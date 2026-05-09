@@ -98,7 +98,10 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
 
   const sendToKitchen = async () => {
     const pending = items.filter((i) => i.sends_to_kitchen && i.kitchen_status === 'pendente');
-    if (!pending.length) { toast.info('Nada novo para enviar.'); return; }
+    if (!pending.length) {
+      toast.info('Nenhum item novo aguardando envio para a cozinha.');
+      return;
+    }
     await supabase.from('order_items').update({
       kitchen_status: 'aguardando', sent_to_kitchen_at: new Date().toISOString(),
     }).in('id', pending.map((p) => p.id));
