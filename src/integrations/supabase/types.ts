@@ -1,0 +1,723 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
+  public: {
+    Tables: {
+      categories: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          status: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          status?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          created_at: string
+          document: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          primary_color: string | null
+          status: string
+          trade_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          primary_color?: string | null
+          status?: string
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          primary_color?: string | null
+          status?: string
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      option_groups: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          max_options: number | null
+          min_options: number
+          name: string
+          product_id: string
+          required: boolean
+          selection_type: Database["public"]["Enums"]["option_selection_type"]
+          sort_order: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          max_options?: number | null
+          min_options?: number
+          name: string
+          product_id: string
+          required?: boolean
+          selection_type?: Database["public"]["Enums"]["option_selection_type"]
+          sort_order?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          max_options?: number | null
+          min_options?: number
+          name?: string
+          product_id?: string
+          required?: boolean
+          selection_type?: Database["public"]["Enums"]["option_selection_type"]
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "option_groups_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      option_items: {
+        Row: {
+          additional_price: number
+          id: string
+          name: string
+          option_group_id: string
+          sort_order: number
+          status: string
+        }
+        Insert: {
+          additional_price?: number
+          id?: string
+          name: string
+          option_group_id: string
+          sort_order?: number
+          status?: string
+        }
+        Update: {
+          additional_price?: number
+          id?: string
+          name?: string
+          option_group_id?: string
+          sort_order?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "option_items_option_group_id_fkey"
+            columns: ["option_group_id"]
+            isOneToOne: false
+            referencedRelation: "option_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_item_options: {
+        Row: {
+          additional_price: number
+          id: string
+          option_group_name: string
+          option_item_name: string
+          order_item_id: string
+        }
+        Insert: {
+          additional_price?: number
+          id?: string
+          option_group_name: string
+          option_item_name: string
+          order_item_id: string
+        }
+        Update: {
+          additional_price?: number
+          id?: string
+          option_group_name?: string
+          option_item_name?: string
+          order_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_options_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          canceled_at: string | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          kitchen_status: Database["public"]["Enums"]["kitchen_status"]
+          notes: string | null
+          order_id: string
+          product_id: string
+          product_name: string
+          quantity: number
+          ready_at: string | null
+          sends_to_kitchen: boolean
+          sent_to_kitchen_at: string | null
+          started_preparation_at: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          kitchen_status?: Database["public"]["Enums"]["kitchen_status"]
+          notes?: string | null
+          order_id: string
+          product_id: string
+          product_name: string
+          quantity?: number
+          ready_at?: string | null
+          sends_to_kitchen?: boolean
+          sent_to_kitchen_at?: string | null
+          started_preparation_at?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          kitchen_status?: Database["public"]["Enums"]["kitchen_status"]
+          notes?: string | null
+          order_id?: string
+          product_id?: string
+          product_name?: string
+          quantity?: number
+          ready_at?: string | null
+          sends_to_kitchen?: boolean
+          sent_to_kitchen_at?: string | null
+          started_preparation_at?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          closed_at: string | null
+          company_id: string
+          discount: number
+          id: string
+          opened_at: string
+          order_number: number
+          service_fee_amount: number
+          service_fee_percentage: number
+          status: Database["public"]["Enums"]["order_status"]
+          subtotal: number
+          table_id: string
+          total: number
+          user_id: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          company_id: string
+          discount?: number
+          id?: string
+          opened_at?: string
+          order_number?: number
+          service_fee_amount?: number
+          service_fee_percentage?: number
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
+          table_id: string
+          total?: number
+          user_id?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          company_id?: string
+          discount?: number
+          id?: string
+          opened_at?: string
+          order_number?: number
+          service_fee_amount?: number
+          service_fee_percentage?: number
+          status?: Database["public"]["Enums"]["order_status"]
+          subtotal?: number
+          table_id?: string
+          total?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          average_preparation_time: number | null
+          category_id: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          sends_to_kitchen: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          average_preparation_time?: number | null
+          category_id?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          price?: number
+          sends_to_kitchen?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          average_preparation_time?: number | null
+          category_id?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          sends_to_kitchen?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company_id: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          email: string
+          id: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settings: {
+        Row: {
+          company_id: string
+          created_at: string
+          credit_fee_percentage: number
+          debit_fee_percentage: number
+          id: string
+          kitchen_danger_minutes: number
+          kitchen_warning_minutes: number
+          service_fee_percentage: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          credit_fee_percentage?: number
+          debit_fee_percentage?: number
+          id?: string
+          kitchen_danger_minutes?: number
+          kitchen_warning_minutes?: number
+          service_fee_percentage?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          credit_fee_percentage?: number
+          debit_fee_percentage?: number
+          id?: string
+          kitchen_danger_minutes?: number
+          kitchen_warning_minutes?: number
+          service_fee_percentage?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          number: number
+          status: Database["public"]["Enums"]["table_status"]
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          number: number
+          status?: Database["public"]["Enums"]["table_status"]
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          number?: number
+          status?: Database["public"]["Enums"]["table_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      current_company_id: { Args: never; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
+    }
+    Enums: {
+      app_role: "admin" | "staff"
+      kitchen_status:
+        | "pendente"
+        | "aguardando"
+        | "preparo"
+        | "pronto"
+        | "entregue"
+        | "cancelado"
+      option_selection_type: "unica" | "multipla"
+      order_status: "aberto" | "fechado" | "cancelado"
+      table_status:
+        | "livre"
+        | "ocupada"
+        | "aguardando"
+        | "preparo"
+        | "pronto"
+        | "fechamento"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      app_role: ["admin", "staff"],
+      kitchen_status: [
+        "pendente",
+        "aguardando",
+        "preparo",
+        "pronto",
+        "entregue",
+        "cancelado",
+      ],
+      option_selection_type: ["unica", "multipla"],
+      order_status: ["aberto", "fechado", "cancelado"],
+      table_status: [
+        "livre",
+        "ocupada",
+        "aguardando",
+        "preparo",
+        "pronto",
+        "fechamento",
+      ],
+    },
+  },
+} as const
