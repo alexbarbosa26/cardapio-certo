@@ -63,8 +63,17 @@ function DashboardPage() {
         </Link>
       </div>
 
-      <div className="mt-10 rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-        Caixa, relatórios detalhados e gráficos virão na próxima fase do MVP.
+      <div className="mt-10 grid gap-4 sm:grid-cols-2">
+        <Link to="/caixa" className="group rounded-2xl border border-border bg-card p-6 hover:border-accent transition shadow-card">
+          <TrendingUp className="h-5 w-5 text-accent" />
+          <h3 className="mt-3 font-display text-2xl">Abrir caixa</h3>
+          <p className="text-sm text-muted-foreground mt-1">Controle suprimentos, sangrias e fechamento.</p>
+        </Link>
+        <Link to="/relatorios" className="group rounded-2xl border border-border bg-card p-6 hover:border-accent transition shadow-card">
+          <ShoppingBag className="h-5 w-5 text-accent" />
+          <h3 className="mt-3 font-display text-2xl">Relatórios</h3>
+          <p className="text-sm text-muted-foreground mt-1">Vendas por dia, por método e top produtos.</p>
+        </Link>
       </div>
     </div>
   );
