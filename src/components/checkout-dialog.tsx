@@ -62,12 +62,28 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
 
   const finalize = async () => {
     if (method === 'dinheiro' && received_n < total) { toast.error('Valor recebido insuficiente.'); return; }
+    const { data: orderRow } = await supabase.from('orders').select('company_id').eq('id', orderId).single();
+    if (!orderRow) { toast.error('Pedido não encontrado.'); return; }
+
+    // procura caixa aberto
+    const { data: reg } = await supabase.from('cash_registers').select('id')
+      .eq('company_id', orderRow.company_id).eq('status', 'aberto')
+      .order('opened_at', { ascending: false }).limit(1).maybeSingle();
+
     await supabase.from('orders').update({
       status: 'fechado', closed_at: new Date().toISOString(),
       subtotal, service_fee_amount: fee, discount, total,
       service_fee_percentage: withFee ? 10 : 0,
     }).eq('id', orderId);
+
+    await supabase.from('payments').insert({
+      company_id: orderRow.company_id, order_id: orderId,
+      register_id: reg?.id ?? null, method, amount: total,
+      fee_percentage: FEES[method], fee_amount: cardFee, net_amount: net,
+    });
+
     await supabase.from('tables').update({ status: 'livre' }).eq('id', tableId);
+    if (!reg) toast.warning('Pagamento registrado, mas nenhum caixa está aberto.');
     toast.success(`Conta da ${tableName} fechada.`);
     onOpenChange(false);
   };
