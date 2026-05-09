@@ -21,9 +21,9 @@ const NAV: NavItem[] = [
   { to: '/cozinha', label: 'Cozinha', icon: ChefHat },
   { to: '/produtos', label: 'Produtos', icon: Package, admin: true },
   { to: '/usuarios', label: 'Usuários', icon: Users, admin: true },
-  { to: '/caixa', label: 'Caixa', icon: Wallet, admin: true, soon: true },
-  { to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true, soon: true },
-  { to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true, soon: true },
+  { to: '/caixa', label: 'Caixa', icon: Wallet, admin: true },
+  { to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
+  { to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
   { to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
   { to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
 ];
