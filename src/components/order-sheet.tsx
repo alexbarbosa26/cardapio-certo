@@ -98,7 +98,10 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
 
   const sendToKitchen = async () => {
     const pending = items.filter((i) => i.sends_to_kitchen && i.kitchen_status === 'pendente');
-    if (!pending.length) { toast.info('Nada novo para enviar.'); return; }
+    if (!pending.length) {
+      toast.info('Nenhum item novo aguardando envio para a cozinha.');
+      return;
+    }
     await supabase.from('order_items').update({
       kitchen_status: 'aguardando', sent_to_kitchen_at: new Date().toISOString(),
     }).in('id', pending.map((p) => p.id));
@@ -271,11 +274,13 @@ function AddProductDialog({ product, orderId, onDone, onClose }: { product: Prod
       if (g.required && !(picks[g.id]?.size)) { toast.error(`Selecione ${g.name}`); return; }
     }
     const unit = product.price + extra;
+    const now = new Date().toISOString();
     const { data: oi, error } = await supabase.from('order_items').insert({
       order_id: orderId, product_id: product.id, product_name: product.name,
       quantity: qty, unit_price: unit, total_price: unit * qty, notes: notes || null,
       sends_to_kitchen: product.sends_to_kitchen,
-      kitchen_status: 'pendente',
+      kitchen_status: product.sends_to_kitchen ? 'pendente' : 'entregue',
+      delivered_at: product.sends_to_kitchen ? null : now,
     }).select('id').single();
     if (error) { toast.error(error.message); return; }
     const opts: any[] = [];
