@@ -3,54 +3,148 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '@/components/ui/dialog';
+import { useServerFn } from '@tanstack/react-start';
+import { createUser, updateUser } from '@/lib/admin-users.functions';
+import { Plus, Edit2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const Route = createFileRoute('/_app/usuarios')({
   component: UsuariosPage,
 });
 
+interface UserRow { id: string; name: string; email: string; status: string; role: string | null; }
+
 function UsuariosPage() {
   const { profile } = useAuth();
   if (profile && profile.role !== 'admin') return <Navigate to="/mesas" />;
 
-  const [users, setUsers] = useState<any[]>([]);
-  useEffect(() => {
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [editing, setEditing] = useState<Partial<UserRow> & { password?: string } | null>(null);
+  const createFn = useServerFn(createUser);
+  const updateFn = useServerFn(updateUser);
+
+  const load = async () => {
     if (!profile) return;
-    (async () => {
-      const { data } = await supabase.from('profiles')
-        .select('id, name, email, status, user_roles(role)')
-        .eq('company_id', profile.company_id);
-      setUsers(data ?? []);
-    })();
-  }, [profile?.company_id]);
+    const { data } = await supabase.from('profiles')
+      .select('id, name, email, status, user_roles(role)')
+      .eq('company_id', profile.company_id);
+    setUsers((data ?? []).map((u: any) => ({
+      id: u.id, name: u.name, email: u.email, status: u.status,
+      role: u.user_roles?.[0]?.role ?? null,
+    })));
+  };
+  useEffect(() => { load(); }, [profile?.company_id]);
+
+  const save = async () => {
+    if (!editing) return;
+    try {
+      if (editing.id) {
+        await updateFn({
+          data: {
+            user_id: editing.id, name: editing.name ?? '',
+            role: (editing.role as 'admin' | 'staff') ?? 'staff',
+            status: (editing.status as 'ativo' | 'inativo') ?? 'ativo',
+            password: editing.password || '',
+          },
+        });
+      } else {
+        await createFn({
+          data: {
+            name: editing.name ?? '', email: editing.email ?? '',
+            password: editing.password ?? '',
+            role: (editing.role as 'admin' | 'staff') ?? 'staff',
+          },
+        });
+      }
+      toast.success('Salvo'); setEditing(null); load();
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Erro ao salvar');
+    }
+  };
 
   return (
     <div className="p-4 sm:p-8 max-w-4xl mx-auto">
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Equipe</p>
-        <h1 className="font-display text-3xl sm:text-4xl mt-1">Usuários</h1>
+      <header className="mb-6 flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Equipe</p>
+          <h1 className="font-display text-3xl sm:text-4xl mt-1">Usuários</h1>
+        </div>
+        <Button onClick={() => setEditing({ role: 'staff', status: 'ativo' })}>
+          <Plus className="h-4 w-4 mr-1"/>Novo usuário
+        </Button>
       </header>
 
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="text-xs uppercase tracking-wider text-muted-foreground bg-secondary/40">
-            <tr><th className="text-left px-4 py-3">Nome</th><th className="text-left px-4 py-3">E-mail</th><th className="text-left px-4 py-3">Perfil</th><th className="text-left px-4 py-3">Status</th></tr>
+            <tr>
+              <th className="text-left px-4 py-3">Nome</th>
+              <th className="text-left px-4 py-3 hidden sm:table-cell">E-mail</th>
+              <th className="text-left px-4 py-3">Perfil</th>
+              <th className="text-left px-4 py-3">Status</th>
+              <th></th>
+            </tr>
           </thead>
           <tbody>
             {users.map((u) => (
               <tr key={u.id} className="border-t border-border">
                 <td className="px-4 py-3 font-medium">{u.name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{u.email}</td>
-                <td className="px-4 py-3"><span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{u.user_roles?.[0]?.role ?? '—'}</span></td>
+                <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{u.email}</td>
+                <td className="px-4 py-3"><span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{u.role ?? '—'}</span></td>
                 <td className="px-4 py-3 text-xs">{u.status}</td>
+                <td className="px-4 py-3 text-right">
+                  <Button variant="ghost" size="icon" onClick={() => setEditing(u)}><Edit2 className="h-4 w-4"/></Button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <p className="mt-6 text-xs text-muted-foreground">
-        A criação completa de usuários (com convite/senha) será habilitada na próxima fase, junto com o módulo de Caixa.
-      </p>
+      {editing && (
+        <Dialog open onOpenChange={(o) => !o && setEditing(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>{editing.id ? 'Editar usuário' : 'Novo usuário'}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div><Label>Nome</Label><Input value={editing.name ?? ''} onChange={(e) => setEditing({ ...editing, name: e.target.value })}/></div>
+              {!editing.id && (
+                <div><Label>E-mail</Label><Input type="email" value={editing.email ?? ''} onChange={(e) => setEditing({ ...editing, email: e.target.value })}/></div>
+              )}
+              <div>
+                <Label>{editing.id ? 'Nova senha (deixe vazio para manter)' : 'Senha'}</Label>
+                <Input type="password" value={editing.password ?? ''} onChange={(e) => setEditing({ ...editing, password: e.target.value })}/>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Perfil</Label>
+                  <select value={editing.role ?? 'staff'} onChange={(e) => setEditing({ ...editing, role: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                    <option value="staff">Atendente</option>
+                    <option value="admin">Administrador</option>
+                  </select>
+                </div>
+                {editing.id && (
+                  <div>
+                    <Label>Status</Label>
+                    <select value={editing.status ?? 'ativo'} onChange={(e) => setEditing({ ...editing, status: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
+                      <option value="ativo">Ativo</option>
+                      <option value="inativo">Inativo</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setEditing(null)}>Cancelar</Button>
+              <Button onClick={save}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
