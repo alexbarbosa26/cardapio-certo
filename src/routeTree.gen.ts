@@ -13,10 +13,13 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppUsuariosRouteImport } from './routes/_app/usuarios'
+import { Route as AppRelatoriosRouteImport } from './routes/_app/relatorios'
 import { Route as AppProdutosRouteImport } from './routes/_app/produtos'
 import { Route as AppMesasRouteImport } from './routes/_app/mesas'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCozinhaRouteImport } from './routes/_app/cozinha'
+import { Route as AppConfiguracoesRouteImport } from './routes/_app/configuracoes'
+import { Route as AppCaixaRouteImport } from './routes/_app/caixa'
 import { Route as ApiPublicSeedDemoRouteImport } from './routes/api/public/seed-demo'
 
 const LoginRoute = LoginRouteImport.update({
@@ -36,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppUsuariosRoute = AppUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRelatoriosRoute = AppRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
   getParentRoute: () => AppRoute,
 } as any)
 const AppProdutosRoute = AppProdutosRouteImport.update({
@@ -58,6 +66,16 @@ const AppCozinhaRoute = AppCozinhaRouteImport.update({
   path: '/cozinha',
   getParentRoute: () => AppRoute,
 } as any)
+const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCaixaRoute = AppCaixaRouteImport.update({
+  id: '/caixa',
+  path: '/caixa',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiPublicSeedDemoRoute = ApiPublicSeedDemoRouteImport.update({
   id: '/api/public/seed-demo',
   path: '/api/public/seed-demo',
@@ -67,20 +85,26 @@ const ApiPublicSeedDemoRoute = ApiPublicSeedDemoRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/caixa': typeof AppCaixaRoute
+  '/configuracoes': typeof AppConfiguracoesRoute
   '/cozinha': typeof AppCozinhaRoute
   '/dashboard': typeof AppDashboardRoute
   '/mesas': typeof AppMesasRoute
   '/produtos': typeof AppProdutosRoute
+  '/relatorios': typeof AppRelatoriosRoute
   '/usuarios': typeof AppUsuariosRoute
   '/api/public/seed-demo': typeof ApiPublicSeedDemoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/caixa': typeof AppCaixaRoute
+  '/configuracoes': typeof AppConfiguracoesRoute
   '/cozinha': typeof AppCozinhaRoute
   '/dashboard': typeof AppDashboardRoute
   '/mesas': typeof AppMesasRoute
   '/produtos': typeof AppProdutosRoute
+  '/relatorios': typeof AppRelatoriosRoute
   '/usuarios': typeof AppUsuariosRoute
   '/api/public/seed-demo': typeof ApiPublicSeedDemoRoute
 }
@@ -89,10 +113,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/caixa': typeof AppCaixaRoute
+  '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/cozinha': typeof AppCozinhaRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/mesas': typeof AppMesasRoute
   '/_app/produtos': typeof AppProdutosRoute
+  '/_app/relatorios': typeof AppRelatoriosRoute
   '/_app/usuarios': typeof AppUsuariosRoute
   '/api/public/seed-demo': typeof ApiPublicSeedDemoRoute
 }
@@ -101,20 +128,26 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/caixa'
+    | '/configuracoes'
     | '/cozinha'
     | '/dashboard'
     | '/mesas'
     | '/produtos'
+    | '/relatorios'
     | '/usuarios'
     | '/api/public/seed-demo'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/caixa'
+    | '/configuracoes'
     | '/cozinha'
     | '/dashboard'
     | '/mesas'
     | '/produtos'
+    | '/relatorios'
     | '/usuarios'
     | '/api/public/seed-demo'
   id:
@@ -122,10 +155,13 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/caixa'
+    | '/_app/configuracoes'
     | '/_app/cozinha'
     | '/_app/dashboard'
     | '/_app/mesas'
     | '/_app/produtos'
+    | '/_app/relatorios'
     | '/_app/usuarios'
     | '/api/public/seed-demo'
   fileRoutesById: FileRoutesById
@@ -167,6 +203,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsuariosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/relatorios': {
+      id: '/_app/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof AppRelatoriosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/produtos': {
       id: '/_app/produtos'
       path: '/produtos'
@@ -195,6 +238,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCozinhaRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/configuracoes': {
+      id: '/_app/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AppConfiguracoesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/caixa': {
+      id: '/_app/caixa'
+      path: '/caixa'
+      fullPath: '/caixa'
+      preLoaderRoute: typeof AppCaixaRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/public/seed-demo': {
       id: '/api/public/seed-demo'
       path: '/api/public/seed-demo'
@@ -206,18 +263,24 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppCaixaRoute: typeof AppCaixaRoute
+  AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppCozinhaRoute: typeof AppCozinhaRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppMesasRoute: typeof AppMesasRoute
   AppProdutosRoute: typeof AppProdutosRoute
+  AppRelatoriosRoute: typeof AppRelatoriosRoute
   AppUsuariosRoute: typeof AppUsuariosRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCaixaRoute: AppCaixaRoute,
+  AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppCozinhaRoute: AppCozinhaRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppMesasRoute: AppMesasRoute,
   AppProdutosRoute: AppProdutosRoute,
+  AppRelatoriosRoute: AppRelatoriosRoute,
   AppUsuariosRoute: AppUsuariosRoute,
 }
 
@@ -232,3 +295,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
