@@ -12,7 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppUsuariosRouteImport } from './routes/_app/usuarios'
+import { Route as AppProdutosRouteImport } from './routes/_app/produtos'
 import { Route as AppMesasRouteImport } from './routes/_app/mesas'
+import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppCozinhaRouteImport } from './routes/_app/cozinha'
 import { Route as ApiPublicSeedDemoRouteImport } from './routes/api/public/seed-demo'
 
 const LoginRoute = LoginRouteImport.update({
@@ -29,9 +33,29 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppUsuariosRoute = AppUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppProdutosRoute = AppProdutosRouteImport.update({
+  id: '/produtos',
+  path: '/produtos',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMesasRoute = AppMesasRouteImport.update({
   id: '/mesas',
   path: '/mesas',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDashboardRoute = AppDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppCozinhaRoute = AppCozinhaRouteImport.update({
+  id: '/cozinha',
+  path: '/cozinha',
   getParentRoute: () => AppRoute,
 } as any)
 const ApiPublicSeedDemoRoute = ApiPublicSeedDemoRouteImport.update({
@@ -43,13 +67,21 @@ const ApiPublicSeedDemoRoute = ApiPublicSeedDemoRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/cozinha': typeof AppCozinhaRoute
+  '/dashboard': typeof AppDashboardRoute
   '/mesas': typeof AppMesasRoute
+  '/produtos': typeof AppProdutosRoute
+  '/usuarios': typeof AppUsuariosRoute
   '/api/public/seed-demo': typeof ApiPublicSeedDemoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/cozinha': typeof AppCozinhaRoute
+  '/dashboard': typeof AppDashboardRoute
   '/mesas': typeof AppMesasRoute
+  '/produtos': typeof AppProdutosRoute
+  '/usuarios': typeof AppUsuariosRoute
   '/api/public/seed-demo': typeof ApiPublicSeedDemoRoute
 }
 export interface FileRoutesById {
@@ -57,20 +89,44 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/cozinha': typeof AppCozinhaRoute
+  '/_app/dashboard': typeof AppDashboardRoute
   '/_app/mesas': typeof AppMesasRoute
+  '/_app/produtos': typeof AppProdutosRoute
+  '/_app/usuarios': typeof AppUsuariosRoute
   '/api/public/seed-demo': typeof ApiPublicSeedDemoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/mesas' | '/api/public/seed-demo'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/cozinha'
+    | '/dashboard'
+    | '/mesas'
+    | '/produtos'
+    | '/usuarios'
+    | '/api/public/seed-demo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/mesas' | '/api/public/seed-demo'
+  to:
+    | '/'
+    | '/login'
+    | '/cozinha'
+    | '/dashboard'
+    | '/mesas'
+    | '/produtos'
+    | '/usuarios'
+    | '/api/public/seed-demo'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/cozinha'
+    | '/_app/dashboard'
     | '/_app/mesas'
+    | '/_app/produtos'
+    | '/_app/usuarios'
     | '/api/public/seed-demo'
   fileRoutesById: FileRoutesById
 }
@@ -104,11 +160,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/usuarios': {
+      id: '/_app/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AppUsuariosRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/produtos': {
+      id: '/_app/produtos'
+      path: '/produtos'
+      fullPath: '/produtos'
+      preLoaderRoute: typeof AppProdutosRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/mesas': {
       id: '/_app/mesas'
       path: '/mesas'
       fullPath: '/mesas'
       preLoaderRoute: typeof AppMesasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/dashboard': {
+      id: '/_app/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/cozinha': {
+      id: '/_app/cozinha'
+      path: '/cozinha'
+      fullPath: '/cozinha'
+      preLoaderRoute: typeof AppCozinhaRouteImport
       parentRoute: typeof AppRoute
     }
     '/api/public/seed-demo': {
@@ -122,11 +206,19 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppCozinhaRoute: typeof AppCozinhaRoute
+  AppDashboardRoute: typeof AppDashboardRoute
   AppMesasRoute: typeof AppMesasRoute
+  AppProdutosRoute: typeof AppProdutosRoute
+  AppUsuariosRoute: typeof AppUsuariosRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCozinhaRoute: AppCozinhaRoute,
+  AppDashboardRoute: AppDashboardRoute,
   AppMesasRoute: AppMesasRoute,
+  AppProdutosRoute: AppProdutosRoute,
+  AppUsuariosRoute: AppUsuariosRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

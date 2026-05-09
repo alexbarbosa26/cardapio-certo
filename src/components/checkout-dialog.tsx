@@ -39,7 +39,12 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
     if (!open) return;
     (async () => {
       const { data: o } = await supabase.from('orders').select('*').eq('id', orderId).single();
-      setOrder({ ...o, subtotal: Number(o.subtotal), service_fee_amount: Number(o.service_fee_amount), discount: Number(o.discount), total: Number(o.total) });
+      if (!o) return;
+      setOrder({
+        id: o.id, order_number: o.order_number,
+        subtotal: Number(o.subtotal), service_fee_percentage: Number(o.service_fee_percentage),
+        service_fee_amount: Number(o.service_fee_amount), discount: Number(o.discount), total: Number(o.total),
+      });
       const { data: its } = await supabase.from('order_items').select('product_name, quantity, unit_price, total_price').eq('order_id', orderId);
       setItems((its ?? []).map((i: any) => ({ ...i, total_price: Number(i.total_price), unit_price: Number(i.unit_price) })));
     })();
