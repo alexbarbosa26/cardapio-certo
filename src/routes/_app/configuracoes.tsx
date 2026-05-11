@@ -30,12 +30,14 @@ function ConfigPage() {
         <TabsList>
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro & Cozinha</TabsTrigger>
+          <TabsTrigger value="tipografia">Tipografia</TabsTrigger>
           <TabsTrigger value="mesas">Mesas</TabsTrigger>
           <TabsTrigger value="categorias">Categorias</TabsTrigger>
         </TabsList>
 
         <TabsContent value="empresa"><CompanyTab/></TabsContent>
         <TabsContent value="financeiro"><SettingsTab/></TabsContent>
+        <TabsContent value="tipografia"><TypographyTab/></TabsContent>
         <TabsContent value="mesas"><TablesTab/></TabsContent>
         <TabsContent value="categorias"><CategoriesTab/></TabsContent>
       </Tabs>
