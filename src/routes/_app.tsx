@@ -97,7 +97,7 @@ function BrandHeader({ companyName }: { companyName: string }) {
   );
 }
 
-function NavList({ items }: { items: NavItem[] }) {
+function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
@@ -119,7 +119,7 @@ function NavList({ items }: { items: NavItem[] }) {
         return it.soon ? (
           <div key={it.to} className={cls}>{inner}</div>
         ) : (
-          <Link key={it.to} to={it.to} className={cls}>{inner}</Link>
+          <Link key={it.to} to={it.to} className={cls} onClick={() => onNavigate?.()}>{inner}</Link>
         );
       })}
     </nav>
