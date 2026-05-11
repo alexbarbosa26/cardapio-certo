@@ -199,6 +199,9 @@ function CaixaPage() {
         <MovementDialog open onOpenChange={() => setMovDialog(null)}
           type={movDialog} registerId={open.id} onDone={load}/>
       )}
+      {historyDetail && (
+        <RegisterDetailDialog register={historyDetail} onClose={() => setHistoryDetail(null)} companyId={profile!.company_id}/>
+      )}
     </div>
   );
 }
