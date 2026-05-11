@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { fmtBRL } from '@/lib/format';
-import { Plus, Minus, Send, X, Trash2 } from 'lucide-react';
+import { printThermal } from '@/lib/print-order';
+import { Plus, Minus, Send, X, Trash2, Printer } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
