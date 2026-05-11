@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { fmtBRL } from '@/lib/format';
+import { printThermal } from '@/lib/print-order';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Banknote, CreditCard, QrCode, Printer } from 'lucide-react';
@@ -176,7 +177,18 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
         </div>
 
         <DialogFooter className="gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4 mr-1" /> Imprimir</Button>
+          <Button variant="outline" onClick={() => printThermal({
+            title: tableName,
+            subtitle: `Conta · Pedido #${order.order_number}`,
+            items: items.map((i) => ({ quantity: i.quantity, product_name: i.product_name, total_price: i.total_price })),
+            totals: [
+              { label: 'Subtotal', value: fmtBRL(subtotal) },
+              ...(withFee ? [{ label: 'Taxa serviço (10%)', value: fmtBRL(fee) }] : []),
+              ...(discount > 0 ? [{ label: 'Desconto', value: `- ${fmtBRL(discount)}` }] : []),
+              { label: 'Total', value: fmtBRL(total), bold: true },
+            ],
+            footer: 'Obrigado pela preferência!',
+          })}><Printer className="h-4 w-4 mr-1" /> Imprimir</Button>
           <Button onClick={finalize} className="bg-primary">Confirmar pagamento</Button>
         </DialogFooter>
       </DialogContent>
