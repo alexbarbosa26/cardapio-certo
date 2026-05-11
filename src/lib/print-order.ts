@@ -30,9 +30,11 @@ export function printThermal({ title, subtitle, items, totals = [], footer, show
   const itemsHtml = items.map((it) => {
     const opts = (it.options ?? []).map((o) => `<div class="opt">+ ${escapeHtml(o.option_item_name)}</div>`).join('');
     const notes = it.notes ? `<div class="opt">Obs: ${escapeHtml(it.notes)}</div>` : '';
+    const unit = showUnitPrice && typeof it.unit_price === 'number'
+      ? `<div class="unit">${it.quantity} × ${fmtBRL(it.unit_price)}</div>` : '';
     const price = showPrices && typeof it.total_price === 'number'
       ? `<span class="price">${fmtBRL(it.total_price)}</span>` : '';
-    return `<div class="item"><div class="row"><div class="name"><span class="qty">${it.quantity}×</span> ${escapeHtml(it.product_name)}</div>${price}</div>${opts}${notes}</div>`;
+    return `<div class="item"><div class="row"><div class="name"><span class="qty">${it.quantity}×</span> ${escapeHtml(it.product_name)}</div>${price}</div>${unit}${opts}${notes}</div>`;
   }).join('');
   const totalsHtml = totals
     .filter((t) => !/subtotal/i.test(t.label))
