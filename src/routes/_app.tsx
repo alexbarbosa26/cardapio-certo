@@ -57,20 +57,20 @@ function AppLayout() {
       {/* Mobile topbar + drawer */}
       <div className="flex flex-1 flex-col">
         <header className="lg:hidden sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/90 backdrop-blur px-4">
-          <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground"><Logo className="h-4 w-4" /></div>
-            <span className="font-semibold">MesaChef</span>
-          </div>
-          <Sheet>
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon"><Menu className="h-5 w-5"/></Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 bg-sidebar text-sidebar-foreground border-sidebar-border p-0">
               <BrandHeader companyName={profile.company_name ?? 'MesaChef'} />
-              <NavList items={items} />
-              <UserCard name={profile.name} role={profile.role} onSignOut={async () => { await signOut(); navigate({ to: '/login' }); }} />
+              <NavList items={items} onNavigate={() => setMobileOpen(false)} />
+              <UserCard name={profile.name} role={profile.role} onSignOut={async () => { setMobileOpen(false); await signOut(); navigate({ to: '/login' }); }} />
             </SheetContent>
           </Sheet>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">MesaChef</span>
+            <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground"><Logo className="h-4 w-4" /></div>
+          </div>
         </header>
 
         <main className="flex-1">
