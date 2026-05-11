@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { fmtBRL } from '@/lib/format';
+import { printThermal } from '@/lib/print-order';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Banknote, CreditCard, QrCode, Printer } from 'lucide-react';
