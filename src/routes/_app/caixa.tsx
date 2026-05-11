@@ -332,3 +332,105 @@ function MovementDialog({ open, onOpenChange, type, registerId, onDone }: any) {
     </Dialog>
   );
 }
+
+function RegisterDetailDialog({ register, onClose, companyId }: { register: RegisterRow; onClose: () => void; companyId: string }) {
+  const [pays, setPays] = useState<PaymentRow[]>([]);
+  const [mvs, setMvs] = useState<MovementRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    (async () => {
+      const upper = register.closed_at ?? new Date().toISOString();
+      const [{ data: p }, { data: m }] = await Promise.all([
+        supabase.from('payments').select('*').eq('company_id', companyId)
+          .gte('created_at', register.opened_at).lte('created_at', upper)
+          .order('created_at', { ascending: false }),
+        supabase.from('cash_movements').select('*').eq('register_id', register.id)
+          .order('created_at', { ascending: false }),
+      ]);
+      setPays((p ?? []).map((x: any) => ({ ...x, amount: Number(x.amount) })));
+      setMvs((m ?? []).map((x: any) => ({ ...x, amount: Number(x.amount) })));
+      setLoading(false);
+    })();
+  }, [register.id]);
+
+  const byMethod: Record<string, number> = { dinheiro: 0, pix: 0, debito: 0, credito: 0 };
+  for (const p of pays) byMethod[p.method] = (byMethod[p.method] ?? 0) + p.amount;
+  const supr = mvs.filter((m) => m.type === 'suprimento').reduce((s, m) => s + m.amount, 0);
+  const sang = mvs.filter((m) => m.type === 'sangria').reduce((s, m) => s + m.amount, 0);
+  const totalVendas = Object.values(byMethod).reduce((a, b) => a + b, 0);
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-baseline gap-2">
+            <span>Caixa de {fmtDateTime(register.opened_at)}</span>
+          </DialogTitle>
+        </DialogHeader>
+        {loading ? <div className="text-sm text-muted-foreground">Carregando…</div> : (
+          <div className="max-h-[70vh] overflow-y-auto space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+              <Mini label="Dinheiro" value={fmtBRL(byMethod.dinheiro)}/>
+              <Mini label="Pix" value={fmtBRL(byMethod.pix)}/>
+              <Mini label="Débito" value={fmtBRL(byMethod.debito)}/>
+              <Mini label="Crédito" value={fmtBRL(byMethod.credito)}/>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+              <Mini label="Total vendas" value={fmtBRL(totalVendas)} accent/>
+              <Mini label="Suprimentos" value={fmtBRL(supr)}/>
+              <Mini label="Sangrias" value={`- ${fmtBRL(sang)}`}/>
+              <Mini label="Diferença" value={fmtBRL(register.difference ?? 0)}/>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Card title="Pagamentos">
+                {pays.length === 0 ? <Empty text="Nenhum pagamento."/> : (
+                  <ul className="divide-y divide-border text-sm">
+                    {pays.map((p) => (
+                      <li key={p.id} className="flex justify-between py-1.5">
+                        <span className="text-muted-foreground">{fmtTime(p.created_at)} · <span className="capitalize">{p.method}</span></span>
+                        <span className="tabular-nums">{fmtBRL(p.amount)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+              <Card title="Movimentos">
+                {mvs.length === 0 ? <Empty text="Nenhum movimento."/> : (
+                  <ul className="divide-y divide-border text-sm">
+                    {mvs.map((m) => (
+                      <li key={m.id} className="flex justify-between py-1.5">
+                        <div>
+                          <span className={cn('font-medium capitalize', m.type === 'suprimento' ? 'text-success' : 'text-danger')}>{m.type}</span>
+                          <span className="text-muted-foreground"> · {fmtTime(m.created_at)}{m.notes ? ` · ${m.notes}` : ''}</span>
+                        </div>
+                        <span className="tabular-nums">{m.type === 'suprimento' ? '+' : '-'} {fmtBRL(m.amount)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            </div>
+            {register.notes && (
+              <div className="rounded-lg bg-secondary/40 p-3 text-sm">
+                <span className="text-muted-foreground text-xs uppercase tracking-wider">Observações</span>
+                <p className="mt-1">{register.notes}</p>
+              </div>
+            )}
+          </div>
+        )}
+        <DialogFooter>
+          <Button onClick={onClose} variant="outline">Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Mini({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-2.5">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
+      <div className={cn('mt-1 font-semibold tabular-nums', accent && 'text-accent')}>{value}</div>
+    </div>
+  );
+}
