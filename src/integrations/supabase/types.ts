@@ -584,6 +584,10 @@ export type Database = {
           created_at: string
           credit_fee_percentage: number
           debit_fee_percentage: number
+          font_body: string
+          font_body_weights: string
+          font_display: string
+          font_display_weights: string
           id: string
           kitchen_danger_minutes: number
           kitchen_warning_minutes: number
@@ -595,6 +599,10 @@ export type Database = {
           created_at?: string
           credit_fee_percentage?: number
           debit_fee_percentage?: number
+          font_body?: string
+          font_body_weights?: string
+          font_display?: string
+          font_display_weights?: string
           id?: string
           kitchen_danger_minutes?: number
           kitchen_warning_minutes?: number
@@ -606,6 +614,10 @@ export type Database = {
           created_at?: string
           credit_fee_percentage?: number
           debit_fee_percentage?: number
+          font_body?: string
+          font_body_weights?: string
+          font_display?: string
+          font_display_weights?: string
           id?: string
           kitchen_danger_minutes?: number
           kitchen_warning_minutes?: number

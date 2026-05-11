@@ -1,0 +1,5 @@
+ALTER TABLE public.settings
+  ADD COLUMN IF NOT EXISTS font_display text NOT NULL DEFAULT 'Inter',
+  ADD COLUMN IF NOT EXISTS font_body text NOT NULL DEFAULT 'Inter',
+  ADD COLUMN IF NOT EXISTS font_display_weights text NOT NULL DEFAULT '400;500;600;700',
+  ADD COLUMN IF NOT EXISTS font_body_weights text NOT NULL DEFAULT '400;500;600;700';
