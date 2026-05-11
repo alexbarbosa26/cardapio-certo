@@ -37,7 +37,6 @@ export function printThermal({ title, subtitle, items, totals = [], footer, show
     return `<div class="item"><div class="row"><div class="name"><span class="qty">${it.quantity}×</span> ${escapeHtml(it.product_name)}</div>${price}</div>${unit}${opts}${notes}</div>`;
   }).join('');
   const totalsHtml = totals
-    .filter((t) => !/subtotal/i.test(t.label))
     .map((t) =>
       `<div class="trow${t.bold ? ' bold' : ''}"><span>${escapeHtml(t.label)}</span><span>${escapeHtml(t.value)}</span></div>`
     ).join('');
