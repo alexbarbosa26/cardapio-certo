@@ -173,7 +173,7 @@ function CaixaPage() {
               </thead>
               <tbody>
                 {history.map((r) => (
-                  <tr key={r.id} className="border-t border-border">
+                  <tr key={r.id} onClick={() => setHistoryDetail(r)} className="border-t border-border cursor-pointer hover:bg-secondary/40">
                     <td className="px-4 py-2.5">{fmtDateTime(r.opened_at)}</td>
                     <td className="px-4 py-2.5">{r.closed_at ? fmtDateTime(r.closed_at) : '—'}</td>
                     <td className="px-4 py-2.5 text-right tabular-nums">{fmtBRL(r.expected_cash ?? 0)}</td>
