@@ -17,9 +17,10 @@ interface PrintOptions {
   totals?: { label: string; value: string; bold?: boolean }[];
   footer?: string;
   showPrices?: boolean;
+  showUnitPrice?: boolean;
 }
 
-export function printThermal({ title, subtitle, items, totals = [], footer, showPrices = false }: PrintOptions) {
+export function printThermal({ title, subtitle, items, totals = [], footer, showPrices = false, showUnitPrice = false }: PrintOptions) {
   const win = window.open('', '_blank', 'width=380,height=640');
   if (!win) {
     alert('Permita pop-ups para imprimir.');
