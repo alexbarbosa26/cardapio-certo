@@ -107,15 +107,6 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
       kitchen_status: 'aguardando', sent_to_kitchen_at: new Date().toISOString(),
     }).in('id', pending.map((p) => p.id));
     await supabase.from('tables').update({ status: 'aguardando' }).eq('id', tableId);
-    printThermal({
-      title: tableName,
-      subtitle: 'Comanda da cozinha',
-      showPrices: false,
-      items: pending.map((i) => ({
-        quantity: i.quantity, product_name: i.product_name,
-        notes: i.notes, options: i.options,
-      })),
-    });
     toast.success(`${pending.length} item(ns) enviados para a cozinha.`);
     load();
   };

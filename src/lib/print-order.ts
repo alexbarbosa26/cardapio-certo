@@ -39,21 +39,20 @@ export function printThermal({ title, subtitle, items, totals = [], footer, show
 
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
   <style>
-    @page { size: 80mm auto; margin: 3mm; }
+    @page { size: 80mm auto; margin: 4mm; }
     * { box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.35; font-weight: 600; color:#000; margin:0; padding: 6px 4px; width: 74mm; -webkit-print-color-adjust: exact; }
-    h1 { font-size: 20px; font-weight: 800; text-align:center; margin: 0 0 4px; letter-spacing:.02em; text-transform: uppercase; }
-    .sub { text-align:center; font-size:13px; font-weight:700; margin-bottom:4px; text-transform: uppercase; }
-    hr { border: 0; border-top: 2px dashed #000; margin: 6px 0; }
-    .row { display:flex; justify-content:space-between; gap:8px; margin-top:6px; align-items: baseline; }
-    .name { flex:1; font-size:15px; font-weight:700; }
-    .name b { font-size:17px; font-weight:800; margin-right:2px; }
-    .price { white-space: nowrap; font-size:15px; font-weight:700; }
-    .opt { padding-left: 16px; font-size: 13px; font-weight:600; color:#000; margin-top:2px; }
-    .trow { display:flex; justify-content:space-between; margin-top:3px; font-size:14px; }
-    .trow.bold { font-weight:800; font-size:17px; border-top:2px solid #000; padding-top:5px; margin-top:6px; }
-    .footer { text-align:center; font-size:12px; font-weight:600; margin-top:10px; }
-    .meta { text-align:center; font-size:12px; font-weight:600; color:#000; margin-bottom:4px; }
+    body { font-family: 'Courier New', ui-monospace, monospace; font-size: 12px; color:#000; margin:0; padding: 8px; width: 72mm; }
+    h1 { font-size: 14px; text-align:center; margin: 0 0 4px; letter-spacing:.04em; }
+    .sub { text-align:center; font-size:11px; margin-bottom:6px; }
+    hr { border: 0; border-top: 1px dashed #000; margin: 6px 0; }
+    .row { display:flex; justify-content:space-between; gap:8px; margin-top:4px; }
+    .name { flex:1; }
+    .price { white-space: nowrap; }
+    .opt { padding-left: 14px; font-size: 11px; color:#000; }
+    .trow { display:flex; justify-content:space-between; margin-top:2px; }
+    .trow.bold { font-weight:700; font-size:13px; border-top:1px solid #000; padding-top:4px; margin-top:6px; }
+    .footer { text-align:center; font-size:11px; margin-top:10px; }
+    .meta { text-align:center; font-size:10px; color:#000; margin-bottom:4px; }
   </style></head><body>
     <h1>${escapeHtml(title)}</h1>
     ${subtitle ? `<div class="sub">${escapeHtml(subtitle)}</div>` : ''}
