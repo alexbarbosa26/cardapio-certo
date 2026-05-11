@@ -36,6 +36,7 @@ function CaixaPage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [closeDialog, setCloseDialog] = useState(false);
   const [movDialog, setMovDialog] = useState<'suprimento' | 'sangria' | null>(null);
+  const [historyDetail, setHistoryDetail] = useState<RegisterRow | null>(null);
 
   const load = async () => {
     if (!profile) return;
