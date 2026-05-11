@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, Link, Navigate, useRouterState, useNavigate } from '@tanstack/react-router';
 import { useAuth } from '@/hooks/use-auth';
+import { useTenantTypography } from '@/hooks/use-tenant-typography';
 import {
   LayoutDashboard, UtensilsCrossed, ChefHat, Package, Users, Wallet,
   BarChart3, Settings as SettingsIcon, MessageSquare, Receipt, LogOut, Menu, ChefHat as Logo,
