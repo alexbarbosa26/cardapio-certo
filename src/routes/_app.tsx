@@ -32,6 +32,7 @@ const NAV: NavItem[] = [
 function AppLayout() {
   const { loading, user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  useTenantTypography();
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-background">
