@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Plus, Trash2 } from 'lucide-react';
+import { applyTenantFontsPreview } from '@/hooks/use-tenant-typography';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const Route = createFileRoute('/_app/configuracoes')({
   component: ConfigPage,
@@ -28,12 +30,14 @@ function ConfigPage() {
         <TabsList>
           <TabsTrigger value="empresa">Empresa</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro & Cozinha</TabsTrigger>
+          <TabsTrigger value="tipografia">Tipografia</TabsTrigger>
           <TabsTrigger value="mesas">Mesas</TabsTrigger>
           <TabsTrigger value="categorias">Categorias</TabsTrigger>
         </TabsList>
 
         <TabsContent value="empresa"><CompanyTab/></TabsContent>
         <TabsContent value="financeiro"><SettingsTab/></TabsContent>
+        <TabsContent value="tipografia"><TypographyTab/></TabsContent>
         <TabsContent value="mesas"><TablesTab/></TabsContent>
         <TabsContent value="categorias"><CategoriesTab/></TabsContent>
       </Tabs>
@@ -178,6 +182,144 @@ function CategoriesTab() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+const FONT_OPTIONS = [
+  { value: 'system', label: 'Sistema (sem Google Fonts)' },
+  { value: 'Inter', label: 'Inter (padrão)' },
+  { value: 'Roboto', label: 'Roboto' },
+  { value: 'Open Sans', label: 'Open Sans' },
+  { value: 'Lato', label: 'Lato' },
+  { value: 'Montserrat', label: 'Montserrat' },
+  { value: 'Poppins', label: 'Poppins' },
+  { value: 'Nunito', label: 'Nunito' },
+  { value: 'Raleway', label: 'Raleway' },
+  { value: 'Playfair Display', label: 'Playfair Display (serif)' },
+  { value: 'Merriweather', label: 'Merriweather (serif)' },
+  { value: 'Lora', label: 'Lora (serif)' },
+  { value: 'DM Serif Display', label: 'DM Serif Display' },
+  { value: 'Space Grotesk', label: 'Space Grotesk' },
+  { value: 'Manrope', label: 'Manrope' },
+  { value: 'Bebas Neue', label: 'Bebas Neue' },
+  { value: 'Oswald', label: 'Oswald' },
+];
+
+const WEIGHT_PRESETS = [
+  { value: '400;700', label: 'Regular + Bold (leve)' },
+  { value: '400;500;600;700', label: 'Regular → Bold (padrão)' },
+  { value: '300;400;500;600;700;800', label: 'Light → ExtraBold (completo)' },
+  { value: '400', label: 'Apenas Regular' },
+];
+
+function TypographyTab() {
+  const { profile } = useAuth();
+  const [s, setS] = useState<any>(null);
+
+  useEffect(() => {
+    if (!profile) return;
+    (async () => {
+      const { data } = await supabase
+        .from('settings')
+        .select('*')
+        .eq('company_id', profile.company_id)
+        .maybeSingle();
+      setS(data ?? {
+        company_id: profile.company_id,
+        font_display: 'Inter',
+        font_body: 'Inter',
+        font_display_weights: '400;500;600;700',
+        font_body_weights: '400;500;600;700',
+      });
+    })();
+  }, [profile?.company_id]);
+
+  if (!s) return null;
+
+  const update = (patch: any) => {
+    const next = { ...s, ...patch };
+    setS(next);
+    applyTenantFontsPreview(
+      next.font_display ?? 'Inter',
+      next.font_body ?? 'Inter',
+      next.font_display_weights ?? '400;500;600;700',
+      next.font_body_weights ?? '400;500;600;700',
+    );
+  };
+
+  const save = async () => {
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ ...s, company_id: profile!.company_id }, { onConflict: 'company_id' });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Tipografia salva');
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 mt-4 space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Personalize a identidade tipográfica do seu restaurante. As fontes são carregadas do Google Fonts.
+      </p>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label>Fonte de títulos (display)</Label>
+          <Select value={s.font_display ?? 'Inter'} onValueChange={(v) => update({ font_display: v })}>
+            <SelectTrigger><SelectValue/></SelectTrigger>
+            <SelectContent>
+              {FONT_OPTIONS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Label className="text-xs text-muted-foreground">Variações (pesos)</Label>
+          <Select value={s.font_display_weights ?? '400;500;600;700'} onValueChange={(v) => update({ font_display_weights: v })}>
+            <SelectTrigger><SelectValue/></SelectTrigger>
+            <SelectContent>
+              {WEIGHT_PRESETS.map((w) => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Personalizado: 400;600;800"
+            value={s.font_display_weights ?? ''}
+            onChange={(e) => update({ font_display_weights: e.target.value })}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Fonte do corpo (body)</Label>
+          <Select value={s.font_body ?? 'Inter'} onValueChange={(v) => update({ font_body: v })}>
+            <SelectTrigger><SelectValue/></SelectTrigger>
+            <SelectContent>
+              {FONT_OPTIONS.map((f) => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Label className="text-xs text-muted-foreground">Variações (pesos)</Label>
+          <Select value={s.font_body_weights ?? '400;500;600;700'} onValueChange={(v) => update({ font_body_weights: v })}>
+            <SelectTrigger><SelectValue/></SelectTrigger>
+            <SelectContent>
+              {WEIGHT_PRESETS.map((w) => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Input
+            placeholder="Personalizado: 400;700"
+            value={s.font_body_weights ?? ''}
+            onChange={(e) => update({ font_body_weights: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border bg-background p-5">
+        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2">Pré-visualização</p>
+        <h2 className="font-display text-3xl mb-2">Cardápio do Chef</h2>
+        <p className="text-base">
+          O melhor sabor da cidade, preparado com ingredientes frescos e selecionados todos os dias.
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Texto secundário · 14px · peso regular
+        </p>
+      </div>
+
+      <Button onClick={save}>Salvar tipografia</Button>
     </div>
   );
 }
