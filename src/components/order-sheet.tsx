@@ -181,9 +181,25 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-semibold">{fmtBRL(subtotal)}</span>
               </div>
-              <Button onClick={sendToKitchen} className="w-full bg-primary hover:bg-primary/90">
-                <Send className="h-4 w-4 mr-2" /> Enviar para cozinha
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button onClick={sendToKitchen} className="bg-primary hover:bg-primary/90">
+                  <Send className="h-4 w-4 mr-2" /> Cozinha
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => printThermal({
+                    title: tableName,
+                    subtitle: 'Comanda',
+                    items: items.map((i) => ({
+                      quantity: i.quantity, product_name: i.product_name,
+                      total_price: i.total_price, notes: i.notes, options: i.options,
+                    })),
+                    totals: [{ label: 'Subtotal', value: fmtBRL(subtotal), bold: true }],
+                  })}
+                >
+                  <Printer className="h-4 w-4 mr-2" /> Imprimir
+                </Button>
+              </div>
             </div>
           </div>
         </div>
