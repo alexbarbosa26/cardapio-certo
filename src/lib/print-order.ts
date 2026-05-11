@@ -57,6 +57,7 @@ export function printThermal({ title, subtitle, items, totals = [], footer, show
     .qty { font-weight: 800; margin-right: 4px; }
     .price { white-space: nowrap; font-weight: 700; }
     .opt { padding-left: 18px; font-size: 14px; font-weight: 600; margin-top: 2px; }
+    .unit { padding-left: 18px; font-size: 13px; font-weight: 600; margin-top: 2px; color:#000; }
     .trow { display:flex; justify-content:space-between; margin-top:4px; font-size: 16px; font-weight:700; }
     .trow.bold { font-weight:900; font-size:19px; border-top:2px solid #000; padding-top:6px; margin-top:8px; }
     .footer { text-align:center; font-size:13px; margin-top:10px; font-weight:600; }
