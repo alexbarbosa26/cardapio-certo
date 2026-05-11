@@ -17,9 +17,10 @@ interface PrintOptions {
   totals?: { label: string; value: string; bold?: boolean }[];
   footer?: string;
   showPrices?: boolean;
+  showUnitPrice?: boolean;
 }
 
-export function printThermal({ title, subtitle, items, totals = [], footer, showPrices = false }: PrintOptions) {
+export function printThermal({ title, subtitle, items, totals = [], footer, showPrices = false, showUnitPrice = false }: PrintOptions) {
   const win = window.open('', '_blank', 'width=380,height=640');
   if (!win) {
     alert('Permita pop-ups para imprimir.');
@@ -29,12 +30,13 @@ export function printThermal({ title, subtitle, items, totals = [], footer, show
   const itemsHtml = items.map((it) => {
     const opts = (it.options ?? []).map((o) => `<div class="opt">+ ${escapeHtml(o.option_item_name)}</div>`).join('');
     const notes = it.notes ? `<div class="opt">Obs: ${escapeHtml(it.notes)}</div>` : '';
+    const unit = showUnitPrice && typeof it.unit_price === 'number'
+      ? `<div class="unit">${it.quantity} × ${fmtBRL(it.unit_price)}</div>` : '';
     const price = showPrices && typeof it.total_price === 'number'
       ? `<span class="price">${fmtBRL(it.total_price)}</span>` : '';
-    return `<div class="item"><div class="row"><div class="name"><span class="qty">${it.quantity}×</span> ${escapeHtml(it.product_name)}</div>${price}</div>${opts}${notes}</div>`;
+    return `<div class="item"><div class="row"><div class="name"><span class="qty">${it.quantity}×</span> ${escapeHtml(it.product_name)}</div>${price}</div>${unit}${opts}${notes}</div>`;
   }).join('');
   const totalsHtml = totals
-    .filter((t) => !/subtotal/i.test(t.label))
     .map((t) =>
       `<div class="trow${t.bold ? ' bold' : ''}"><span>${escapeHtml(t.label)}</span><span>${escapeHtml(t.value)}</span></div>`
     ).join('');
@@ -55,6 +57,7 @@ export function printThermal({ title, subtitle, items, totals = [], footer, show
     .qty { font-weight: 800; margin-right: 4px; }
     .price { white-space: nowrap; font-weight: 700; }
     .opt { padding-left: 18px; font-size: 14px; font-weight: 600; margin-top: 2px; }
+    .unit { padding-left: 18px; font-size: 13px; font-weight: 600; margin-top: 2px; color:#000; }
     .trow { display:flex; justify-content:space-between; margin-top:4px; font-size: 16px; font-weight:700; }
     .trow.bold { font-weight:900; font-size:19px; border-top:2px solid #000; padding-top:6px; margin-top:8px; }
     .footer { text-align:center; font-size:13px; margin-top:10px; font-weight:600; }
