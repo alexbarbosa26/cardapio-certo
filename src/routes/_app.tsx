@@ -32,6 +32,7 @@ const NAV: NavItem[] = [
 function AppLayout() {
   const { loading, user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
   useTenantTypography();
 
   if (loading) {
