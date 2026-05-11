@@ -180,7 +180,9 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
           <Button variant="outline" onClick={() => printThermal({
             title: tableName,
             subtitle: `Conta · Pedido #${order.order_number}`,
-            items: items.map((i) => ({ quantity: i.quantity, product_name: i.product_name, total_price: i.total_price })),
+            showPrices: true,
+            showUnitPrice: true,
+            items: items.map((i) => ({ quantity: i.quantity, product_name: i.product_name, unit_price: i.unit_price, total_price: i.total_price })),
             totals: [
               { label: 'Subtotal', value: fmtBRL(subtotal) },
               ...(withFee ? [{ label: 'Taxa serviço (10%)', value: fmtBRL(fee) }] : []),
