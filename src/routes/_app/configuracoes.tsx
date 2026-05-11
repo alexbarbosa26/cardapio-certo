@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Plus, Trash2 } from 'lucide-react';
+import { applyTenantFontsPreview } from '@/hooks/use-tenant-typography';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const Route = createFileRoute('/_app/configuracoes')({
   component: ConfigPage,
