@@ -208,18 +208,18 @@ function CaixaPage() {
 
 function Stat({ label, value, icon: Icon, accent }: any) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-card">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-card">
       <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="min-w-0 text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
         {Icon && <Icon className={`h-4 w-4 ${accent ? 'text-accent' : 'text-muted-foreground'}`}/>}
       </div>
-      <div className={cn('mt-2 font-display text-2xl', accent && 'text-accent')}>{value}</div>
+      <div className={cn('mt-2 truncate font-display text-xl sm:text-2xl tabular-nums', accent && 'text-accent')}>{value}</div>
     </div>
   );
 }
 function Card({ title, children }: any) {
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5 overflow-hidden">
       <h3 className="font-display text-lg mb-3">{title}</h3>
       {children}
     </div>
