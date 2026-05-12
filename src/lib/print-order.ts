@@ -1,7 +1,8 @@
-// Utilitário para impressão térmica (papel 80mm) abrindo uma nova janela.
+// Utilitário para impressão térmica (papel 80mm).
+// Mostra uma prévia digital antes de abrir o pop-up de impressão.
 import { fmtBRL } from './format';
 
-interface PrintItem {
+export interface PrintItem {
   quantity: number;
   product_name: string;
   unit_price?: number;
@@ -10,7 +11,7 @@ interface PrintItem {
   options?: { option_item_name: string }[];
 }
 
-interface PrintOptions {
+export interface PrintOptions {
   title: string;
   subtitle?: string;
   items: PrintItem[];
@@ -20,110 +21,91 @@ interface PrintOptions {
   showUnitPrice?: boolean;
 }
 
-export function printThermal({ title, subtitle, items, totals = [], footer, showPrices = false, showUnitPrice = false }: PrintOptions) {
-  const win = window.open('', '_blank', 'width=420,height=720');
-  if (!win) {
-    alert('Permita pop-ups para imprimir.');
-    return;
-  }
+export function buildThermalHtml(opts: PrintOptions): string {
+  const { title, subtitle, items, totals = [], footer, showPrices = false, showUnitPrice = false } = opts;
   const now = new Date().toLocaleString('pt-BR');
   const itemsHtml = items.map((it) => {
-    const opts = (it.options ?? []).map((o) => `<div class="opt">+ ${escapeHtml(o.option_item_name)}</div>`).join('');
-    const notes = it.notes ? `<div class="opt">Obs: ${escapeHtml(it.notes)}</div>` : '';
-    const unit = showUnitPrice && typeof it.unit_price === 'number'
+    const o = (it.options ?? []).map((x) => `<div class="opt">+ ${esc(x.option_item_name)}</div>`).join('');
+    const n = it.notes ? `<div class="opt">Obs: ${esc(it.notes)}</div>` : '';
+    const u = showUnitPrice && typeof it.unit_price === 'number'
       ? `<div class="unit">${it.quantity} × ${fmtBRL(it.unit_price)}</div>` : '';
-    const price = showPrices && typeof it.total_price === 'number'
+    const p = showPrices && typeof it.total_price === 'number'
       ? `<span class="price">${fmtBRL(it.total_price)}</span>` : '';
-    return `<div class="item"><div class="row"><div class="name"><span class="qty">${it.quantity}×</span> ${escapeHtml(it.product_name)}</div>${price}</div>${unit}${opts}${notes}</div>`;
+    return `<div class="item"><div class="row"><div class="name"><span class="qty">${it.quantity}×</span> ${esc(it.product_name)}</div>${p}</div>${u}${o}${n}</div>`;
   }).join('');
-  const totalsHtml = totals
-    .map((t) =>
-      `<div class="trow${t.bold ? ' bold' : ''}"><span>${escapeHtml(t.label)}</span><span>${escapeHtml(t.value)}</span></div>`
-    ).join('');
+  const totalsHtml = totals.map((t) =>
+    `<div class="trow${t.bold ? ' bold' : ''}"><span>${esc(t.label)}</span><span>${esc(t.value)}</span></div>`
+  ).join('');
 
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
   <style>
     @page { size: 80mm auto; margin: 2mm; }
     * { box-sizing: border-box; }
-    html, body { margin:0; padding:0; }
+    html, body { margin:0; padding:0; background:#fff; }
     body {
       font-family: 'Arial Black', Arial, Helvetica, sans-serif;
-      font-size: 13px;
-      line-height: 1.3;
-      color:#000;
-      padding: 4px 2px;
-      width: 76mm;
-      font-weight: 700;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      font-size: 13px; line-height: 1.3; color:#000;
+      padding: 4px 2px; width: 76mm; font-weight: 700;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
-    h1 {
-      font-size: 18px;
-      text-align:center;
-      margin: 0 0 2px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      word-wrap: break-word;
-    }
+    h1 { font-size: 18px; text-align:center; margin: 0 0 2px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; word-wrap: break-word; }
     .sub { text-align:center; font-size:12px; margin-bottom:2px; font-weight:700; }
     .meta { text-align:center; font-size:11px; margin-bottom:2px; font-weight:600; }
     hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
     .item { margin: 4px 0; padding-bottom: 3px; border-bottom: 1px dotted #000; page-break-inside: avoid; }
     .item:last-child { border-bottom: 0; }
     .row { display:flex; justify-content:space-between; gap:6px; align-items: flex-start; }
-    .name {
-      flex:1;
-      font-size: 14px;
-      font-weight: 800;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      hyphens: auto;
-    }
+    .name { flex:1; font-size: 14px; font-weight: 800; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; }
     .qty { font-weight: 900; margin-right: 3px; }
     .price { white-space: nowrap; font-weight: 800; font-size: 13px; }
-    .opt {
-      padding-left: 14px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-top: 1px;
-      word-wrap: break-word;
-    }
-    .unit {
-      padding-left: 14px;
-      font-size: 11px;
-      font-weight: 600;
-      margin-top: 1px;
-    }
-    .trow {
-      display:flex;
-      justify-content:space-between;
-      gap: 6px;
-      margin-top: 2px;
-      font-size: 13px;
-      font-weight:700;
-    }
-    .trow.bold {
-      font-weight:900;
-      font-size:16px;
-      border-top:1px solid #000;
-      padding-top:4px;
-      margin-top:6px;
-    }
+    .opt { padding-left: 14px; font-size: 11px; font-weight: 600; margin-top: 1px; word-wrap: break-word; }
+    .unit { padding-left: 14px; font-size: 11px; font-weight: 600; margin-top: 1px; }
+    .trow { display:flex; justify-content:space-between; gap: 6px; margin-top: 2px; font-size: 13px; font-weight:700; }
+    .trow.bold { font-weight:900; font-size:16px; border-top:1px solid #000; padding-top:4px; margin-top:6px; }
     .footer { text-align:center; font-size:11px; margin-top:8px; font-weight:600; }
   </style></head><body>
-    <h1>${escapeHtml(title)}</h1>
-    ${subtitle ? `<div class="sub">${escapeHtml(subtitle)}</div>` : ''}
+    <h1>${esc(title)}</h1>
+    ${subtitle ? `<div class="sub">${esc(subtitle)}</div>` : ''}
     <div class="meta">${now}</div>
     <hr/>
     ${itemsHtml || '<div class="sub">Sem itens</div>'}
     ${totalsHtml ? `<hr/>${totalsHtml}` : ''}
-    ${footer ? `<div class="footer">${escapeHtml(footer)}</div>` : ''}
-    <script>window.onload=function(){setTimeout(function(){window.print();},150);};window.onafterprint=function(){window.close();};</script>
-  </body></html>`);
+    ${footer ? `<div class="footer">${esc(footer)}</div>` : ''}
+  </body></html>`;
+}
+
+export function openPrintWindow(opts: PrintOptions) {
+  const win = window.open('', '_blank', 'width=420,height=720');
+  if (!win) { alert('Permita pop-ups para imprimir.'); return; }
+  const html = buildThermalHtml(opts).replace(
+    '</body>',
+    `<script>window.onload=function(){setTimeout(function(){window.print();},150);};window.onafterprint=function(){window.close();};</script></body>`
+  );
+  win.document.write(html);
   win.document.close();
 }
 
-function escapeHtml(s: string) {
+// ---- Pub/sub para a prévia (consumido pelo PrintPreviewDialog) ----
+type Listener = (opts: PrintOptions | null) => void;
+const listeners = new Set<Listener>();
+
+export function subscribePrintPreview(fn: Listener) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+/**
+ * Abre a prévia digital. O usuário confirma e o pop-up de impressão é aberto.
+ */
+export function printThermal(opts: PrintOptions) {
+  if (listeners.size === 0) {
+    // fallback: nenhum dialog montado, imprime direto
+    openPrintWindow(opts);
+    return;
+  }
+  listeners.forEach((fn) => fn(opts));
+}
+
+function esc(s: string) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]!));
 }
