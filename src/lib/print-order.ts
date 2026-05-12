@@ -91,7 +91,7 @@ const listeners = new Set<Listener>();
 
 export function subscribePrintPreview(fn: Listener) {
   listeners.add(fn);
-  return () => listeners.delete(fn);
+  return () => { listeners.delete(fn); };
 }
 
 /**
