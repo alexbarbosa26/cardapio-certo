@@ -166,8 +166,8 @@ function CaixaPage() {
       {history.length > 0 && (
         <div className="mt-10">
           <h2 className="font-display text-xl mb-3">Histórico recente</h2>
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="rounded-xl border border-border bg-card overflow-x-auto">
+            <table className="w-full text-sm min-w-[560px]">
               <thead className="text-xs uppercase tracking-wider text-muted-foreground bg-secondary/40">
                 <tr><th className="text-left px-4 py-2.5">Abertura</th><th className="text-left px-4 py-2.5">Fechamento</th><th className="text-right px-4 py-2.5">Esperado</th><th className="text-right px-4 py-2.5">Informado</th><th className="text-right px-4 py-2.5">Diferença</th></tr>
               </thead>
