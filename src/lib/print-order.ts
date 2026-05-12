@@ -21,7 +21,7 @@ interface PrintOptions {
 }
 
 export function printThermal({ title, subtitle, items, totals = [], footer, showPrices = false, showUnitPrice = false }: PrintOptions) {
-  const win = window.open('', '_blank', 'width=380,height=640');
+  const win = window.open('', '_blank', 'width=420,height=720');
   if (!win) {
     alert('Permita pop-ups para imprimir.');
     return;
@@ -43,24 +43,74 @@ export function printThermal({ title, subtitle, items, totals = [], footer, show
 
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
   <style>
-    @page { size: 80mm auto; margin: 3mm; }
+    @page { size: 80mm auto; margin: 2mm; }
     * { box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; font-size: 16px; line-height: 1.35; color:#000; margin:0; padding: 6px; width: 74mm; -webkit-font-smoothing: never; font-weight: 600; }
-    h1 { font-size: 22px; text-align:center; margin: 0 0 4px; font-weight: 800; text-transform: uppercase; }
-    .sub { text-align:center; font-size:14px; margin-bottom:4px; font-weight:700; }
-    .meta { text-align:center; font-size:12px; margin-bottom:4px; font-weight:600; }
-    hr { border: 0; border-top: 2px dashed #000; margin: 6px 0; }
-    .item { margin: 6px 0; padding-bottom: 4px; border-bottom: 1px dotted #000; }
+    html, body { margin:0; padding:0; }
+    body {
+      font-family: 'Arial Black', Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      line-height: 1.3;
+      color:#000;
+      padding: 4px 2px;
+      width: 76mm;
+      font-weight: 700;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    h1 {
+      font-size: 18px;
+      text-align:center;
+      margin: 0 0 2px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      word-wrap: break-word;
+    }
+    .sub { text-align:center; font-size:12px; margin-bottom:2px; font-weight:700; }
+    .meta { text-align:center; font-size:11px; margin-bottom:2px; font-weight:600; }
+    hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
+    .item { margin: 4px 0; padding-bottom: 3px; border-bottom: 1px dotted #000; page-break-inside: avoid; }
     .item:last-child { border-bottom: 0; }
-    .row { display:flex; justify-content:space-between; gap:8px; }
-    .name { flex:1; font-size: 17px; font-weight: 700; }
-    .qty { font-weight: 800; margin-right: 4px; }
-    .price { white-space: nowrap; font-weight: 700; }
-    .opt { padding-left: 18px; font-size: 14px; font-weight: 600; margin-top: 2px; }
-    .unit { padding-left: 18px; font-size: 13px; font-weight: 600; margin-top: 2px; color:#000; }
-    .trow { display:flex; justify-content:space-between; margin-top:4px; font-size: 16px; font-weight:700; }
-    .trow.bold { font-weight:900; font-size:19px; border-top:2px solid #000; padding-top:6px; margin-top:8px; }
-    .footer { text-align:center; font-size:13px; margin-top:10px; font-weight:600; }
+    .row { display:flex; justify-content:space-between; gap:6px; align-items: flex-start; }
+    .name {
+      flex:1;
+      font-size: 14px;
+      font-weight: 800;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+    .qty { font-weight: 900; margin-right: 3px; }
+    .price { white-space: nowrap; font-weight: 800; font-size: 13px; }
+    .opt {
+      padding-left: 14px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 1px;
+      word-wrap: break-word;
+    }
+    .unit {
+      padding-left: 14px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 1px;
+    }
+    .trow {
+      display:flex;
+      justify-content:space-between;
+      gap: 6px;
+      margin-top: 2px;
+      font-size: 13px;
+      font-weight:700;
+    }
+    .trow.bold {
+      font-weight:900;
+      font-size:16px;
+      border-top:1px solid #000;
+      padding-top:4px;
+      margin-top:6px;
+    }
+    .footer { text-align:center; font-size:11px; margin-top:8px; font-weight:600; }
   </style></head><body>
     <h1>${escapeHtml(title)}</h1>
     ${subtitle ? `<div class="sub">${escapeHtml(subtitle)}</div>` : ''}
