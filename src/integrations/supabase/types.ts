@@ -502,7 +502,22 @@ export type Database = {
           product_id?: string
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "product_option_groups_option_group_id_fkey"
+            columns: ["option_group_id"]
+            isOneToOne: false
+            referencedRelation: "option_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
