@@ -106,9 +106,11 @@ export function openPrintWindow(opts: PrintOptions) {
 }
 
 function printViaIframe(html: string) {
-  // remove iframe anterior, se houver
   const prev = document.getElementById('__thermal_print_iframe__');
   if (prev) prev.remove();
+
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
 
   const iframe = document.createElement('iframe');
   iframe.id = '__thermal_print_iframe__';
@@ -116,24 +118,43 @@ function printViaIframe(html: string) {
   iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
   document.body.appendChild(iframe);
 
-  const trigger = () => {
-    try {
-      const w = iframe.contentWindow;
-      if (!w) return;
-      w.focus();
-      w.print();
-    } catch (e) {
-      console.error('Falha ao imprimir', e);
-      alert('Não foi possível abrir a impressão. Verifique as permissões do navegador.');
-    }
-    // cleanup depois de um tempo
-    setTimeout(() => iframe.remove(), 2000);
+  let printed = false;
+  const cleanup = () => {
+    setTimeout(() => {
+      try { URL.revokeObjectURL(url); } catch {}
+      iframe.remove();
+    }, 3000);
   };
 
-  iframe.onload = () => setTimeout(trigger, 250);
+  const trigger = () => {
+    if (printed) return;
+    printed = true;
+    try {
+      const w = iframe.contentWindow;
+      if (!w) throw new Error('no contentWindow');
+      w.focus();
+      w.print();
+      cleanup();
+    } catch (e) {
+      console.error('Falha ao imprimir via iframe', e);
+      cleanup();
+      openInNewTab(html);
+    }
+  };
 
-  // srcdoc tem melhor compatibilidade em mobile que document.write
-  iframe.srcdoc = html;
+  iframe.onload = () => setTimeout(trigger, 400);
+  iframe.src = url;
+}
+
+function openInNewTab(html: string) {
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if (!w) {
+    alert('Não foi possível abrir a impressão. Permita pop-ups e tente novamente.');
+    return;
+  }
+  setTimeout(() => { try { URL.revokeObjectURL(url); } catch {} }, 60000);
 }
 
 // ---- Pub/sub para a prévia (consumido pelo PrintPreviewDialog) ----
