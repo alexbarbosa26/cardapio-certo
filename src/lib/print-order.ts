@@ -74,15 +74,66 @@ export function buildThermalHtml(opts: PrintOptions): string {
   </body></html>`;
 }
 
+function isMobile() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
+/**
+ * Imprime via iframe oculto (compatível com Android/iOS) ou pop-up no desktop.
+ */
 export function openPrintWindow(opts: PrintOptions) {
+  const html = buildThermalHtml(opts);
+
+  if (isMobile()) {
+    printViaIframe(html);
+    return;
+  }
+
   const win = window.open('', '_blank', 'width=420,height=720');
-  if (!win) { alert('Permita pop-ups para imprimir.'); return; }
-  const html = buildThermalHtml(opts).replace(
+  if (!win) {
+    // pop-up bloqueado: cai no iframe
+    printViaIframe(html);
+    return;
+  }
+  const withScript = html.replace(
     '</body>',
     `<script>window.onload=function(){setTimeout(function(){window.print();},150);};window.onafterprint=function(){window.close();};</script></body>`
   );
-  win.document.write(html);
+  win.document.open();
+  win.document.write(withScript);
   win.document.close();
+}
+
+function printViaIframe(html: string) {
+  // remove iframe anterior, se houver
+  const prev = document.getElementById('__thermal_print_iframe__');
+  if (prev) prev.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = '__thermal_print_iframe__';
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+  document.body.appendChild(iframe);
+
+  const trigger = () => {
+    try {
+      const w = iframe.contentWindow;
+      if (!w) return;
+      w.focus();
+      w.print();
+    } catch (e) {
+      console.error('Falha ao imprimir', e);
+      alert('Não foi possível abrir a impressão. Verifique as permissões do navegador.');
+    }
+    // cleanup depois de um tempo
+    setTimeout(() => iframe.remove(), 2000);
+  };
+
+  iframe.onload = () => setTimeout(trigger, 250);
+
+  // srcdoc tem melhor compatibilidade em mobile que document.write
+  iframe.srcdoc = html;
 }
 
 // ---- Pub/sub para a prévia (consumido pelo PrintPreviewDialog) ----
