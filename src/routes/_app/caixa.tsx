@@ -85,17 +85,17 @@ function CaixaPage() {
   return (
     <div className="p-4 sm:p-8 max-w-6xl mx-auto">
       <header className="mb-6 flex items-end justify-between flex-wrap gap-3">
-        <div className="min-w-0">
+        <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Financeiro</p>
           <h1 className="font-display text-3xl sm:text-4xl mt-1">Caixa</h1>
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-          {!open && <Button size="sm" onClick={() => setOpenDialog(true)} className="flex-1 sm:flex-none"><Wallet className="h-4 w-4 mr-1"/>Abrir caixa</Button>}
+        <div className="flex gap-2">
+          {!open && <Button onClick={() => setOpenDialog(true)}><Wallet className="h-4 w-4 mr-1"/>Abrir caixa</Button>}
           {open && (
             <>
-              <Button size="sm" variant="outline" onClick={() => setMovDialog('suprimento')} className="flex-1 sm:flex-none"><ArrowDownCircle className="h-4 w-4 mr-1"/>Suprimento</Button>
-              <Button size="sm" variant="outline" onClick={() => setMovDialog('sangria')} className="flex-1 sm:flex-none"><ArrowUpCircle className="h-4 w-4 mr-1"/>Sangria</Button>
-              <Button size="sm" onClick={() => setCloseDialog(true)} className="flex-1 sm:flex-none bg-primary"><Lock className="h-4 w-4 mr-1"/>Fechar</Button>
+              <Button variant="outline" onClick={() => setMovDialog('suprimento')}><ArrowDownCircle className="h-4 w-4 mr-1"/>Suprimento</Button>
+              <Button variant="outline" onClick={() => setMovDialog('sangria')}><ArrowUpCircle className="h-4 w-4 mr-1"/>Sangria</Button>
+              <Button onClick={() => setCloseDialog(true)} className="bg-primary"><Lock className="h-4 w-4 mr-1"/>Fechar caixa</Button>
             </>
           )}
         </div>
@@ -166,8 +166,8 @@ function CaixaPage() {
       {history.length > 0 && (
         <div className="mt-10">
           <h2 className="font-display text-xl mb-3">Histórico recente</h2>
-          <div className="rounded-xl border border-border bg-card overflow-x-auto">
-            <table className="w-full min-w-[560px] text-sm">
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <table className="w-full text-sm">
               <thead className="text-xs uppercase tracking-wider text-muted-foreground bg-secondary/40">
                 <tr><th className="text-left px-4 py-2.5">Abertura</th><th className="text-left px-4 py-2.5">Fechamento</th><th className="text-right px-4 py-2.5">Esperado</th><th className="text-right px-4 py-2.5">Informado</th><th className="text-right px-4 py-2.5">Diferença</th></tr>
               </thead>
