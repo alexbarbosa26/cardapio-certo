@@ -89,13 +89,13 @@ function CaixaPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Financeiro</p>
           <h1 className="font-display text-3xl sm:text-4xl mt-1">Caixa</h1>
         </div>
-        <div className="flex gap-2">
-          {!open && <Button onClick={() => setOpenDialog(true)}><Wallet className="h-4 w-4 mr-1"/>Abrir caixa</Button>}
+        <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+          {!open && <Button onClick={() => setOpenDialog(true)} className="flex-1 sm:flex-none"><Wallet className="h-4 w-4 mr-1"/>Abrir caixa</Button>}
           {open && (
             <>
-              <Button variant="outline" onClick={() => setMovDialog('suprimento')}><ArrowDownCircle className="h-4 w-4 mr-1"/>Suprimento</Button>
-              <Button variant="outline" onClick={() => setMovDialog('sangria')}><ArrowUpCircle className="h-4 w-4 mr-1"/>Sangria</Button>
-              <Button onClick={() => setCloseDialog(true)} className="bg-primary"><Lock className="h-4 w-4 mr-1"/>Fechar caixa</Button>
+              <Button variant="outline" size="sm" onClick={() => setMovDialog('suprimento')} className="flex-1 sm:flex-none"><ArrowDownCircle className="h-4 w-4 mr-1"/>Suprimento</Button>
+              <Button variant="outline" size="sm" onClick={() => setMovDialog('sangria')} className="flex-1 sm:flex-none"><ArrowUpCircle className="h-4 w-4 mr-1"/>Sangria</Button>
+              <Button size="sm" onClick={() => setCloseDialog(true)} className="bg-primary flex-1 sm:flex-none"><Lock className="h-4 w-4 mr-1"/>Fechar caixa</Button>
             </>
           )}
         </div>
