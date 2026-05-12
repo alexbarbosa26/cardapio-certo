@@ -46,7 +46,7 @@ function AppLayout() {
   const items = NAV.filter((i) => !i.admin || profile.role === 'admin');
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen w-full overflow-x-hidden bg-background">
       {/* Sidebar desktop */}
       <aside className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
         <BrandHeader companyName={profile.company_name ?? 'MesaChef'} />
@@ -55,7 +55,7 @@ function AppLayout() {
       </aside>
 
       {/* Mobile topbar + drawer */}
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <header className="lg:hidden sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/90 backdrop-blur px-4">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
@@ -73,7 +73,7 @@ function AppLayout() {
           </div>
         </header>
 
-        <main className="flex-1">
+        <main className="min-w-0 flex-1 overflow-x-hidden">
           <Outlet />
         </main>
       </div>
