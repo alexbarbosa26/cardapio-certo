@@ -194,7 +194,6 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                       quantity: i.quantity, product_name: i.product_name,
                       total_price: i.total_price, notes: i.notes, options: i.options,
                     })),
-                    totals: [{ label: 'Subtotal', value: fmtBRL(subtotal), bold: true }],
                   })}
                 >
                   <Printer className="h-4 w-4 mr-2" /> Imprimir
