@@ -83,7 +83,7 @@ function CaixaPage() {
   })();
 
   return (
-    <div className="p-4 sm:p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-8 max-w-6xl mx-auto overflow-x-hidden">
       <header className="mb-6 flex items-end justify-between flex-wrap gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Financeiro</p>
