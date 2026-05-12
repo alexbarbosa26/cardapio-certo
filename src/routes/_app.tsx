@@ -21,6 +21,7 @@ const NAV: NavItem[] = [
   { to: '/mesas', label: 'Mesas', icon: UtensilsCrossed },
   { to: '/cozinha', label: 'Cozinha', icon: ChefHat },
   { to: '/produtos', label: 'Produtos', icon: Package, admin: true },
+  { to: '/grupos-opcoes', label: 'Grupos de opções', icon: ListPlus, admin: true },
   { to: '/usuarios', label: 'Usuários', icon: Users, admin: true },
   { to: '/caixa', label: 'Caixa', icon: Wallet, admin: true },
   { to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
