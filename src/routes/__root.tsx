@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
+import { PrintPreviewDialog } from "@/components/print-preview-dialog";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
