@@ -145,133 +145,66 @@ function ProdutosPage() {
   );
 }
 
-interface OG { id: string; name: string; required: boolean; selection_type: 'unica' | 'multipla'; max_options: number | null; items: OI[]; }
-interface OI { id: string; name: string; additional_price: number; }
+interface OG { id: string; name: string; selection_type: string; required: boolean; items_count: number; }
 
 function OptionGroupsEditor({ productId, companyId }: { productId: string; companyId: string }) {
-  const [groups, setGroups] = useState<OG[]>([]);
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [allGroups, setAllGroups] = useState<OG[]>([]);
+  const [linked, setLinked] = useState<Set<string>>(new Set());
 
   const load = async () => {
-    const { data } = await supabase
-      .from('option_groups')
-      .select('id, name, required, selection_type, max_options, option_items(id, name, additional_price)')
-      .eq('product_id', productId)
-      .order('sort_order');
-    setGroups((data ?? []).map((g: any) => ({
-      id: g.id, name: g.name, required: g.required, selection_type: g.selection_type, max_options: g.max_options,
-      items: (g.option_items ?? []).map((i: any) => ({ ...i, additional_price: Number(i.additional_price) })),
+    const [{ data: groups }, { data: links }] = await Promise.all([
+      supabase
+        .from('option_groups')
+        .select('id, name, selection_type, required, option_items(id)')
+        .eq('company_id', companyId)
+        .order('name'),
+      supabase.from('product_option_groups').select('option_group_id').eq('product_id', productId),
+    ]);
+    setAllGroups((groups ?? []).map((g: any) => ({
+      id: g.id, name: g.name, selection_type: g.selection_type, required: g.required,
+      items_count: (g.option_items ?? []).length,
     })));
+    setLinked(new Set((links ?? []).map((l: any) => l.option_group_id)));
   };
-  useEffect(() => { load(); }, [productId]);
+  useEffect(() => { load(); }, [productId, companyId]);
 
-  const addGroup = async () => {
-    const { error } = await supabase.from('option_groups').insert({
-      company_id: companyId, product_id: productId, name: 'Novo grupo',
-      selection_type: 'unica', required: false,
-    });
-    if (error) { toast.error(error.message); return; }
-    load();
-  };
-
-  const updateGroup = async (id: string, patch: Partial<OG>) => {
-    await supabase.from('option_groups').update(patch as any).eq('id', id);
-    load();
-  };
-
-  const deleteGroup = async (id: string) => {
-    if (!confirm('Excluir este grupo e todas as suas opções?')) return;
-    await supabase.from('option_items').delete().eq('option_group_id', id);
-    await supabase.from('option_groups').delete().eq('id', id);
-    load();
-  };
-
-  const addItem = async (groupId: string) => {
-    const { error } = await supabase.from('option_items').insert({
-      option_group_id: groupId, name: 'Nova opção', additional_price: 0,
-    });
-    if (error) { toast.error(error.message); return; }
-    load();
-  };
-
-  const updateItem = async (id: string, patch: Partial<OI>) => {
-    await supabase.from('option_items').update(patch as any).eq('id', id);
-    load();
-  };
-
-  const deleteItem = async (id: string) => {
-    await supabase.from('option_items').delete().eq('id', id);
+  const toggle = async (groupId: string, on: boolean) => {
+    if (on) {
+      const { error } = await supabase.from('product_option_groups').insert({ product_id: productId, option_group_id: groupId });
+      if (error) { toast.error(error.message); return; }
+    } else {
+      await supabase.from('product_option_groups').delete()
+        .eq('product_id', productId).eq('option_group_id', groupId);
+    }
     load();
   };
 
   return (
-    <div className="rounded-md border border-border p-3 space-y-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">Grupos de opções</div>
-          <div className="text-[11px] text-muted-foreground">Ex: acompanhamento (+R$ 4,00), ponto da carne, tamanho…</div>
+    <div className="rounded-md border border-border p-3 space-y-2">
+      <div>
+        <div className="text-sm font-semibold">Grupos de opções associados</div>
+        <div className="text-[11px] text-muted-foreground">
+          Cadastre e edite grupos em <strong>Grupos de opções</strong> no menu. Aqui você só ativa/desativa para este produto.
         </div>
-        <Button type="button" size="sm" variant="outline" onClick={addGroup}><Plus className="h-3 w-3 mr-1" /> Grupo</Button>
       </div>
-      {groups.length === 0 && <p className="text-xs text-muted-foreground">Nenhum grupo cadastrado.</p>}
-      {groups.map((g) => {
-        const isOpen = open[g.id] ?? true;
-        return (
-          <div key={g.id} className="rounded-md border border-border bg-secondary/30">
-            <div className="flex items-center gap-2 p-2">
-              <button type="button" onClick={() => setOpen({ ...open, [g.id]: !isOpen })} className="text-muted-foreground">
-                {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </button>
-              <Input value={g.name} onChange={(e) => setGroups(groups.map(x => x.id === g.id ? { ...x, name: e.target.value } : x))}
-                onBlur={(e) => updateGroup(g.id, { name: e.target.value })} className="h-8 flex-1" />
-              <Button type="button" size="icon" variant="ghost" onClick={() => deleteGroup(g.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-            </div>
-            {isOpen && (
-              <div className="px-3 pb-3 space-y-2">
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <Label className="text-[10px] uppercase">Tipo</Label>
-                    <select value={g.selection_type}
-                      onChange={(e) => updateGroup(g.id, { selection_type: e.target.value as any })}
-                      className="flex h-8 w-full rounded-md border border-input bg-background px-2 text-xs">
-                      <option value="unica">Única</option>
-                      <option value="multipla">Múltipla</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label className="text-[10px] uppercase">Máx. (múltipla)</Label>
-                    <Input type="number" min={0} value={g.max_options ?? ''} className="h-8"
-                      onChange={(e) => updateGroup(g.id, { max_options: e.target.value ? Number(e.target.value) : null })} />
-                  </div>
-                  <div className="flex items-end justify-between rounded-md border border-border px-2 h-8">
-                    <span className="text-[10px] uppercase text-muted-foreground">Obrigatório</span>
-                    <Switch checked={g.required} onCheckedChange={(v) => updateGroup(g.id, { required: v })} />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  {g.items.map((it) => (
-                    <div key={it.id} className="flex items-center gap-2">
-                      <Input value={it.name} className="h-8 flex-1"
-                        onChange={(e) => setGroups(groups.map(x => x.id === g.id ? { ...x, items: x.items.map(y => y.id === it.id ? { ...y, name: e.target.value } : y) } : x))}
-                        onBlur={(e) => updateItem(it.id, { name: e.target.value })} />
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-muted-foreground">+R$</span>
-                        <Input type="number" step="0.01" value={it.additional_price} className="h-8 w-20"
-                          onChange={(e) => setGroups(groups.map(x => x.id === g.id ? { ...x, items: x.items.map(y => y.id === it.id ? { ...y, additional_price: Number(e.target.value) } : y) } : x))}
-                          onBlur={(e) => updateItem(it.id, { additional_price: Number(e.target.value) })} />
-                      </div>
-                      <Button type="button" size="icon" variant="ghost" onClick={() => deleteItem(it.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                    </div>
-                  ))}
-                  <Button type="button" size="sm" variant="ghost" onClick={() => addItem(g.id)}>
-                    <Plus className="h-3 w-3 mr-1" /> Opção
-                  </Button>
-                </div>
+      {allGroups.length === 0 && (
+        <p className="text-xs text-muted-foreground py-2">
+          Nenhum grupo cadastrado ainda. Vá em <strong>Grupos de opções</strong> no menu para criar.
+        </p>
+      )}
+      <div className="space-y-1.5">
+        {allGroups.map((g) => (
+          <div key={g.id} className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
+            <div className="min-w-0">
+              <div className="text-sm font-medium truncate">{g.name}</div>
+              <div className="text-[11px] text-muted-foreground">
+                {g.selection_type === 'unica' ? 'Única' : 'Múltipla'} · {g.items_count} opção(ões){g.required ? ' · obrigatório' : ''}
               </div>
-            )}
+            </div>
+            <Switch checked={linked.has(g.id)} onCheckedChange={(v) => toggle(g.id, v)} />
           </div>
-        );
-      })}
+        ))}
+      </div>
     </div>
   );
 }
