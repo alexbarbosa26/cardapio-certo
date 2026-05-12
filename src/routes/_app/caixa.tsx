@@ -83,7 +83,7 @@ function CaixaPage() {
   })();
 
   return (
-    <div className="p-3 sm:p-8 max-w-6xl mx-auto overflow-x-hidden">
+    <div className="w-full min-w-0 max-w-6xl mx-auto overflow-x-hidden px-3 py-4 sm:p-8">
       <header className="mb-6 flex items-end justify-between flex-wrap gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Financeiro</p>
@@ -102,17 +102,17 @@ function CaixaPage() {
       </header>
 
       {loading ? <div className="text-sm text-muted-foreground">Carregando…</div> : !open ? (
-        <div className="rounded-xl border border-dashed border-border p-12 text-center">
+        <div className="rounded-xl border border-dashed border-border p-6 sm:p-12 text-center">
           <Wallet className="h-10 w-10 mx-auto text-muted-foreground"/>
           <p className="mt-3 text-sm text-muted-foreground">Nenhum caixa aberto. Abra um caixa para registrar pagamentos.</p>
         </div>
       ) : (
         <>
-          <div className="rounded-xl border border-border bg-card p-5 mb-6">
+          <div className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5 mb-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Caixa aberto</p>
-                <p className="font-display text-2xl">{fmtDateTime(open.opened_at)}</p>
+                <p className="font-display text-xl sm:text-2xl break-words">{fmtDateTime(open.opened_at)}</p>
               </div>
               <p className="text-xs text-muted-foreground">Abertura: {fmtBRL(open.opening_amount)}</p>
             </div>
@@ -131,7 +131,7 @@ function CaixaPage() {
             <Stat label="Sangrias" value={`- ${fmtBRL(totals.sang)}`}/>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-2">
             <Card title="Pagamentos do caixa">
               {payments.length === 0 ? <Empty text="Nenhum pagamento ainda."/> : (
                 <ul className="divide-y divide-border text-sm">
