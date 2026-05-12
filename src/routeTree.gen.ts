@@ -16,6 +16,7 @@ import { Route as AppUsuariosRouteImport } from './routes/_app/usuarios'
 import { Route as AppRelatoriosRouteImport } from './routes/_app/relatorios'
 import { Route as AppProdutosRouteImport } from './routes/_app/produtos'
 import { Route as AppMesasRouteImport } from './routes/_app/mesas'
+import { Route as AppGruposOpcoesRouteImport } from './routes/_app/grupos-opcoes'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCozinhaRouteImport } from './routes/_app/cozinha'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app/configuracoes'
@@ -56,6 +57,11 @@ const AppMesasRoute = AppMesasRouteImport.update({
   path: '/mesas',
   getParentRoute: () => AppRoute,
 } as any)
+const AppGruposOpcoesRoute = AppGruposOpcoesRouteImport.update({
+  id: '/grupos-opcoes',
+  path: '/grupos-opcoes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/configuracoes': typeof AppConfiguracoesRoute
   '/cozinha': typeof AppCozinhaRoute
   '/dashboard': typeof AppDashboardRoute
+  '/grupos-opcoes': typeof AppGruposOpcoesRoute
   '/mesas': typeof AppMesasRoute
   '/produtos': typeof AppProdutosRoute
   '/relatorios': typeof AppRelatoriosRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/configuracoes': typeof AppConfiguracoesRoute
   '/cozinha': typeof AppCozinhaRoute
   '/dashboard': typeof AppDashboardRoute
+  '/grupos-opcoes': typeof AppGruposOpcoesRoute
   '/mesas': typeof AppMesasRoute
   '/produtos': typeof AppProdutosRoute
   '/relatorios': typeof AppRelatoriosRoute
@@ -117,6 +125,7 @@ export interface FileRoutesById {
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/cozinha': typeof AppCozinhaRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/grupos-opcoes': typeof AppGruposOpcoesRoute
   '/_app/mesas': typeof AppMesasRoute
   '/_app/produtos': typeof AppProdutosRoute
   '/_app/relatorios': typeof AppRelatoriosRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/cozinha'
     | '/dashboard'
+    | '/grupos-opcoes'
     | '/mesas'
     | '/produtos'
     | '/relatorios'
@@ -145,6 +155,7 @@ export interface FileRouteTypes {
     | '/configuracoes'
     | '/cozinha'
     | '/dashboard'
+    | '/grupos-opcoes'
     | '/mesas'
     | '/produtos'
     | '/relatorios'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/_app/configuracoes'
     | '/_app/cozinha'
     | '/_app/dashboard'
+    | '/_app/grupos-opcoes'
     | '/_app/mesas'
     | '/_app/produtos'
     | '/_app/relatorios'
@@ -224,6 +236,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMesasRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/grupos-opcoes': {
+      id: '/_app/grupos-opcoes'
+      path: '/grupos-opcoes'
+      fullPath: '/grupos-opcoes'
+      preLoaderRoute: typeof AppGruposOpcoesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -267,6 +286,7 @@ interface AppRouteChildren {
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppCozinhaRoute: typeof AppCozinhaRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppGruposOpcoesRoute: typeof AppGruposOpcoesRoute
   AppMesasRoute: typeof AppMesasRoute
   AppProdutosRoute: typeof AppProdutosRoute
   AppRelatoriosRoute: typeof AppRelatoriosRoute
@@ -278,6 +298,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppCozinhaRoute: AppCozinhaRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppGruposOpcoesRoute: AppGruposOpcoesRoute,
   AppMesasRoute: AppMesasRoute,
   AppProdutosRoute: AppProdutosRoute,
   AppRelatoriosRoute: AppRelatoriosRoute,
@@ -295,3 +316,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
