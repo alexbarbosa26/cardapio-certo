@@ -90,6 +90,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Outlet />
+        <PrintPreviewDialog />
         <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>
