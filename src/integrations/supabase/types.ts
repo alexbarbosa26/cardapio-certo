@@ -182,7 +182,7 @@ export type Database = {
           max_options: number | null
           min_options: number
           name: string
-          product_id: string
+          product_id: string | null
           required: boolean
           selection_type: Database["public"]["Enums"]["option_selection_type"]
           sort_order: number
@@ -194,7 +194,7 @@ export type Database = {
           max_options?: number | null
           min_options?: number
           name: string
-          product_id: string
+          product_id?: string | null
           required?: boolean
           selection_type?: Database["public"]["Enums"]["option_selection_type"]
           sort_order?: number
@@ -206,7 +206,7 @@ export type Database = {
           max_options?: number | null
           min_options?: number
           name?: string
-          product_id?: string
+          product_id?: string | null
           required?: boolean
           selection_type?: Database["public"]["Enums"]["option_selection_type"]
           sort_order?: number
@@ -479,6 +479,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_option_groups: {
+        Row: {
+          created_at: string
+          id: string
+          option_group_id: string
+          product_id: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_group_id: string
+          product_id: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_group_id?: string
+          product_id?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       products: {
         Row: {

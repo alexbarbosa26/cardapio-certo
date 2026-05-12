@@ -251,13 +251,17 @@ function AddProductDialog({ product, orderId, onDone, onClose }: { product: Prod
   useEffect(() => {
     (async () => {
       const { data } = await supabase
-        .from('option_groups')
-        .select('id, name, required, selection_type, max_options, option_items(id, name, additional_price)')
-        .eq('product_id', product.id).order('sort_order');
-      const gs: OptionGroup[] = (data ?? []).map((g: any) => ({
-        id: g.id, name: g.name, required: g.required, selection_type: g.selection_type, max_options: g.max_options,
-        items: (g.option_items ?? []).map((i: any) => ({ ...i, additional_price: Number(i.additional_price) })),
-      }));
+        .from('product_option_groups')
+        .select('sort_order, option_groups(id, name, required, selection_type, max_options, option_items(id, name, additional_price))')
+        .eq('product_id', product.id)
+        .order('sort_order');
+      const gs: OptionGroup[] = (data ?? [])
+        .map((row: any) => row.option_groups)
+        .filter(Boolean)
+        .map((g: any) => ({
+          id: g.id, name: g.name, required: g.required, selection_type: g.selection_type, max_options: g.max_options,
+          items: (g.option_items ?? []).map((i: any) => ({ ...i, additional_price: Number(i.additional_price) })),
+        }));
       setGroups(gs);
       setLoading(false);
     })();
