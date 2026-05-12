@@ -149,7 +149,7 @@ function CaixaPage() {
                 <ul className="divide-y divide-border text-sm">
                   {movements.map((m) => (
                     <li key={m.id} className="flex min-w-0 justify-between gap-3 py-2">
-                      <div>
+                      <div className="min-w-0 break-words">
                         <span className={cn('font-medium capitalize', m.type === 'suprimento' ? 'text-success' : 'text-danger')}>{m.type}</span>
                         <span className="text-muted-foreground"> · {fmtTime(m.created_at)}{m.notes ? ` · ${m.notes}` : ''}</span>
                       </div>
@@ -386,9 +386,9 @@ function RegisterDetailDialog({ register, onClose, companyId }: { register: Regi
                 {pays.length === 0 ? <Empty text="Nenhum pagamento."/> : (
                   <ul className="divide-y divide-border text-sm">
                     {pays.map((p) => (
-                      <li key={p.id} className="flex justify-between py-1.5">
+                      <li key={p.id} className="flex min-w-0 justify-between gap-3 py-1.5">
                         <span className="min-w-0 break-words text-muted-foreground">{fmtTime(p.created_at)} · <span className="capitalize">{p.method}</span></span>
-                        <span className="tabular-nums">{fmtBRL(p.amount)}</span>
+                        <span className="shrink-0 tabular-nums">{fmtBRL(p.amount)}</span>
                       </li>
                     ))}
                   </ul>
@@ -398,7 +398,7 @@ function RegisterDetailDialog({ register, onClose, companyId }: { register: Regi
                 {mvs.length === 0 ? <Empty text="Nenhum movimento."/> : (
                   <ul className="divide-y divide-border text-sm">
                     {mvs.map((m) => (
-                      <li key={m.id} className="flex justify-between py-1.5">
+                      <li key={m.id} className="flex min-w-0 justify-between gap-3 py-1.5">
                         <div className="min-w-0 break-words">
                           <span className={cn('font-medium capitalize', m.type === 'suprimento' ? 'text-success' : 'text-danger')}>{m.type}</span>
                           <span className="text-muted-foreground"> · {fmtTime(m.created_at)}{m.notes ? ` · ${m.notes}` : ''}</span>
