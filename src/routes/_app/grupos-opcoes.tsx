@@ -29,11 +29,12 @@ function GruposOpcoesPage() {
 
   const load = async () => {
     if (!profile) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('option_groups')
       .select('id, name, required, selection_type, max_options, option_items(id, name, additional_price), product_option_groups(product_id)')
       .eq('company_id', profile.company_id)
       .order('name');
+    if (error) { toast.error(error.message); return; }
     setGroups((data ?? []).map((g: any) => ({
       id: g.id, name: g.name, required: g.required,
       selection_type: g.selection_type, max_options: g.max_options,
@@ -50,6 +51,7 @@ function GruposOpcoesPage() {
       selection_type: 'unica', required: false,
     });
     if (error) { toast.error(error.message); return; }
+    toast.success('Grupo criado');
     load();
   };
 
