@@ -98,13 +98,13 @@ async function handleSeed() {
         prodId = data!.id;
       }
       if (p.withOptions && prodId) {
-        // grupo Acompanhamento
+        // grupo Acompanhamento (reutilizável por empresa)
         const { data: grpExist } = await supabaseAdmin.from('option_groups')
-          .select('id').eq('product_id', prodId).eq('name', 'Acompanhamentos').maybeSingle();
+          .select('id').eq('company_id', companyId).eq('name', 'Acompanhamentos').maybeSingle();
         let acompId = grpExist?.id as string | undefined;
         if (!acompId) {
           const { data } = await supabaseAdmin.from('option_groups').insert({
-            company_id: companyId, product_id: prodId, name: 'Acompanhamentos',
+            company_id: companyId, name: 'Acompanhamentos',
             required: false, selection_type: 'multipla', max_options: 4, sort_order: 1,
           }).select('id').single();
           acompId = data!.id;
@@ -114,20 +114,27 @@ async function handleSeed() {
             });
           }
         }
-        // grupo Molho
+        await supabaseAdmin.from('product_option_groups')
+          .upsert({ product_id: prodId, option_group_id: acompId }, { onConflict: 'product_id,option_group_id' });
+
+        // grupo Molho (reutilizável por empresa)
         const { data: molExist } = await supabaseAdmin.from('option_groups')
-          .select('id').eq('product_id', prodId).eq('name', 'Molho').maybeSingle();
-        if (!molExist) {
+          .select('id').eq('company_id', companyId).eq('name', 'Molho').maybeSingle();
+        let molhoId = molExist?.id as string | undefined;
+        if (!molhoId) {
           const { data } = await supabaseAdmin.from('option_groups').insert({
-            company_id: companyId, product_id: prodId, name: 'Molho',
+            company_id: companyId, name: 'Molho',
             required: false, selection_type: 'unica', max_options: 1, sort_order: 2,
           }).select('id').single();
+          molhoId = data!.id;
           for (const [i, item] of ['Molho da Casa', 'Molho Apimentado', 'Barbecue', 'Sem Molho'].entries()) {
             await supabaseAdmin.from('option_items').insert({
-              option_group_id: data!.id, name: item, sort_order: i,
+              option_group_id: molhoId, name: item, sort_order: i,
             });
           }
         }
+        await supabaseAdmin.from('product_option_groups')
+          .upsert({ product_id: prodId, option_group_id: molhoId }, { onConflict: 'product_id,option_group_id' });
       }
     }
 
