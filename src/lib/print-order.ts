@@ -45,7 +45,7 @@ export function buildThermalHtml(opts: PrintOptions): string {
     html, body { margin:0; padding:0; background:#fff; }
     body {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-      font-size: 13px; line-height: 1.45; color:#000;
+      font-size: 15px; line-height: 1.45; color:#000;
       padding: 6px 4px; width: 74mm;
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
@@ -56,17 +56,17 @@ export function buildThermalHtml(opts: PrintOptions): string {
     .sub { text-align:center; font-size: 12px; margin-bottom: 2px; font-weight: 600; }
     .meta { text-align:center; font-size: 12px; margin: 2px 0; font-weight: 500; }
     hr { border: 0; border-top: 1.5px dashed #000; margin: 6px 0; }
-    .info { font-size: 13px; margin: 3px 0; display:flex; gap: 8px; }
+    .info { font-size: 15px; margin: 3px 0; display:flex; gap: 8px; }
     .info .lbl { font-weight: 800; min-width: 70px; }
-    .cols { display:flex; justify-content:space-between; font-size: 13px; font-weight: 800; margin-bottom: 4px; }
-    .item { margin: 5px 0; page-break-inside: avoid; }
+    .cols { display:flex; justify-content:space-between; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+    .item { margin: 6px 0; page-break-inside: avoid; }
     .row { display:flex; justify-content:space-between; gap:8px; align-items: flex-start; }
-    .name { flex:1; font-size: 13px; font-weight: 600; word-wrap: break-word; overflow-wrap: break-word; }
+    .name { flex:1; font-size: 15px; font-weight: 600; word-wrap: break-word; overflow-wrap: break-word; }
     .qty { font-weight: 800; margin-right: 4px; }
-    .price { white-space: nowrap; font-weight: 700; font-size: 13px; }
-    .opt { padding-left: 14px; font-size: 11px; font-weight: 500; margin-top: 1px; word-wrap: break-word; }
-    .unit { padding-left: 14px; font-size: 11px; font-weight: 500; margin-top: 1px; color: #222; }
-    .trow { display:flex; justify-content:space-between; gap: 8px; margin-top: 3px; font-size: 13px; font-weight: 600; }
+    .price { white-space: nowrap; font-weight: 700; font-size: 15px; }
+    .opt { padding-left: 16px; font-size: 13px; font-weight: 500; margin-top: 2px; word-wrap: break-word; }
+    .unit { padding-left: 16px; font-size: 13px; font-weight: 500; margin-top: 2px; color: #222; }
+    .trow { display:flex; justify-content:space-between; gap: 8px; margin-top: 3px; font-size: 15px; font-weight: 600; }
     .trow.bold { font-weight: 900; font-size: 18px; border-top: 1.5px dashed #000; padding-top: 6px; margin-top: 8px; text-transform: uppercase; }
     .footer { text-align:center; font-size: 12px; margin-top: 10px; font-weight: 600; font-style: italic; }
   </style></head><body>
