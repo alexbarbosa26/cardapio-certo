@@ -52,8 +52,8 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
       setItems((its ?? []).map((i: any) => ({ ...i, total_price: Number(i.total_price), unit_price: Number(i.unit_price) })));
       const { data: st } = await supabase.from('settings').select('service_fee_percentage').eq('company_id', o.company_id).maybeSingle();
       if (st?.service_fee_percentage != null) setFeePct(Number(st.service_fee_percentage));
-      const { data: comp } = await supabase.from('companies').select('trade_name, name').eq('id', o.company_id).maybeSingle();
-      setTradeName(comp?.trade_name || comp?.name || '');
+      const { data: comp } = await supabase.from('companies').select('name, trade_name, logo_url').eq('id', o.company_id).maybeSingle();
+      setBrand({ name: comp?.name || undefined, tradeName: comp?.trade_name || undefined, logoUrl: comp?.logo_url || undefined });
       setWithFee(false);
     })();
   }, [open, orderId]);
