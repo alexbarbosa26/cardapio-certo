@@ -187,7 +187,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
           <Button variant="outline" onClick={() => printThermal({
             title: tableName,
             subtitle: `Conta · Pedido #${order.order_number}`,
-            brand: { name: 'MesaChef', tradeName },
+            brand,
             showPrices: true,
             showUnitPrice: true,
             items: items.map((i) => ({ quantity: i.quantity, product_name: i.product_name, unit_price: i.unit_price, total_price: i.total_price })),
