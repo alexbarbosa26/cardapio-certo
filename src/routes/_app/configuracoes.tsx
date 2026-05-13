@@ -27,13 +27,15 @@ function ConfigPage() {
       </header>
 
       <Tabs defaultValue="empresa">
-        <TabsList>
-          <TabsTrigger value="empresa">Empresa</TabsTrigger>
-          <TabsTrigger value="financeiro">Financeiro & Cozinha</TabsTrigger>
-          <TabsTrigger value="tipografia">Tipografia</TabsTrigger>
-          <TabsTrigger value="mesas">Mesas</TabsTrigger>
-          <TabsTrigger value="categorias">Categorias</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 sm:mx-0 overflow-x-auto">
+          <TabsList className="w-max sm:w-full inline-flex sm:flex mx-4 sm:mx-0">
+            <TabsTrigger value="empresa">Empresa</TabsTrigger>
+            <TabsTrigger value="financeiro">Financeiro & Cozinha</TabsTrigger>
+            <TabsTrigger value="tipografia">Tipografia</TabsTrigger>
+            <TabsTrigger value="mesas">Mesas</TabsTrigger>
+            <TabsTrigger value="categorias">Categorias</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="empresa"><CompanyTab/></TabsContent>
         <TabsContent value="financeiro"><SettingsTab/></TabsContent>
