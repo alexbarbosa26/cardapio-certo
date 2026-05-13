@@ -64,7 +64,12 @@ export function buildThermalHtml(opts: PrintOptions): string {
     .trow { display:flex; justify-content:space-between; gap: 6px; margin-top: 2px; font-size: 13px; font-weight:700; }
     .trow.bold { font-weight:900; font-size:16px; border-top:1px solid #000; padding-top:4px; margin-top:6px; }
     .footer { text-align:center; font-size:11px; margin-top:8px; font-weight:600; }
+    .brand { text-align:center; margin-bottom: 6px; }
+    .brand-logo { display:flex; align-items:center; justify-content:center; gap:4px; font-size:20px; font-weight:900; letter-spacing:1px; text-transform:uppercase; }
+    .brand-logo .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#000; }
+    .brand-trade { font-size:13px; font-weight:800; margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
   </style></head><body>
+    ${brand ? `<div class="brand"><div class="brand-logo"><span class="dot"></span>${esc(brand.name ?? 'MesaChef')}</div>${brand.tradeName ? `<div class="brand-trade">${esc(brand.tradeName)}</div>` : ''}</div><hr/>` : ''}
     <h1>${esc(title)}</h1>
     ${subtitle ? `<div class="sub">${esc(subtitle)}</div>` : ''}
     <div class="meta">${now}</div>
