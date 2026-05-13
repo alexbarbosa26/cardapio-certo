@@ -55,6 +55,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   const [editingNotes, setEditingNotes] = useState<OrderItem | null>(null);
   const [confirmCancelOrder, setConfirmCancelOrder] = useState(false);
   const [confirmCancelItem, setConfirmCancelItem] = useState<OrderItem | null>(null);
+  const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
 
   const load = async () => {
     if (!profile) return;
