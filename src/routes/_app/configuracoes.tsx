@@ -179,23 +179,6 @@ function TablesTab() {
     </div>
   );
 }
-    <div className="rounded-xl border border-border bg-card p-5 mt-4">
-      <div className="flex gap-2 mb-4">
-        <Input placeholder="Nº" type="number" className="w-20" value={num} onChange={(e) => setNum(e.target.value)}/>
-        <Input placeholder="Nome (opcional)" value={name} onChange={(e) => setName(e.target.value)}/>
-        <Button onClick={add}><Plus className="h-4 w-4"/></Button>
-      </div>
-      <ul className="divide-y divide-border">
-        {tables.map((t) => (
-          <li key={t.id} className="flex items-center justify-between py-2">
-            <span><span className="font-display text-lg mr-2">{String(t.number).padStart(2,'0')}</span> <span className="text-sm text-muted-foreground">{t.name}</span></span>
-            <Button variant="ghost" size="icon" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4 text-danger"/></Button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 function CategoriesTab() {
   const { profile } = useAuth();
