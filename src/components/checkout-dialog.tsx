@@ -189,7 +189,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             items: items.map((i) => ({ quantity: i.quantity, product_name: i.product_name, unit_price: i.unit_price, total_price: i.total_price })),
             totals: [
               { label: 'Subtotal', value: fmtBRL(subtotal) },
-              ...(withFee ? [{ label: 'Taxa serviço (10%)', value: fmtBRL(fee) }] : []),
+              ...(withFee ? [{ label: `Taxa serviço (${feePct}%)`, value: fmtBRL(fee) }] : []),
               ...(discount > 0 ? [{ label: 'Desconto', value: `- ${fmtBRL(discount)}` }] : []),
               { label: 'Total', value: fmtBRL(total), bold: true },
             ],
