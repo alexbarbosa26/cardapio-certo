@@ -93,8 +93,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   const recalcOrder = async () => {
     const { data } = await supabase.from('order_items').select('total_price, kitchen_status').eq('order_id', orderId);
     const sub = (data ?? []).reduce((s, i: any) => s + (i.kitchen_status === 'cancelado' ? 0 : Number(i.total_price)), 0);
-    const fee = sub * 0.10;
-    await supabase.from('orders').update({ subtotal: sub, service_fee_amount: fee, total: sub + fee }).eq('id', orderId);
+    await supabase.from('orders').update({ subtotal: sub, service_fee_amount: 0, total: sub }).eq('id', orderId);
   };
 
   const cancelItem = async (it: OrderItem) => {
