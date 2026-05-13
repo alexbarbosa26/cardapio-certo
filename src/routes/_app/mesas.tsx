@@ -29,7 +29,7 @@ function MesasPage() {
   const { profile } = useAuth();
   const [mesas, setMesas] = useState<MesaCard[]>([]);
   const [loading, setLoading] = useState(true);
-  const [orderSheet, setOrderSheet] = useState<{ tableId: string; orderId: string | null; tableName: string } | null>(null);
+  const [orderSheet, setOrderSheet] = useState<{ tableId: string; orderId: string | null; tableName: string; createdNow: boolean } | null>(null);
   const [checkout, setCheckout] = useState<{ orderId: string; tableId: string; tableName: string } | null>(null);
 
   const load = async () => {
