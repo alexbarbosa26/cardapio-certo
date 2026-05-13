@@ -31,7 +31,8 @@ const FEES: Record<Method, number> = { dinheiro: 0, pix: 0, debito: 1.37, credit
 export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange }: Props) {
   const [order, setOrder] = useState<Order | null>(null);
   const [items, setItems] = useState<any[]>([]);
-  const [withFee, setWithFee] = useState(true);
+  const [withFee, setWithFee] = useState(false);
+  const [feePct, setFeePct] = useState(10);
   const [discount, setDiscount] = useState(0);
   const [method, setMethod] = useState<Method>('dinheiro');
   const [received, setReceived] = useState<string>('');
@@ -48,13 +49,16 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
       });
       const { data: its } = await supabase.from('order_items').select('product_name, quantity, unit_price, total_price').eq('order_id', orderId);
       setItems((its ?? []).map((i: any) => ({ ...i, total_price: Number(i.total_price), unit_price: Number(i.unit_price) })));
+      const { data: st } = await supabase.from('settings').select('service_fee_percentage').eq('company_id', o.company_id).maybeSingle();
+      if (st?.service_fee_percentage != null) setFeePct(Number(st.service_fee_percentage));
+      setWithFee(false);
     })();
   }, [open, orderId]);
 
   if (!order) return null;
 
   const subtotal = items.reduce((s, i) => s + i.total_price, 0);
-  const fee = withFee ? subtotal * 0.10 : 0;
+  const fee = withFee ? subtotal * (feePct / 100) : 0;
   const total = Math.max(0, subtotal + fee - discount);
   const received_n = Number(received.replace(',', '.')) || 0;
   const change = method === 'dinheiro' ? Math.max(0, received_n - total) : 0;
