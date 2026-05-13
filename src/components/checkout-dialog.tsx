@@ -36,6 +36,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
   const [discount, setDiscount] = useState(0);
   const [method, setMethod] = useState<Method>('dinheiro');
   const [received, setReceived] = useState<string>('');
+  const [tradeName, setTradeName] = useState<string>('');
 
   useEffect(() => {
     if (!open) return;
@@ -51,6 +52,8 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
       setItems((its ?? []).map((i: any) => ({ ...i, total_price: Number(i.total_price), unit_price: Number(i.unit_price) })));
       const { data: st } = await supabase.from('settings').select('service_fee_percentage').eq('company_id', o.company_id).maybeSingle();
       if (st?.service_fee_percentage != null) setFeePct(Number(st.service_fee_percentage));
+      const { data: comp } = await supabase.from('companies').select('trade_name, name').eq('id', o.company_id).maybeSingle();
+      setTradeName(comp?.trade_name || comp?.name || '');
       setWithFee(false);
     })();
   }, [open, orderId]);
@@ -184,6 +187,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
           <Button variant="outline" onClick={() => printThermal({
             title: tableName,
             subtitle: `Conta · Pedido #${order.order_number}`,
+            brand: { name: 'MesaChef', tradeName },
             showPrices: true,
             showUnitPrice: true,
             items: items.map((i) => ({ quantity: i.quantity, product_name: i.product_name, unit_price: i.unit_price, total_price: i.total_price })),

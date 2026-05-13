@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 import { applyTenantFontsPreview } from '@/hooks/use-tenant-typography';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -109,6 +109,8 @@ function TablesTab() {
   const { profile } = useAuth();
   const [tables, setTables] = useState<any[]>([]);
   const [num, setNum] = useState(''); const [name, setName] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editNum, setEditNum] = useState(''); const [editName, setEditName] = useState('');
   const load = async () => {
     if (!profile) return;
     const { data } = await supabase.from('tables').select('*').eq('company_id', profile.company_id).order('number');
@@ -129,6 +131,18 @@ function TablesTab() {
     const { error } = await supabase.from('tables').delete().eq('id', id);
     if (error) toast.error(error.message); else load();
   };
+  const startEdit = (t: any) => {
+    setEditingId(t.id); setEditNum(String(t.number)); setEditName(t.name ?? '');
+  };
+  const cancelEdit = () => { setEditingId(null); setEditNum(''); setEditName(''); };
+  const saveEdit = async (id: string) => {
+    const n = Number(editNum); if (!n) { toast.error('Número inválido'); return; }
+    const { error } = await supabase.from('tables').update({
+      number: n, name: editName || `Mesa ${String(n).padStart(2,'0')}`,
+    }).eq('id', id);
+    if (error) { toast.error(error.message); return; }
+    cancelEdit(); load(); toast.success('Mesa atualizada');
+  };
   return (
     <div className="rounded-xl border border-border bg-card p-5 mt-4">
       <div className="flex gap-2 mb-4">
@@ -138,9 +152,27 @@ function TablesTab() {
       </div>
       <ul className="divide-y divide-border">
         {tables.map((t) => (
-          <li key={t.id} className="flex items-center justify-between py-2">
-            <span><span className="font-display text-lg mr-2">{String(t.number).padStart(2,'0')}</span> <span className="text-sm text-muted-foreground">{t.name}</span></span>
-            <Button variant="ghost" size="icon" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4 text-danger"/></Button>
+          <li key={t.id} className="flex items-center justify-between py-2 gap-2">
+            {editingId === t.id ? (
+              <>
+                <div className="flex gap-2 flex-1">
+                  <Input type="number" className="w-20" value={editNum} onChange={(e) => setEditNum(e.target.value)}/>
+                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Nome (opcional)"/>
+                </div>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => saveEdit(t.id)}><Check className="h-4 w-4 text-success"/></Button>
+                  <Button variant="ghost" size="icon" onClick={cancelEdit}><X className="h-4 w-4"/></Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <span><span className="font-display text-lg mr-2">{String(t.number).padStart(2,'0')}</span> <span className="text-sm text-muted-foreground">{t.name}</span></span>
+                <div className="flex gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => startEdit(t)}><Pencil className="h-4 w-4"/></Button>
+                  <Button variant="ghost" size="icon" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4 text-danger"/></Button>
+                </div>
+              </>
+            )}
           </li>
         ))}
       </ul>
