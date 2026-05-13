@@ -40,40 +40,41 @@ export function buildThermalHtml(opts: PrintOptions): string {
 
   return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title>
   <style>
-    @page { size: 80mm auto; margin: 2mm; }
+    @page { size: 80mm auto; margin: 3mm; }
     * { box-sizing: border-box; }
     html, body { margin:0; padding:0; background:#fff; }
     body {
-      font-family: 'Arial Black', Arial, Helvetica, sans-serif;
-      font-size: 13px; line-height: 1.3; color:#000;
-      padding: 4px 2px; width: 76mm; font-weight: 700;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 13px; line-height: 1.45; color:#000;
+      padding: 6px 4px; width: 74mm;
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
-    h1 { font-size: 18px; text-align:center; margin: 0 0 2px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; word-wrap: break-word; }
-    .sub { text-align:center; font-size:12px; margin-bottom:2px; font-weight:700; }
-    .meta { text-align:center; font-size:11px; margin-bottom:2px; font-weight:600; }
-    hr { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
-    .item { margin: 4px 0; padding-bottom: 3px; border-bottom: 1px dotted #000; page-break-inside: avoid; }
-    .item:last-child { border-bottom: 0; }
-    .row { display:flex; justify-content:space-between; gap:6px; align-items: flex-start; }
-    .name { flex:1; font-size: 14px; font-weight: 800; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; }
-    .qty { font-weight: 900; margin-right: 3px; }
-    .price { white-space: nowrap; font-weight: 800; font-size: 13px; }
-    .opt { padding-left: 14px; font-size: 11px; font-weight: 600; margin-top: 1px; word-wrap: break-word; }
-    .unit { padding-left: 14px; font-size: 11px; font-weight: 600; margin-top: 1px; }
-    .trow { display:flex; justify-content:space-between; gap: 6px; margin-top: 2px; font-size: 13px; font-weight:700; }
-    .trow.bold { font-weight:900; font-size:16px; border-top:1px solid #000; padding-top:4px; margin-top:6px; }
-    .footer { text-align:center; font-size:11px; margin-top:8px; font-weight:600; }
-    .brand { text-align:center; margin-bottom: 6px; }
-    .brand-logo { display:flex; align-items:center; justify-content:center; gap:4px; font-size:20px; font-weight:900; letter-spacing:1px; text-transform:uppercase; }
-    .brand-logo .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:#000; }
-    .brand-trade { font-size:13px; font-weight:800; margin-top:2px; text-transform:uppercase; letter-spacing:0.5px; }
+    .brand-name { text-align:center; font-size: 22px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 0; }
+    .brand-trade { text-align:center; font-size: 12px; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+    h1 { font-size: 20px; text-align:center; margin: 6px 0 2px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; word-wrap: break-word; }
+    .sub { text-align:center; font-size: 12px; margin-bottom: 2px; font-weight: 600; }
+    .meta { text-align:center; font-size: 12px; margin: 2px 0; font-weight: 500; }
+    hr { border: 0; border-top: 1.5px dashed #000; margin: 6px 0; }
+    .info { font-size: 13px; margin: 3px 0; display:flex; gap: 8px; }
+    .info .lbl { font-weight: 800; min-width: 70px; }
+    .cols { display:flex; justify-content:space-between; font-size: 13px; font-weight: 800; margin-bottom: 4px; }
+    .item { margin: 5px 0; page-break-inside: avoid; }
+    .row { display:flex; justify-content:space-between; gap:8px; align-items: flex-start; }
+    .name { flex:1; font-size: 13px; font-weight: 600; word-wrap: break-word; overflow-wrap: break-word; }
+    .qty { font-weight: 800; margin-right: 4px; }
+    .price { white-space: nowrap; font-weight: 700; font-size: 13px; }
+    .opt { padding-left: 14px; font-size: 11px; font-weight: 500; margin-top: 1px; word-wrap: break-word; }
+    .unit { padding-left: 14px; font-size: 11px; font-weight: 500; margin-top: 1px; color: #222; }
+    .trow { display:flex; justify-content:space-between; gap: 8px; margin-top: 3px; font-size: 13px; font-weight: 600; }
+    .trow.bold { font-weight: 900; font-size: 18px; border-top: 1.5px dashed #000; padding-top: 6px; margin-top: 8px; text-transform: uppercase; }
+    .footer { text-align:center; font-size: 12px; margin-top: 10px; font-weight: 600; font-style: italic; }
   </style></head><body>
-    ${brand ? `<div class="brand"><div class="brand-logo"><span class="dot"></span>${esc(brand.name ?? 'MesaChef')}</div>${brand.tradeName ? `<div class="brand-trade">${esc(brand.tradeName)}</div>` : ''}</div><hr/>` : ''}
+    ${brand ? `<div class="brand-name">${esc(brand.name ?? 'MesaChef')}</div>${brand.tradeName ? `<div class="brand-trade">${esc(brand.tradeName)}</div>` : ''}` : ''}
     <h1>${esc(title)}</h1>
     ${subtitle ? `<div class="sub">${esc(subtitle)}</div>` : ''}
     <div class="meta">${now}</div>
     <hr/>
+    <div class="cols"><span>Item</span><span>${showPrices ? 'Valor' : ''}</span></div>
     ${itemsHtml || '<div class="sub">Sem itens</div>'}
     ${totalsHtml ? `<hr/>${totalsHtml}` : ''}
     ${footer ? `<div class="footer">${esc(footer)}</div>` : ''}
