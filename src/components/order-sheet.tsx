@@ -292,19 +292,6 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
               >
                 <Ban className="h-4 w-4 mr-2" /> Cancelar pedido
               </Button>
-                  variant="outline"
-                  onClick={() => printThermal({
-                    title: tableName,
-                    subtitle: 'Comanda',
-                    items: items.filter((i) => i.kitchen_status !== 'cancelado').map((i) => ({
-                      quantity: i.quantity, product_name: i.product_name,
-                      total_price: i.total_price, notes: i.notes, options: i.options,
-                    })),
-                  })}
-                >
-                  <Printer className="h-4 w-4 mr-2" /> Imprimir
-                </Button>
-              </div>
             </div>
           </div>
         </div>
