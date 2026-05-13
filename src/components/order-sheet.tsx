@@ -55,6 +55,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   const [editingNotes, setEditingNotes] = useState<OrderItem | null>(null);
   const [confirmCancelOrder, setConfirmCancelOrder] = useState(false);
   const [confirmCancelItem, setConfirmCancelItem] = useState<OrderItem | null>(null);
+  const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
 
   const load = async () => {
     if (!profile) return;
@@ -74,6 +75,14 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   };
 
   useEffect(() => { if (open) load(); }, [open, orderId]);
+
+  useEffect(() => {
+    if (!open || !profile) return;
+    (async () => {
+      const { data: comp } = await supabase.from('companies').select('name, trade_name, logo_url').eq('id', profile.company_id).maybeSingle();
+      setBrand({ name: comp?.name || undefined, tradeName: comp?.trade_name || undefined, logoUrl: comp?.logo_url || undefined });
+    })();
+  }, [open, profile?.company_id]);
 
   useEffect(() => {
     if (!open) return;
@@ -275,6 +284,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                   onClick={() => printThermal({
                     title: tableName,
                     subtitle: 'Comanda',
+                    brand,
                     items: items.filter((i) => i.kitchen_status !== 'cancelado').map((i) => ({
                       quantity: i.quantity, product_name: i.product_name,
                       total_price: i.total_price, notes: i.notes, options: i.options,
