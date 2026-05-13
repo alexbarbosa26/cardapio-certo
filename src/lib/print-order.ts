@@ -19,7 +19,7 @@ export interface PrintOptions {
   footer?: string;
   showPrices?: boolean;
   showUnitPrice?: boolean;
-  brand?: { name?: string; tradeName?: string };
+  brand?: { name?: string; tradeName?: string; logoUrl?: string };
 }
 
 export function buildThermalHtml(opts: PrintOptions): string {
