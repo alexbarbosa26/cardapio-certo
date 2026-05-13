@@ -70,7 +70,7 @@ export function buildThermalHtml(opts: PrintOptions): string {
     .trow.bold { font-weight: 900; font-size: 18px; border-top: 1.5px dashed #000; padding-top: 6px; margin-top: 8px; text-transform: uppercase; }
     .footer { text-align:center; font-size: 12px; margin-top: 10px; font-weight: 600; font-style: italic; }
   </style></head><body>
-    ${brand ? `<div class="brand-name">${esc(brand.name ?? 'MesaChef')}</div>${brand.tradeName ? `<div class="brand-trade">${esc(brand.tradeName)}</div>` : ''}` : ''}
+    ${brand ? `${brand.logoUrl ? `<img class="brand-logo" src="${esc(brand.logoUrl)}" alt=""/>` : ''}${brand.name ? `<div class="brand-name">${esc(brand.name)}</div>` : ''}${brand.tradeName ? `<div class="brand-trade">${esc(brand.tradeName)}</div>` : ''}` : ''}
     <h1>${esc(title)}</h1>
     ${subtitle ? `<div class="sub">${esc(subtitle)}</div>` : ''}
     <div class="meta">${now}</div>
