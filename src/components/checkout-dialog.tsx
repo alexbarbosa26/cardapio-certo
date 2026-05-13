@@ -78,7 +78,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
     await supabase.from('orders').update({
       status: 'fechado', closed_at: new Date().toISOString(),
       subtotal, service_fee_amount: fee, discount, total,
-      service_fee_percentage: withFee ? 10 : 0,
+      service_fee_percentage: withFee ? feePct : 0,
     }).eq('id', orderId);
 
     await supabase.from('payments').insert({
