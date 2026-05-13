@@ -2,14 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { fmtBRL } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
-import { Plus, Minus, Send, X, Trash2, Printer } from 'lucide-react';
+import { Plus, Minus, Send, X, Printer, MoreVertical, Pencil, Repeat, Ban, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -45,6 +51,10 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   const [items, setItems] = useState<OrderItem[]>([]);
   const [activeCat, setActiveCat] = useState<string>('all');
   const [adding, setAdding] = useState<Product | null>(null);
+  const [swapItemId, setSwapItemId] = useState<string | null>(null);
+  const [editingNotes, setEditingNotes] = useState<OrderItem | null>(null);
+  const [confirmCancelOrder, setConfirmCancelOrder] = useState(false);
+  const [confirmCancelItem, setConfirmCancelItem] = useState<OrderItem | null>(null);
 
   const load = async () => {
     if (!profile) return;
@@ -78,23 +88,58 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     [products, activeCat]
   );
 
-  const subtotal = items.reduce((s, i) => s + i.total_price, 0);
+  const subtotal = items.reduce((s, i) => s + (i.kitchen_status === 'cancelado' ? 0 : i.total_price), 0);
 
-  const removeItem = async (id: string, status: string) => {
-    if (status !== 'pendente' && status !== 'aguardando') {
-      toast.error('Item já está em preparo, não pode ser removido.');
-      return;
+  const recalcOrder = async () => {
+    const { data } = await supabase.from('order_items').select('total_price, kitchen_status').eq('order_id', orderId);
+    const sub = (data ?? []).reduce((s, i: any) => s + (i.kitchen_status === 'cancelado' ? 0 : Number(i.total_price)), 0);
+    const fee = sub * 0.10;
+    await supabase.from('orders').update({ subtotal: sub, service_fee_amount: fee, total: sub + fee }).eq('id', orderId);
+  };
+
+  const cancelItem = async (it: OrderItem) => {
+    // Se ainda não foi enviado para a cozinha, remove. Caso contrário, marca como cancelado.
+    if (it.kitchen_status === 'pendente' || !it.sends_to_kitchen && it.kitchen_status === 'entregue' && !it.id) {
+      // pure pending → delete
     }
-    await supabase.from('order_items').delete().eq('id', id);
+    if (it.kitchen_status === 'pendente') {
+      await supabase.from('order_items').delete().eq('id', it.id);
+    } else {
+      await supabase.from('order_items').update({
+        kitchen_status: 'cancelado', canceled_at: new Date().toISOString(),
+      }).eq('id', it.id);
+    }
     await recalcOrder();
+    toast.success('Item cancelado');
+    setConfirmCancelItem(null);
     load();
   };
 
-  const recalcOrder = async () => {
-    const { data } = await supabase.from('order_items').select('total_price').eq('order_id', orderId);
-    const sub = (data ?? []).reduce((s, i: any) => s + Number(i.total_price), 0);
-    const fee = sub * 0.10;
-    await supabase.from('orders').update({ subtotal: sub, service_fee_amount: fee, total: sub + fee }).eq('id', orderId);
+  const swapItem = (it: OrderItem) => {
+    if (it.kitchen_status !== 'pendente') {
+      toast.error('Só é possível trocar itens ainda não enviados à cozinha.');
+      return;
+    }
+    setSwapItemId(it.id);
+    toast.info('Selecione o novo produto no cardápio');
+  };
+
+  const saveNotes = async (newNotes: string) => {
+    if (!editingNotes) return;
+    await supabase.from('order_items').update({ notes: newNotes || null }).eq('id', editingNotes.id);
+    setEditingNotes(null);
+    toast.success('Observação atualizada');
+    load();
+  };
+
+  const cancelOrder = async () => {
+    // Deleta itens, opções (cascade via RLS join) e o pedido. Libera a mesa.
+    await supabase.from('order_items').delete().eq('order_id', orderId);
+    await supabase.from('orders').delete().eq('id', orderId);
+    await supabase.from('tables').update({ status: 'livre' }).eq('id', tableId);
+    toast.success('Pedido cancelado');
+    setConfirmCancelOrder(false);
+    onOpenChange(false);
   };
 
   const sendToKitchen = async () => {
@@ -111,13 +156,37 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     load();
   };
 
+  const handleAddDone = async (newItemId: string | null) => {
+    setAdding(null);
+    // Se for uma troca, remove o item original após inserir o novo
+    if (swapItemId && newItemId) {
+      await supabase.from('order_items').delete().eq('id', swapItemId);
+      toast.success('Produto trocado');
+    }
+    setSwapItemId(null);
+    await recalcOrder();
+    load();
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
         <SheetHeader className="border-b border-border px-6 py-4">
-          <SheetTitle className="flex items-baseline gap-3">
-            <span className="font-display text-2xl">{tableName}</span>
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">Pedido aberto</span>
+          <SheetTitle className="flex items-center justify-between gap-3">
+            <div className="flex items-baseline gap-3">
+              <span className="font-display text-2xl">{tableName}</span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                {swapItemId ? 'Trocando produto…' : 'Pedido aberto'}
+              </span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setConfirmCancelOrder(true)}
+              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Ban className="h-4 w-4 mr-1" /> Cancelar pedido
+            </Button>
           </SheetTitle>
         </SheetHeader>
 
@@ -150,31 +219,58 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
               {items.length === 0 && (
                 <div className="text-center text-xs text-muted-foreground py-12">Nenhum item ainda.</div>
               )}
-              {items.map((it) => (
-                <div key={it.id} className="rounded-lg border border-border bg-card p-3">
-                  <div className="flex items-start gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-mono text-xs text-muted-foreground">{it.quantity}×</span>
-                        <span className="text-sm font-medium truncate">{it.product_name}</span>
-                      </div>
-                      {it.options.length > 0 && (
-                        <div className="mt-1 text-[11px] text-muted-foreground">
-                          {it.options.map((o) => o.option_item_name).join(', ')}
+              {items.map((it) => {
+                const canceled = it.kitchen_status === 'cancelado';
+                return (
+                  <div key={it.id} className={cn(
+                    'rounded-lg border border-border bg-card p-3',
+                    canceled && 'opacity-60',
+                  )}>
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-mono text-xs text-muted-foreground">{it.quantity}×</span>
+                          <span className={cn('text-sm font-medium truncate', canceled && 'line-through')}>{it.product_name}</span>
                         </div>
-                      )}
-                      {it.notes && <div className="mt-1 text-[11px] italic text-muted-foreground">"{it.notes}"</div>}
-                      <KitchenBadge status={it.kitchen_status} />
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold">{fmtBRL(it.total_price)}</div>
-                      <button onClick={() => removeItem(it.id, it.kitchen_status)} className="mt-1 text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                        {it.options.length > 0 && (
+                          <div className="mt-1 text-[11px] text-muted-foreground">
+                            {it.options.map((o) => o.option_item_name).join(', ')}
+                          </div>
+                        )}
+                        {it.notes && <div className="mt-1 text-[11px] italic text-muted-foreground">"{it.notes}"</div>}
+                        <KitchenBadge status={it.kitchen_status} />
+                      </div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <div className={cn('text-sm font-semibold', canceled && 'line-through')}>{fmtBRL(it.total_price)}</div>
+                        {!canceled && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button className="p-1 rounded hover:bg-muted text-muted-foreground">
+                                <MoreVertical className="h-4 w-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => setEditingNotes(it)}>
+                                <Pencil className="h-3.5 w-3.5 mr-2" /> Editar observação
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => swapItem(it)}>
+                                <Repeat className="h-3.5 w-3.5 mr-2" /> Trocar produto
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setConfirmCancelItem(it)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-3.5 w-3.5 mr-2" /> Cancelar item
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="border-t border-border bg-card p-4 space-y-3">
               <div className="flex justify-between text-sm">
@@ -190,7 +286,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                   onClick={() => printThermal({
                     title: tableName,
                     subtitle: 'Comanda',
-                    items: items.map((i) => ({
+                    items: items.filter((i) => i.kitchen_status !== 'cancelado').map((i) => ({
                       quantity: i.quantity, product_name: i.product_name,
                       total_price: i.total_price, notes: i.notes, options: i.options,
                     })),
@@ -208,10 +304,59 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
         <AddProductDialog
           product={adding}
           orderId={orderId}
-          onDone={async () => { setAdding(null); await recalcOrder(); load(); }}
-          onClose={() => setAdding(null)}
+          isSwap={!!swapItemId}
+          onDone={handleAddDone}
+          onClose={() => { setAdding(null); setSwapItemId(null); }}
         />
       )}
+
+      {editingNotes && (
+        <EditNotesDialog
+          initial={editingNotes.notes ?? ''}
+          productName={editingNotes.product_name}
+          onSave={saveNotes}
+          onClose={() => setEditingNotes(null)}
+        />
+      )}
+
+      <AlertDialog open={confirmCancelOrder} onOpenChange={setConfirmCancelOrder}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar pedido?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Todos os itens deste pedido serão removidos e a mesa <strong>{tableName}</strong> ficará livre. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Manter pedido</AlertDialogCancel>
+            <AlertDialogAction onClick={cancelOrder} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Sim, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmCancelItem} onOpenChange={(o) => !o && setConfirmCancelItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmCancelItem?.kitchen_status === 'pendente'
+                ? `O item "${confirmCancelItem?.product_name}" será removido do pedido.`
+                : `O item "${confirmCancelItem?.product_name}" já foi enviado à cozinha. Ele será marcado como cancelado e não será cobrado.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmCancelItem && cancelItem(confirmCancelItem)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Cancelar item
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 }
@@ -241,7 +386,29 @@ function KitchenBadge({ status }: { status: string }) {
   return <span className={cn('mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider', c.cls)}>{c.label}</span>;
 }
 
-function AddProductDialog({ product, orderId, onDone, onClose }: { product: Product; orderId: string; onDone: () => void; onClose: () => void }) {
+function EditNotesDialog({ initial, productName, onSave, onClose }: { initial: string; productName: string; onSave: (v: string) => void; onClose: () => void }) {
+  const [val, setVal] = useState(initial);
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Observação</DialogTitle>
+          <DialogDescription>{productName}</DialogDescription>
+        </DialogHeader>
+        <div>
+          <Label htmlFor="edit-notes">Detalhes para a cozinha</Label>
+          <Textarea id="edit-notes" rows={4} value={val} onChange={(e) => setVal(e.target.value)} placeholder="Ex: bem passado, sem cebola…" />
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={() => onSave(val)}>Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { product: Product; orderId: string; isSwap: boolean; onDone: (newItemId: string | null) => void; onClose: () => void }) {
   const [groups, setGroups] = useState<OptionGroup[]>([]);
   const [qty, setQty] = useState(1);
   const [notes, setNotes] = useState('');
@@ -289,7 +456,6 @@ function AddProductDialog({ product, orderId, onDone, onClose }: { product: Prod
   const total = (product.price + extra) * qty;
 
   const submit = async () => {
-    // validar obrigatórios
     for (const g of groups) {
       if (g.required && !(picks[g.id]?.size)) { toast.error(`Selecione ${g.name}`); return; }
     }
@@ -313,15 +479,15 @@ function AddProductDialog({ product, orderId, onDone, onClose }: { product: Prod
       }
     }
     if (opts.length) await supabase.from('order_item_options').insert(opts);
-    toast.success(`${product.name} adicionado`);
-    onDone();
+    toast.success(isSwap ? `${product.name} substituído` : `${product.name} adicionado`);
+    onDone(oi.id);
   };
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{product.name}</DialogTitle>
+          <DialogTitle>{isSwap ? `Trocar por: ${product.name}` : product.name}</DialogTitle>
         </DialogHeader>
         {loading ? <div className="text-sm text-muted-foreground">Carregando…</div> : (
           <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-1">
@@ -372,7 +538,9 @@ function AddProductDialog({ product, orderId, onDone, onClose }: { product: Prod
         )}
         <DialogFooter className="gap-2">
           <Button variant="ghost" onClick={onClose}><X className="h-4 w-4 mr-1" /> Cancelar</Button>
-          <Button onClick={submit} className="bg-primary"><Plus className="h-4 w-4 mr-1" /> Adicionar</Button>
+          <Button onClick={submit} className="bg-primary">
+            <Plus className="h-4 w-4 mr-1" /> {isSwap ? 'Substituir' : 'Adicionar'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
