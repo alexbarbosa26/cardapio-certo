@@ -77,6 +77,14 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   useEffect(() => { if (open) load(); }, [open, orderId]);
 
   useEffect(() => {
+    if (!open || !profile) return;
+    (async () => {
+      const { data: comp } = await supabase.from('companies').select('name, trade_name, logo_url').eq('id', profile.company_id).maybeSingle();
+      setBrand({ name: comp?.name || undefined, tradeName: comp?.trade_name || undefined, logoUrl: comp?.logo_url || undefined });
+    })();
+  }, [open, profile?.company_id]);
+
+  useEffect(() => {
     if (!open) return;
     const ch = supabase.channel(`order-${orderId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `order_id=eq.${orderId}` }, load)
