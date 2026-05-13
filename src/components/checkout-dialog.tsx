@@ -36,7 +36,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
   const [discount, setDiscount] = useState(0);
   const [method, setMethod] = useState<Method>('dinheiro');
   const [received, setReceived] = useState<string>('');
-  const [tradeName, setTradeName] = useState<string>('');
+  const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
 
   useEffect(() => {
     if (!open) return;
