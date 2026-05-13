@@ -49,6 +49,7 @@ export function buildThermalHtml(opts: PrintOptions): string {
       padding: 6px 4px; width: 74mm;
       -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
+    .brand-logo { display:block; max-width: 60mm; max-height: 22mm; margin: 0 auto 4px; object-fit: contain; }
     .brand-name { text-align:center; font-size: 22px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 0; }
     .brand-trade { text-align:center; font-size: 12px; font-weight: 600; margin-top: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
     h1 { font-size: 20px; text-align:center; margin: 6px 0 2px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; word-wrap: break-word; }
