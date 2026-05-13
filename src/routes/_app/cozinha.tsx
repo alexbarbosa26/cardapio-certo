@@ -142,9 +142,6 @@ function CozinhaPage() {
                   {it.kitchen_status === 'pronto' && (
                     <Button size="sm" onClick={() => setStatus(it.id, 'entregue')} variant="outline"><Truck className="h-3.5 w-3.5 mr-1" /> Entregue</Button>
                   )}
-                  <Button size="sm" variant="ghost" onClick={() => setStatus(it.id, 'cancelado')} className="text-muted-foreground hover:text-destructive ml-auto">
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
               </div>
             );
