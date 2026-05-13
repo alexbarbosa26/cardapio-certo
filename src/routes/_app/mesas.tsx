@@ -77,6 +77,7 @@ function MesasPage() {
   const openMesa = async (m: MesaCard) => {
     if (!profile) return;
     let orderId = m.open_order_id;
+    let createdNow = false;
     if (!orderId) {
       const { data, error } = await supabase.from('orders').insert({
         company_id: profile.company_id, table_id: m.id, user_id: profile.id,
@@ -84,9 +85,24 @@ function MesasPage() {
       }).select('id').single();
       if (error) { toast.error(error.message); return; }
       orderId = data.id;
+      createdNow = true;
       await supabase.from('tables').update({ status: 'ocupada' }).eq('id', m.id);
     }
-    setOrderSheet({ tableId: m.id, orderId, tableName: m.name });
+    setOrderSheet({ tableId: m.id, orderId, tableName: m.name, createdNow });
+  };
+
+  const handleSheetClose = async () => {
+    if (!orderSheet?.orderId) { setOrderSheet(null); load(); return; }
+    const { count } = await supabase
+      .from('order_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('order_id', orderSheet.orderId);
+    if ((count ?? 0) === 0) {
+      await supabase.from('orders').delete().eq('id', orderSheet.orderId);
+      await supabase.from('tables').update({ status: 'livre' }).eq('id', orderSheet.tableId);
+    }
+    setOrderSheet(null);
+    load();
   };
 
   return (
