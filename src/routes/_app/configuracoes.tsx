@@ -50,20 +50,55 @@ function ConfigPage() {
 function CompanyTab() {
   const { profile, refresh } = useAuth();
   const [name, setName] = useState(''); const [trade, setTrade] = useState(''); const [doc, setDoc] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string>(''); const [uploading, setUploading] = useState(false);
   useEffect(() => {
     if (!profile) return;
     (async () => {
       const { data } = await supabase.from('companies').select('*').eq('id', profile.company_id).single();
-      if (data) { setName(data.name); setTrade(data.trade_name ?? ''); setDoc(data.document ?? ''); }
+      if (data) { setName(data.name); setTrade(data.trade_name ?? ''); setDoc(data.document ?? ''); setLogoUrl(data.logo_url ?? ''); }
     })();
   }, [profile?.company_id]);
   const save = async () => {
-    await supabase.from('companies').update({ name, trade_name: trade, document: doc }).eq('id', profile!.company_id);
+    await supabase.from('companies').update({ name, trade_name: trade, document: doc, logo_url: logoUrl || null }).eq('id', profile!.company_id);
     toast.success('Salvo'); refresh();
+  };
+  const onUpload = async (file: File) => {
+    if (!profile) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('Imagem deve ter até 2MB'); return; }
+    setUploading(true);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const path = `${profile.company_id}/logo-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('branding').upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { toast.error(error.message); setUploading(false); return; }
+    const { data: pub } = supabase.storage.from('branding').getPublicUrl(path);
+    setLogoUrl(pub.publicUrl);
+    await supabase.from('companies').update({ logo_url: pub.publicUrl }).eq('id', profile.company_id);
+    setUploading(false); toast.success('Logo atualizada');
+  };
+  const removeLogo = async () => {
+    setLogoUrl('');
+    await supabase.from('companies').update({ logo_url: null }).eq('id', profile!.company_id);
+    toast.success('Logo removida');
   };
   return (
     <div className="rounded-xl border border-border bg-card p-5 space-y-3 mt-4">
-      <div><Label>Razão social</Label><Input value={name} onChange={(e) => setName(e.target.value)}/></div>
+      <div>
+        <Label>Logo da impressão</Label>
+        <div className="flex items-center gap-3 mt-1">
+          <div className="h-20 w-20 rounded-md border border-border bg-background flex items-center justify-center overflow-hidden">
+            {logoUrl
+              ? <img src={logoUrl} alt="logo" className="max-h-full max-w-full object-contain"/>
+              : <span className="text-[10px] text-muted-foreground text-center px-1">Sem logo</span>}
+          </div>
+          <div className="flex flex-col gap-1">
+            <Input type="file" accept="image/*" disabled={uploading}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); }} />
+            {logoUrl && <Button type="button" variant="ghost" size="sm" onClick={removeLogo}>Remover logo</Button>}
+            <p className="text-xs text-muted-foreground">PNG/JPG até 2MB. Aparece no topo da comanda e da conta.</p>
+          </div>
+        </div>
+      </div>
+      <div><Label>Razão social (cabeçalho da impressão)</Label><Input value={name} onChange={(e) => setName(e.target.value)}/></div>
       <div><Label>Nome fantasia</Label><Input value={trade} onChange={(e) => setTrade(e.target.value)}/></div>
       <div><Label>CNPJ</Label><Input value={doc} onChange={(e) => setDoc(e.target.value)}/></div>
       <Button onClick={save}>Salvar</Button>
