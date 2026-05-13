@@ -19,10 +19,11 @@ export interface PrintOptions {
   footer?: string;
   showPrices?: boolean;
   showUnitPrice?: boolean;
+  brand?: { name?: string; tradeName?: string };
 }
 
 export function buildThermalHtml(opts: PrintOptions): string {
-  const { title, subtitle, items, totals = [], footer, showPrices = false, showUnitPrice = false } = opts;
+  const { title, subtitle, items, totals = [], footer, showPrices = false, showUnitPrice = false, brand } = opts;
   const now = new Date().toLocaleString('pt-BR');
   const itemsHtml = items.map((it) => {
     const o = (it.options ?? []).map((x) => `<div class="opt">+ ${esc(x.option_item_name)}</div>`).join('');
