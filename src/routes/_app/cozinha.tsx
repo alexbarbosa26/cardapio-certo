@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtTime, minutesSince } from '@/lib/format';
 import { Button } from '@/components/ui/button';
-import { Clock, Play, CheckCircle2, Truck, X } from 'lucide-react';
+import { Clock, Play, CheckCircle2, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -142,9 +142,6 @@ function CozinhaPage() {
                   {it.kitchen_status === 'pronto' && (
                     <Button size="sm" onClick={() => setStatus(it.id, 'entregue')} variant="outline"><Truck className="h-3.5 w-3.5 mr-1" /> Entregue</Button>
                   )}
-                  <Button size="sm" variant="ghost" onClick={() => setStatus(it.id, 'cancelado')} className="text-muted-foreground hover:text-destructive ml-auto">
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
                 </div>
               </div>
             );

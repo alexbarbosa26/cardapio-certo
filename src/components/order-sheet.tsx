@@ -170,22 +170,12 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
-        <SheetHeader className="border-b border-border px-6 py-4">
-          <SheetTitle className="flex items-center justify-between gap-3">
-            <div className="flex items-baseline gap-3">
-              <span className="font-display text-2xl">{tableName}</span>
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">
-                {swapItemId ? 'Trocando produto…' : 'Pedido aberto'}
-              </span>
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setConfirmCancelOrder(true)}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <Ban className="h-4 w-4 mr-1" /> Cancelar pedido
-            </Button>
+        <SheetHeader className="border-b border-border px-6 py-4 pr-14">
+          <SheetTitle className="flex items-baseline gap-3">
+            <span className="font-display text-2xl">{tableName}</span>
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+              {swapItemId ? 'Trocando produto…' : 'Pedido aberto'}
+            </span>
           </SheetTitle>
         </SheetHeader>
 
@@ -294,6 +284,14 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                   <Printer className="h-4 w-4 mr-2" /> Imprimir
                 </Button>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmCancelOrder(true)}
+                className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 mt-1"
+              >
+                <Ban className="h-4 w-4 mr-2" /> Cancelar pedido
+              </Button>
             </div>
           </div>
         </div>
