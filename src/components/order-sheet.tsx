@@ -284,6 +284,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                   onClick={() => printThermal({
                     title: tableName,
                     subtitle: 'Comanda',
+                    brand,
                     items: items.filter((i) => i.kitchen_status !== 'cancelado').map((i) => ({
                       quantity: i.quantity, product_name: i.product_name,
                       total_price: i.total_price, notes: i.notes, options: i.options,
