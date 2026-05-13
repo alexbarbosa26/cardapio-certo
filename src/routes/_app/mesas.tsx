@@ -183,7 +183,7 @@ function MesasPage() {
           orderId={orderSheet.orderId!}
           tableName={orderSheet.tableName}
           open
-          onOpenChange={(o) => { if (!o) { setOrderSheet(null); load(); } }}
+          onOpenChange={(o) => { if (!o) handleSheetClose(); }}
         />
       )}
       {checkout && (
