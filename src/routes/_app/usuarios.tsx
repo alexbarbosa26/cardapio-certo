@@ -28,12 +28,24 @@ function UsuariosPage() {
 
   const load = async () => {
     if (!profile) return;
-    const { data } = await supabase.from('profiles')
-      .select('id, name, email, status, user_roles(role)')
-      .eq('company_id', profile.company_id);
-    setUsers((data ?? []).map((u: any) => ({
+    const { data: profs, error: pErr } = await supabase
+      .from('profiles')
+      .select('id, name, email, status')
+      .eq('company_id', profile.company_id)
+      .order('created_at', { ascending: true });
+    if (pErr) { toast.error(pErr.message); return; }
+    const ids = (profs ?? []).map((p) => p.id);
+    let rolesMap: Record<string, string> = {};
+    if (ids.length) {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', ids);
+      rolesMap = Object.fromEntries((roles ?? []).map((r: any) => [r.user_id, r.role]));
+    }
+    setUsers((profs ?? []).map((u) => ({
       id: u.id, name: u.name, email: u.email, status: u.status,
-      role: u.user_roles?.[0]?.role ?? null,
+      role: rolesMap[u.id] ?? null,
     })));
   };
   useEffect(() => { load(); }, [profile?.company_id]);
