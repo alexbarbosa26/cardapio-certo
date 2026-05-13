@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtTime, minutesSince } from '@/lib/format';
 import { Button } from '@/components/ui/button';
-import { Clock, Play, CheckCircle2, Truck, X } from 'lucide-react';
+import { Clock, Play, CheckCircle2, Truck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
