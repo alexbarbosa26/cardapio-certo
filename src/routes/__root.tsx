@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/hooks/use-auth";
+import "@/lib/server-fn-fetch";
 import { PrintPreviewDialog } from "@/components/print-preview-dialog";
 import appCss from "../styles.css?url";
 
