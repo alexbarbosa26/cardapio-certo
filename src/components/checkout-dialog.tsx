@@ -115,8 +115,8 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
 
           <div className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
             <div>
-              <div className="text-sm font-medium">Taxa de serviço (10%)</div>
-              <div className="text-xs text-muted-foreground">Inclui ou remove os 10%</div>
+              <div className="text-sm font-medium">Taxa de serviço ({feePct}%)</div>
+              <div className="text-xs text-muted-foreground">Opcional · inclui ou remove os {feePct}%</div>
             </div>
             <Switch checked={withFee} onCheckedChange={setWithFee} />
           </div>
