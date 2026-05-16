@@ -20,6 +20,7 @@ import { Route as AppGruposOpcoesRouteImport } from './routes/_app/grupos-opcoes
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppCozinhaRouteImport } from './routes/_app/cozinha'
 import { Route as AppConfiguracoesRouteImport } from './routes/_app/configuracoes'
+import { Route as AppComandasRouteImport } from './routes/_app/comandas'
 import { Route as AppCaixaRouteImport } from './routes/_app/caixa'
 import { Route as ApiPublicSeedDemoRouteImport } from './routes/api/public/seed-demo'
 
@@ -77,6 +78,11 @@ const AppConfiguracoesRoute = AppConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AppRoute,
 } as any)
+const AppComandasRoute = AppComandasRouteImport.update({
+  id: '/comandas',
+  path: '/comandas',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppCaixaRoute = AppCaixaRouteImport.update({
   id: '/caixa',
   path: '/caixa',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/caixa': typeof AppCaixaRoute
+  '/comandas': typeof AppComandasRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/cozinha': typeof AppCozinhaRoute
   '/dashboard': typeof AppDashboardRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/caixa': typeof AppCaixaRoute
+  '/comandas': typeof AppComandasRoute
   '/configuracoes': typeof AppConfiguracoesRoute
   '/cozinha': typeof AppCozinhaRoute
   '/dashboard': typeof AppDashboardRoute
@@ -122,6 +130,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/caixa': typeof AppCaixaRoute
+  '/_app/comandas': typeof AppComandasRoute
   '/_app/configuracoes': typeof AppConfiguracoesRoute
   '/_app/cozinha': typeof AppCozinhaRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/caixa'
+    | '/comandas'
     | '/configuracoes'
     | '/cozinha'
     | '/dashboard'
@@ -152,6 +162,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/caixa'
+    | '/comandas'
     | '/configuracoes'
     | '/cozinha'
     | '/dashboard'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/caixa'
+    | '/_app/comandas'
     | '/_app/configuracoes'
     | '/_app/cozinha'
     | '/_app/dashboard'
@@ -264,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppConfiguracoesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/comandas': {
+      id: '/_app/comandas'
+      path: '/comandas'
+      fullPath: '/comandas'
+      preLoaderRoute: typeof AppComandasRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/caixa': {
       id: '/_app/caixa'
       path: '/caixa'
@@ -283,6 +302,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppCaixaRoute: typeof AppCaixaRoute
+  AppComandasRoute: typeof AppComandasRoute
   AppConfiguracoesRoute: typeof AppConfiguracoesRoute
   AppCozinhaRoute: typeof AppCozinhaRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -295,6 +315,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppCaixaRoute: AppCaixaRoute,
+  AppComandasRoute: AppComandasRoute,
   AppConfiguracoesRoute: AppConfiguracoesRoute,
   AppCozinhaRoute: AppCozinhaRoute,
   AppDashboardRoute: AppDashboardRoute,
