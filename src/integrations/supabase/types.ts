@@ -304,6 +304,8 @@ export type Database = {
           kitchen_status: Database["public"]["Enums"]["kitchen_status"]
           notes: string | null
           order_id: string
+          paid_quantity: number
+          payment_status: Database["public"]["Enums"]["item_payment_status"]
           product_id: string
           product_name: string
           quantity: number
@@ -322,6 +324,8 @@ export type Database = {
           kitchen_status?: Database["public"]["Enums"]["kitchen_status"]
           notes?: string | null
           order_id: string
+          paid_quantity?: number
+          payment_status?: Database["public"]["Enums"]["item_payment_status"]
           product_id: string
           product_name: string
           quantity?: number
@@ -340,6 +344,8 @@ export type Database = {
           kitchen_status?: Database["public"]["Enums"]["kitchen_status"]
           notes?: string | null
           order_id?: string
+          paid_quantity?: number
+          payment_status?: Database["public"]["Enums"]["item_payment_status"]
           product_id?: string
           product_name?: string
           quantity?: number
@@ -367,6 +373,39 @@ export type Database = {
           },
         ]
       }
+      order_payment_allocations: {
+        Row: {
+          amount_allocated: number
+          company_id: string
+          created_at: string
+          id: string
+          order_id: string
+          order_item_id: string
+          payment_id: string
+          quantity_paid: number
+        }
+        Insert: {
+          amount_allocated?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          order_id: string
+          order_item_id: string
+          payment_id: string
+          quantity_paid?: number
+        }
+        Update: {
+          amount_allocated?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+          order_item_id?: string
+          payment_id?: string
+          quantity_paid?: number
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           closed_at: string | null
@@ -375,6 +414,7 @@ export type Database = {
           id: string
           opened_at: string
           order_number: number
+          paid_amount: number
           service_fee_amount: number
           service_fee_percentage: number
           status: Database["public"]["Enums"]["order_status"]
@@ -390,6 +430,7 @@ export type Database = {
           id?: string
           opened_at?: string
           order_number?: number
+          paid_amount?: number
           service_fee_amount?: number
           service_fee_percentage?: number
           status?: Database["public"]["Enums"]["order_status"]
@@ -405,6 +446,7 @@ export type Database = {
           id?: string
           opened_at?: string
           order_number?: number
+          paid_amount?: number
           service_fee_amount?: number
           service_fee_percentage?: number
           status?: Database["public"]["Enums"]["order_status"]
@@ -433,6 +475,9 @@ export type Database = {
       payments: {
         Row: {
           amount: number
+          canceled_at: string | null
+          canceled_by: string | null
+          change_amount: number
           company_id: string
           created_at: string
           fee_amount: number
@@ -441,11 +486,17 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           net_amount: number
           order_id: string
+          person_label: string | null
+          received_amount: number
           register_id: string | null
+          status: Database["public"]["Enums"]["payment_status"]
           user_id: string | null
         }
         Insert: {
           amount: number
+          canceled_at?: string | null
+          canceled_by?: string | null
+          change_amount?: number
           company_id: string
           created_at?: string
           fee_amount?: number
@@ -454,11 +505,17 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           net_amount?: number
           order_id: string
+          person_label?: string | null
+          received_amount?: number
           register_id?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
           user_id?: string | null
         }
         Update: {
           amount?: number
+          canceled_at?: string | null
+          canceled_by?: string | null
+          change_amount?: number
           company_id?: string
           created_at?: string
           fee_amount?: number
@@ -467,7 +524,10 @@ export type Database = {
           method?: Database["public"]["Enums"]["payment_method"]
           net_amount?: number
           order_id?: string
+          person_label?: string | null
+          received_amount?: number
           register_id?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
           user_id?: string | null
         }
         Relationships: [
@@ -744,11 +804,13 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      recalc_order_payments: { Args: { _order_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "staff"
       cash_movement_type: "suprimento" | "sangria"
       cash_register_status: "aberto" | "fechado"
+      item_payment_status: "pendente" | "parcial" | "pago"
       kitchen_status:
         | "pendente"
         | "aguardando"
@@ -759,6 +821,7 @@ export type Database = {
       option_selection_type: "unica" | "multipla"
       order_status: "aberto" | "fechado" | "cancelado"
       payment_method: "dinheiro" | "pix" | "debito" | "credito"
+      payment_status: "ativo" | "cancelado"
       table_status:
         | "livre"
         | "ocupada"
@@ -896,6 +959,7 @@ export const Constants = {
       app_role: ["admin", "staff"],
       cash_movement_type: ["suprimento", "sangria"],
       cash_register_status: ["aberto", "fechado"],
+      item_payment_status: ["pendente", "parcial", "pago"],
       kitchen_status: [
         "pendente",
         "aguardando",
@@ -907,6 +971,7 @@ export const Constants = {
       option_selection_type: ["unica", "multipla"],
       order_status: ["aberto", "fechado", "cancelado"],
       payment_method: ["dinheiro", "pix", "debito", "credito"],
+      payment_status: ["ativo", "cancelado"],
       table_status: [
         "livre",
         "ocupada",
