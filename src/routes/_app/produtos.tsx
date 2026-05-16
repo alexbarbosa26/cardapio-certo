@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_app/produtos')({
   component: ProdutosPage,
 });
 
-interface Product { id: string; name: string; price: number; status: string; sends_to_kitchen: boolean; category_id: string | null; }
+interface Product { id: string; name: string; price: number; status: string; sends_to_kitchen: boolean; category_id: string | null; is_weighted: boolean; price_per_kg: number; }
 interface Category { id: string; name: string; }
 
 function ProdutosPage() {
@@ -31,7 +31,7 @@ function ProdutosPage() {
     if (!profile) return;
     const { data: p } = await supabase.from('products').select('*').eq('company_id', profile.company_id).order('name');
     const { data: c } = await supabase.from('categories').select('id, name').eq('company_id', profile.company_id).order('name');
-    setProducts((p ?? []).map((x: any) => ({ ...x, price: Number(x.price) })));
+    setProducts((p ?? []).map((x: any) => ({ ...x, price: Number(x.price), price_per_kg: Number(x.price_per_kg ?? 0), is_weighted: !!x.is_weighted })));
     setCats(c ?? []);
   };
 
@@ -51,6 +51,8 @@ function ProdutosPage() {
       sends_to_kitchen: editing.sends_to_kitchen ?? true,
       category_id: editing.category_id || null,
       status: editing.status ?? 'ativo',
+      is_weighted: editing.is_weighted ?? false,
+      price_per_kg: Number(editing.price_per_kg) || 0,
     };
     if (editing.id) {
       await supabase.from('products').update(payload).eq('id', editing.id);
@@ -127,6 +129,19 @@ function ProdutosPage() {
                 <div className="text-sm">Envia para cozinha</div>
                 <Switch checked={editing.sends_to_kitchen ?? true} onCheckedChange={(v) => setEditing({ ...editing, sends_to_kitchen: v })} />
               </div>
+              <div className="flex items-center justify-between rounded-md border border-border p-3">
+                <div>
+                  <div className="text-sm">Vendido por peso</div>
+                  <div className="text-[11px] text-muted-foreground">Para sorvete, açaí, buffet etc. — cobrado por kg.</div>
+                </div>
+                <Switch checked={editing.is_weighted ?? false} onCheckedChange={(v) => setEditing({ ...editing, is_weighted: v })} />
+              </div>
+              {editing.is_weighted && (
+                <div><Label>Preço por kg (R$)</Label>
+                  <Input type="number" step="0.01" value={editing.price_per_kg ?? 0}
+                    onChange={(e) => setEditing({ ...editing, price_per_kg: Number(e.target.value) })} />
+                </div>
+              )}
               {editing.id && profile && (
                 <OptionGroupsEditor productId={editing.id} companyId={profile.company_id} />
               )}
