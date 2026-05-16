@@ -174,6 +174,69 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_tabs: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          company_id: string
+          created_at: string
+          customer_name: string | null
+          discount: number
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string | null
+          paid_amount: number
+          service_fee_amount: number
+          service_fee_percentage: number
+          status: Database["public"]["Enums"]["customer_tab_status"]
+          subtotal: number
+          tab_number: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          company_id: string
+          created_at?: string
+          customer_name?: string | null
+          discount?: number
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          paid_amount?: number
+          service_fee_amount?: number
+          service_fee_percentage?: number
+          status?: Database["public"]["Enums"]["customer_tab_status"]
+          subtotal?: number
+          tab_number?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          company_id?: string
+          created_at?: string
+          customer_name?: string | null
+          discount?: number
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          paid_amount?: number
+          service_fee_amount?: number
+          service_fee_percentage?: number
+          status?: Database["public"]["Enums"]["customer_tab_status"]
+          subtotal?: number
+          tab_number?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       option_groups: {
         Row: {
           company_id: string
@@ -588,8 +651,10 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_weighted: boolean
           name: string
           price: number
+          price_per_kg: number
           sends_to_kitchen: boolean
           status: string
           updated_at: string
@@ -602,8 +667,10 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_weighted?: boolean
           name: string
           price?: number
+          price_per_kg?: number
           sends_to_kitchen?: boolean
           status?: string
           updated_at?: string
@@ -616,8 +683,10 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_weighted?: boolean
           name?: string
           price?: number
+          price_per_kg?: number
           sends_to_kitchen?: boolean
           status?: string
           updated_at?: string
@@ -733,6 +802,139 @@ export type Database = {
           },
         ]
       }
+      tab_items: {
+        Row: {
+          canceled_at: string | null
+          category_name: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_type: Database["public"]["Enums"]["tab_item_type"]
+          notes: string | null
+          price_per_kg: number | null
+          product_id: string | null
+          product_name: string
+          quantity: number
+          tab_id: string
+          total_price: number
+          unit_price: number
+          weight_grams: number | null
+        }
+        Insert: {
+          canceled_at?: string | null
+          category_name?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["tab_item_type"]
+          notes?: string | null
+          price_per_kg?: number | null
+          product_id?: string | null
+          product_name: string
+          quantity?: number
+          tab_id: string
+          total_price?: number
+          unit_price?: number
+          weight_grams?: number | null
+        }
+        Update: {
+          canceled_at?: string | null
+          category_name?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_type?: Database["public"]["Enums"]["tab_item_type"]
+          notes?: string | null
+          price_per_kg?: number | null
+          product_id?: string | null
+          product_name?: string
+          quantity?: number
+          tab_id?: string
+          total_price?: number
+          unit_price?: number
+          weight_grams?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_items_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tab_payments: {
+        Row: {
+          amount: number
+          canceled_at: string | null
+          canceled_by: string | null
+          change_amount: number
+          company_id: string
+          created_at: string
+          fee_amount: number
+          fee_percentage: number
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          net_amount: number
+          person_label: string | null
+          received_amount: number
+          register_id: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          tab_id: string
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          canceled_at?: string | null
+          canceled_by?: string | null
+          change_amount?: number
+          company_id: string
+          created_at?: string
+          fee_amount?: number
+          fee_percentage?: number
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          net_amount?: number
+          person_label?: string | null
+          received_amount?: number
+          register_id?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          tab_id: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          canceled_at?: string | null
+          canceled_by?: string | null
+          change_amount?: number
+          company_id?: string
+          created_at?: string
+          fee_amount?: number
+          fee_percentage?: number
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          net_amount?: number
+          person_label?: string | null
+          received_amount?: number
+          register_id?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          tab_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_payments_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tables: {
         Row: {
           company_id: string
@@ -804,12 +1006,18 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      recalc_customer_tab: { Args: { _tab_id: string }; Returns: undefined }
       recalc_order_payments: { Args: { _order_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "staff"
       cash_movement_type: "suprimento" | "sangria"
       cash_register_status: "aberto" | "fechado"
+      customer_tab_status:
+        | "aberta"
+        | "aguardando_pagamento"
+        | "paga"
+        | "cancelada"
       item_payment_status: "pendente" | "parcial" | "pago"
       kitchen_status:
         | "pendente"
@@ -822,6 +1030,7 @@ export type Database = {
       order_status: "aberto" | "fechado" | "cancelado"
       payment_method: "dinheiro" | "pix" | "debito" | "credito"
       payment_status: "ativo" | "cancelado"
+      tab_item_type: "fixo" | "peso" | "manual"
       table_status:
         | "livre"
         | "ocupada"
@@ -959,6 +1168,12 @@ export const Constants = {
       app_role: ["admin", "staff"],
       cash_movement_type: ["suprimento", "sangria"],
       cash_register_status: ["aberto", "fechado"],
+      customer_tab_status: [
+        "aberta",
+        "aguardando_pagamento",
+        "paga",
+        "cancelada",
+      ],
       item_payment_status: ["pendente", "parcial", "pago"],
       kitchen_status: [
         "pendente",
@@ -972,6 +1187,7 @@ export const Constants = {
       order_status: ["aberto", "fechado", "cancelado"],
       payment_method: ["dinheiro", "pix", "debito", "credito"],
       payment_status: ["ativo", "cancelado"],
+      tab_item_type: ["fixo", "peso", "manual"],
       table_status: [
         "livre",
         "ocupada",

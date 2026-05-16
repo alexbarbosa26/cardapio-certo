@@ -4,6 +4,7 @@ import { useTenantTypography } from '@/hooks/use-tenant-typography';
 import {
   LayoutDashboard, UtensilsCrossed, ChefHat, Package, Users, Wallet,
   BarChart3, Settings as SettingsIcon, MessageSquare, Receipt, LogOut, Menu, ChefHat as Logo, ListPlus,
+  ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -19,6 +20,7 @@ interface NavItem { to: string; label: string; icon: React.ComponentType<{ class
 const NAV: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true },
   { to: '/mesas', label: 'Mesas', icon: UtensilsCrossed },
+  { to: '/comandas', label: 'Comandas', icon: ClipboardList },
   { to: '/cozinha', label: 'Cozinha', icon: ChefHat },
   { to: '/produtos', label: 'Produtos', icon: Package, admin: true },
   { to: '/grupos-opcoes', label: 'Grupos de opções', icon: ListPlus, admin: true },
