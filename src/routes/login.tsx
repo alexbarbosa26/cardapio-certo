@@ -14,10 +14,11 @@ export const Route = createFileRoute('/login')({
 function LoginPage() {
   const { user, signIn, loading } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@gmail.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const isDev = import.meta.env.DEV;
 
   if (!loading && user) return <Navigate to="/" />;
 
@@ -82,27 +83,17 @@ function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-8 rounded-lg border border-dashed border-border bg-secondary/40 p-4 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2 font-medium text-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-accent" /> Acesso de demonstração
-            </div>
-            <p className="mt-1">Clique para criar a empresa demo, usuários e cardápio de exemplo.</p>
-            <Button variant="outline" size="sm" disabled={seeding} onClick={seed} className="mt-3 w-full">
-              {seeding ? 'Preparando…' : 'Criar dados de demonstração'}
-            </Button>
-            <div className="mt-3 grid grid-cols-2 gap-2 font-mono text-[11px]">
-              <div className="rounded border border-border bg-card p-2">
-                <div className="text-muted-foreground">Admin</div>
-                <div>admin@gmail.com</div>
-                <div>admin123</div>
+          {isDev && (
+            <div className="mt-8 rounded-lg border border-dashed border-border bg-secondary/40 p-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 font-medium text-foreground">
+                <Sparkles className="h-3.5 w-3.5 text-accent" /> Acesso de demonstração (dev)
               </div>
-              <div className="rounded border border-border bg-card p-2">
-                <div className="text-muted-foreground">Atendente</div>
-                <div>staff@gmail.com</div>
-                <div>staff123</div>
-              </div>
+              <p className="mt-1">Disponível apenas em ambiente de desenvolvimento.</p>
+              <Button variant="outline" size="sm" disabled={seeding} onClick={seed} className="mt-3 w-full">
+                {seeding ? 'Preparando…' : 'Criar dados de demonstração'}
+              </Button>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

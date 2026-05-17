@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, Navigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -11,6 +11,7 @@ export const Route = createFileRoute('/_app/dashboard')({
 
 function DashboardPage() {
   const { profile } = useAuth();
+  if (profile && profile.role !== 'admin') return <Navigate to="/mesas" />;
   const [stats, setStats] = useState({
     vendas: 0,
     vendasMesa: 0,

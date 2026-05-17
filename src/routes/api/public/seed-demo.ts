@@ -1,12 +1,12 @@
 // Server route público para criar dados de demonstração.
-// Idempotente: se já existir, apenas garante senhas/dados básicos.
+// PROTEGIDO: requer header `x-seed-secret` igual a process.env.SEED_DEMO_SECRET.
+// Não retorna senhas em texto plano.
 import { createFileRoute } from '@tanstack/react-router';
 import { supabaseAdmin } from '@/integrations/supabase/client.server';
 
 const DEMO_COMPANY = 'Restaurante Demonstração';
 
 async function ensureUser(email: string, password: string, name: string) {
-  // tenta achar
   const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
   const existing = list?.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
   if (existing) {
@@ -23,15 +23,21 @@ async function ensureUser(email: string, password: string, name: string) {
 export const Route = createFileRoute('/api/public/seed-demo')({
   server: {
     handlers: {
-      GET: async () => handleSeed(),
-      POST: async () => handleSeed(),
+      GET: async ({ request }) => handleSeed(request),
+      POST: async ({ request }) => handleSeed(request),
     },
   },
 });
 
-async function handleSeed() {
+async function handleSeed(request: Request) {
+  const secret = process.env.SEED_DEMO_SECRET;
+  const provided = request.headers.get('x-seed-secret');
+  if (!secret || !provided || provided !== secret) {
+    return new Response(JSON.stringify({ ok: false, error: 'Não autorizado.' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' },
+    });
+  }
   try {
-    // 1. Empresa
     const { data: existingCompany } = await supabaseAdmin
       .from('companies').select('id').eq('name', DEMO_COMPANY).maybeSingle();
     let companyId = existingCompany?.id as string | undefined;
@@ -43,30 +49,27 @@ async function handleSeed() {
       companyId = data.id;
     }
 
-    // 2. Settings
     await supabaseAdmin.from('settings').upsert({
       company_id: companyId,
       service_fee_percentage: 10, debit_fee_percentage: 1.37, credit_fee_percentage: 3.17,
       kitchen_warning_minutes: 10, kitchen_danger_minutes: 20,
     }, { onConflict: 'company_id' });
 
-    // 3. Usuários
-    const adminId = await ensureUser('admin@gmail.com', 'admin123', 'Administrador Demo');
-    const staffId = await ensureUser('staff@gmail.com', 'staff123', 'Atendente Demo');
+    // Senhas aleatórias por execução — não retornadas
+    const rand = () => Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2).toUpperCase();
+    const adminId = await ensureUser('admin@gmail.com', rand(), 'Administrador Demo');
+    const staffId = await ensureUser('staff@gmail.com', rand(), 'Atendente Demo');
 
-    // 4. Profiles
     await supabaseAdmin.from('profiles').upsert([
       { id: adminId, company_id: companyId, name: 'Administrador Demo', email: 'admin@gmail.com' },
       { id: staffId, company_id: companyId, name: 'Atendente Demo', email: 'staff@gmail.com' },
     ], { onConflict: 'id' });
 
-    // 5. Roles
     await supabaseAdmin.from('user_roles').upsert([
       { user_id: adminId, role: 'admin' },
       { user_id: staffId, role: 'staff' },
     ], { onConflict: 'user_id,role' });
 
-    // 6. Categorias
     const categories = ['Espetinhos', 'Bebidas', 'Acompanhamentos', 'Sobremesas'];
     const catIds: Record<string, string> = {};
     for (const [i, name] of categories.entries()) {
@@ -78,10 +81,9 @@ async function handleSeed() {
       catIds[name] = data!.id;
     }
 
-    // 7. Produtos
     const produtos = [
-      { name: 'Espetinho de Carne', price: 12, cat: 'Espetinhos', kitchen: true, withOptions: true },
-      { name: 'Espetinho de Frango', price: 10, cat: 'Espetinhos', kitchen: true, withOptions: true },
+      { name: 'Espetinho de Carne', price: 12, cat: 'Espetinhos', kitchen: true },
+      { name: 'Espetinho de Frango', price: 10, cat: 'Espetinhos', kitchen: true },
       { name: 'Refrigerante Lata', price: 6, cat: 'Bebidas', kitchen: false },
       { name: 'Água', price: 4, cat: 'Bebidas', kitchen: false },
       { name: 'Porção de Farofa', price: 3, cat: 'Acompanhamentos', kitchen: true },
@@ -89,56 +91,14 @@ async function handleSeed() {
     for (const p of produtos) {
       const { data: existing } = await supabaseAdmin.from('products')
         .select('id').eq('company_id', companyId).eq('name', p.name).maybeSingle();
-      let prodId = existing?.id as string | undefined;
-      if (!prodId) {
-        const { data } = await supabaseAdmin.from('products').insert({
+      if (!existing) {
+        await supabaseAdmin.from('products').insert({
           company_id: companyId, category_id: catIds[p.cat],
           name: p.name, price: p.price, sends_to_kitchen: p.kitchen,
-        }).select('id').single();
-        prodId = data!.id;
-      }
-      if (p.withOptions && prodId) {
-        // grupo Acompanhamento (reutilizável por empresa)
-        const { data: grpExist } = await supabaseAdmin.from('option_groups')
-          .select('id').eq('company_id', companyId).eq('name', 'Acompanhamentos').maybeSingle();
-        let acompId = grpExist?.id as string | undefined;
-        if (!acompId) {
-          const { data } = await supabaseAdmin.from('option_groups').insert({
-            company_id: companyId, name: 'Acompanhamentos',
-            required: false, selection_type: 'multipla', max_options: 4, sort_order: 1,
-          }).select('id').single();
-          acompId = data!.id;
-          for (const [i, item] of ['Farofa', 'Vinagrete', 'Arroz', 'Salada'].entries()) {
-            await supabaseAdmin.from('option_items').insert({
-              option_group_id: acompId, name: item, sort_order: i,
-            });
-          }
-        }
-        await supabaseAdmin.from('product_option_groups')
-          .upsert({ product_id: prodId, option_group_id: acompId }, { onConflict: 'product_id,option_group_id' });
-
-        // grupo Molho (reutilizável por empresa)
-        const { data: molExist } = await supabaseAdmin.from('option_groups')
-          .select('id').eq('company_id', companyId).eq('name', 'Molho').maybeSingle();
-        let molhoId = molExist?.id as string | undefined;
-        if (!molhoId) {
-          const { data } = await supabaseAdmin.from('option_groups').insert({
-            company_id: companyId, name: 'Molho',
-            required: false, selection_type: 'unica', max_options: 1, sort_order: 2,
-          }).select('id').single();
-          molhoId = data!.id;
-          for (const [i, item] of ['Molho da Casa', 'Molho Apimentado', 'Barbecue', 'Sem Molho'].entries()) {
-            await supabaseAdmin.from('option_items').insert({
-              option_group_id: molhoId, name: item, sort_order: i,
-            });
-          }
-        }
-        await supabaseAdmin.from('product_option_groups')
-          .upsert({ product_id: prodId, option_group_id: molhoId }, { onConflict: 'product_id,option_group_id' });
+        });
       }
     }
 
-    // 8. Mesas
     for (let i = 1; i <= 10; i++) {
       const name = `Mesa ${String(i).padStart(2, '0')}`;
       const { data: existing } = await supabaseAdmin.from('tables')
@@ -148,17 +108,10 @@ async function handleSeed() {
       }
     }
 
-    return Response.json({
-      ok: true,
-      message: 'Dados de demonstração criados.',
-      credentials: {
-        admin: { email: 'admin@gmail.com', password: 'admin123' },
-        staff: { email: 'staff@gmail.com', password: 'staff123' },
-      },
-    });
+    return Response.json({ ok: true, message: 'Dados de demonstração prontos.' });
   } catch (e: any) {
     console.error('seed error', e);
-    return new Response(JSON.stringify({ ok: false, error: e?.message ?? String(e) }), {
+    return new Response(JSON.stringify({ ok: false, error: 'Falha ao criar demo.' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
   }
