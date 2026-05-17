@@ -998,6 +998,18 @@ export type Database = {
     Functions: {
       current_company_id: { Args: never; Returns: string }
       current_open_register: { Args: { _company: string }; Returns: string }
+      get_public_settings: {
+        Args: never
+        Returns: {
+          font_body: string
+          font_body_weights: string
+          font_display: string
+          font_display_weights: string
+          kitchen_danger_minutes: number
+          kitchen_warning_minutes: number
+          service_fee_percentage: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
