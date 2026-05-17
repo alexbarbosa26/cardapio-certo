@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtBRL } from '@/lib/format';
-import { TrendingUp, ShoppingBag, UtensilsCrossed, Receipt } from 'lucide-react';
+import { TrendingUp, ShoppingBag, UtensilsCrossed, Receipt, ClipboardList, CreditCard } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/dashboard')({
   component: DashboardPage,
@@ -11,26 +11,84 @@ export const Route = createFileRoute('/_app/dashboard')({
 
 function DashboardPage() {
   const { profile } = useAuth();
-  const [stats, setStats] = useState({ vendas: 0, pedidos: 0, mesasOcupadas: 0, ticket: 0 });
+  const [stats, setStats] = useState({
+    vendas: 0,
+    vendasMesa: 0,
+    vendasComanda: 0,
+    pedidos: 0,
+    mesasOcupadas: 0,
+    comandasAbertas: 0,
+    ticket: 0,
+    topCat: [] as { name: string; total: number }[],
+  });
 
   useEffect(() => {
     if (!profile) return;
     (async () => {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const { data: closed } = await supabase
-        .from('orders').select('total')
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+
+      const [paysRes, openOrdersRes, openTabsRes, closedOrdersRes, closedTabsRes] = await Promise.all([
+        supabase.from('payments')
+          .select('amount, method')
+          .eq('company_id', profile.company_id)
+          .eq('status', 'ativo')
+          .gte('created_at', today.toISOString()),
+        supabase.from('orders').select('id, table_id')
+          .eq('company_id', profile.company_id).eq('status', 'aberto'),
+        supabase.from('customer_tabs').select('id')
+          .eq('company_id', profile.company_id).eq('status', 'aberta'),
+        supabase.from('orders').select('id')
+          .eq('company_id', profile.company_id).eq('status', 'fechado')
+          .gte('closed_at', today.toISOString()),
+        supabase.from('tab_payments')
+          .select('amount')
+          .eq('company_id', profile.company_id)
+          .eq('status', 'ativo')
+          .gte('created_at', today.toISOString()),
+      ]);
+
+      const vendasMesa = (paysRes.data ?? []).reduce((s, p: any) => s + Number(p.amount), 0);
+      const vendasComanda = (closedTabsRes.data ?? []).reduce((s, p: any) => s + Number(p.amount), 0);
+      const vendas = vendasMesa + vendasComanda;
+      const pedidos = (closedOrdersRes.data ?? []).length;
+
+      // top categorias hoje (combina order_items + tab_items)
+      const orderIds = (closedOrdersRes.data ?? []).map((o: any) => o.id);
+      const catMap = new Map<string, number>();
+      if (orderIds.length) {
+        const { data: oi } = await supabase
+          .from('order_items')
+          .select('total_price, products(categories(name))')
+          .in('order_id', orderIds);
+        for (const it of oi ?? []) {
+          const cat = (it as any).products?.categories?.name ?? 'Outros';
+          catMap.set(cat, (catMap.get(cat) ?? 0) + Number((it as any).total_price));
+        }
+      }
+      const { data: ti } = await supabase
+        .from('tab_items')
+        .select('total_price, category_name, created_at')
         .eq('company_id', profile.company_id)
-        .eq('status', 'fechado')
-        .gte('closed_at', today.toISOString());
-      const { data: open } = await supabase
-        .from('orders').select('id, table_id')
-        .eq('company_id', profile.company_id).eq('status', 'aberto');
-      const vendas = (closed ?? []).reduce((s, o: any) => s + Number(o.total), 0);
-      const pedidos = (closed ?? []).length;
+        .is('canceled_at', null)
+        .gte('created_at', today.toISOString());
+      for (const it of ti ?? []) {
+        const cat = (it as any).category_name ?? 'Outros';
+        catMap.set(cat, (catMap.get(cat) ?? 0) + Number((it as any).total_price));
+      }
+      const topCat = Array.from(catMap.entries())
+        .map(([name, total]) => ({ name, total }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5);
+
       setStats({
-        vendas, pedidos,
-        mesasOcupadas: new Set((open ?? []).map((o: any) => o.table_id)).size,
+        vendas,
+        vendasMesa,
+        vendasComanda,
+        pedidos,
+        mesasOcupadas: new Set((openOrdersRes.data ?? []).map((o: any) => o.table_id)).size,
+        comandasAbertas: (openTabsRes.data ?? []).length,
         ticket: pedidos > 0 ? vendas / pedidos : 0,
+        topCat,
       });
     })();
   }, [profile?.company_id]);
@@ -45,35 +103,42 @@ function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label="Vendas do dia" value={fmtBRL(stats.vendas)} icon={TrendingUp} accent />
+        <Stat label="Vendas mesas" value={fmtBRL(stats.vendasMesa)} icon={UtensilsCrossed} />
+        <Stat label="Vendas comandas" value={fmtBRL(stats.vendasComanda)} icon={ClipboardList} />
+        <Stat label="Ticket médio" value={fmtBRL(stats.ticket)} icon={CreditCard} />
         <Stat label="Pedidos finalizados" value={String(stats.pedidos)} icon={Receipt} />
         <Stat label="Mesas ocupadas" value={String(stats.mesasOcupadas)} icon={UtensilsCrossed} />
-        <Stat label="Ticket médio" value={fmtBRL(stats.ticket)} icon={ShoppingBag} />
+        <Stat label="Comandas abertas" value={String(stats.comandasAbertas)} icon={ClipboardList} />
+        <Stat label="Categorias ativas" value={String(stats.topCat.length)} icon={ShoppingBag} />
       </div>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2">
-        <Link to="/mesas" className="group rounded-2xl border border-border bg-card p-6 hover:border-accent transition shadow-card">
-          <UtensilsCrossed className="h-5 w-5 text-accent" />
-          <h3 className="mt-3 font-display text-2xl">Operação de mesas</h3>
-          <p className="text-sm text-muted-foreground mt-1">Abrir, gerenciar pedidos e fechar contas.</p>
-        </Link>
-        <Link to="/cozinha" className="group rounded-2xl border border-border bg-card p-6 hover:border-accent transition shadow-card">
-          <Receipt className="h-5 w-5 text-accent" />
-          <h3 className="mt-3 font-display text-2xl">Painel da cozinha</h3>
-          <p className="text-sm text-muted-foreground mt-1">Ver pedidos pendentes e marcar como prontos.</p>
-        </Link>
-      </div>
+      {stats.topCat.length > 0 && (
+        <div className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-card">
+          <h3 className="font-display text-xl mb-4">Top categorias hoje</h3>
+          <div className="space-y-3">
+            {stats.topCat.map((c) => {
+              const pct = stats.topCat[0].total > 0 ? (c.total / stats.topCat[0].total) * 100 : 0;
+              return (
+                <div key={c.name}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium">{c.name}</span>
+                    <span className="tabular-nums text-muted-foreground">{fmtBRL(c.total)}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-accent rounded-full" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2">
-        <Link to="/caixa" className="group rounded-2xl border border-border bg-card p-6 hover:border-accent transition shadow-card">
-          <TrendingUp className="h-5 w-5 text-accent" />
-          <h3 className="mt-3 font-display text-2xl">Abrir caixa</h3>
-          <p className="text-sm text-muted-foreground mt-1">Controle suprimentos, sangrias e fechamento.</p>
-        </Link>
-        <Link to="/relatorios" className="group rounded-2xl border border-border bg-card p-6 hover:border-accent transition shadow-card">
-          <ShoppingBag className="h-5 w-5 text-accent" />
-          <h3 className="mt-3 font-display text-2xl">Relatórios</h3>
-          <p className="text-sm text-muted-foreground mt-1">Vendas por dia, por método e top produtos.</p>
-        </Link>
+      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <QuickLink to="/mesas" icon={UtensilsCrossed} title="Mesas" desc="Operação e fechamento." />
+        <QuickLink to="/comandas" icon={ClipboardList} title="Comandas" desc="PDV simplificado." />
+        <QuickLink to="/cozinha" icon={Receipt} title="Cozinha" desc="Pedidos pendentes." />
+        <QuickLink to="/relatorios" icon={ShoppingBag} title="Relatórios" desc="Vendas e top produtos." />
       </div>
     </div>
   );
@@ -88,5 +153,15 @@ function Stat({ label, value, icon: Icon, accent }: any) {
       </div>
       <div className="mt-3 font-display text-3xl">{value}</div>
     </div>
+  );
+}
+
+function QuickLink({ to, icon: Icon, title, desc }: any) {
+  return (
+    <Link to={to} className="group rounded-2xl border border-border bg-card p-6 hover:border-accent transition shadow-card">
+      <Icon className="h-5 w-5 text-accent" />
+      <h3 className="mt-3 font-display text-xl">{title}</h3>
+      <p className="text-sm text-muted-foreground mt-1">{desc}</p>
+    </Link>
   );
 }
