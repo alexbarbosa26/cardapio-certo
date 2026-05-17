@@ -56,12 +56,15 @@ function DashboardPage() {
       const orderIds = (closedOrdersRes.data ?? []).map((o: any) => o.id);
       const catMap = new Map<string, number>();
       if (orderIds.length) {
-        const { data: oi } = await supabase
-          .from('order_items')
-          .select('total_price, products(categories(name))')
-          .in('order_id', orderIds);
-        for (const it of oi ?? []) {
-          const cat = (it as any).products?.categories?.name ?? 'Outros';
+        const [oiRes, prodRes, catRes] = await Promise.all([
+          supabase.from('order_items').select('total_price, product_id').in('order_id', orderIds),
+          supabase.from('products').select('id, category_id').eq('company_id', profile.company_id),
+          supabase.from('categories').select('id, name').eq('company_id', profile.company_id),
+        ]);
+        const prodCat = new Map((prodRes.data ?? []).map((p: any) => [p.id, p.category_id]));
+        const catName = new Map((catRes.data ?? []).map((c: any) => [c.id, c.name]));
+        for (const it of oiRes.data ?? []) {
+          const cat = catName.get(prodCat.get((it as any).product_id) as any) ?? 'Outros';
           catMap.set(cat, (catMap.get(cat) ?? 0) + Number((it as any).total_price));
         }
       }
