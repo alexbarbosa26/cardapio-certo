@@ -1,81 +1,191 @@
-## Visão geral
 
-Vou implementar dois blocos grandes e interligados, mantendo o padrão visual atual (cards off-white, badges, mobile-first) e o isolamento por `company_id`. Por ser uma entrega extensa, proponho dividir em **3 fases entregáveis**, cada uma já funcional. Confirme a ordem ou peça para mesclar.
+# Migração TanStack Start → Vite React SPA (cPanel)
 
----
+## Resultado esperado
 
-## Fase 1 — Pagamentos avançados na Mesa
+- `npm run build` gera apenas `dist/index.html` + `dist/assets/*` (mais favicon e demais estáticos), pronto para upload em `public_html` do cPanel.
+- Sem `dist/server`, `server/index.js`, `wrangler.jsonc`, Cloudflare Worker ou SSR.
+- App continua usando React 19 + TS + Tailwind v4 + shadcn/ui + Supabase + React Query.
+- Todas as telas atuais funcionam (login, dashboard, mesas, comandas, cozinha, caixa, produtos, grupos-opcoes, configurações, relatórios, usuários).
+- Impressão térmica 58/80mm e `PrintPreviewDialog` continuam funcionando (são puro browser, sem dependência de SSR).
+- Multi-tenant e RLS preservados — Supabase client direto com a anon/publishable key.
 
-### Banco
-- Nova tabela `order_payment_allocations` (vincula um `payment` a `order_item` com `quantity_paid` e `amount_allocated`).
-- Adicionar em `order_items`: `paid_quantity numeric default 0`, `payment_status` (`pendente|parcial|pago`) calculado.
-- Adicionar em `payments`: `status` (`ativo|cancelado`), `canceled_at`, `canceled_by`, `received_amount`, `change_amount`, `person_label` (para divisão).
-- Adicionar em `orders`: `paid_amount numeric default 0` (atualizado por trigger ao inserir/cancelar pagamentos).
-- Trigger para recalcular `paid_amount` da order e `paid_quantity` dos itens.
-- RLS: tudo escopo `company_id` + admin para estorno.
+## Arquitetura final
 
-### UI — reescrita do `CheckoutDialog`
-Tabs no topo:
-1. **Total** — fluxo atual melhorado.
-2. **Dividir igualmente** — input nº pessoas, lista de "Pessoa 1..N" com valor pré-calculado (último absorve centavos), método por pessoa, botão "Registrar pagamento" individual.
-3. **Por itens** — lista de itens com checkbox/stepper de quantidade ainda não paga, total selecionado em tempo real, método, registrar.
-4. **Parcial (valor livre)** — input de valor + método.
+```text
+src/
+  main.tsx                 ← novo entry (ReactDOM.createRoot)
+  App.tsx                  ← <BrowserRouter> + providers (QueryClient, Tooltip, Toaster, AuthProvider)
+  routes.tsx               ← tabela de <Routes>/<Route> do react-router-dom
+  pages/
+    Login.tsx              ← migrado de routes/login.tsx
+    Index.tsx              ← migrado de routes/index.tsx (redirect)
+    AppLayout.tsx          ← migrado de routes/_app.tsx (sidebar + Outlet)
+    Mesas.tsx, Comandas.tsx, Cozinha.tsx, Caixa.tsx, Dashboard.tsx,
+    Produtos.tsx, GruposOpcoes.tsx, Configuracoes.tsx,
+    Relatorios.tsx, Usuarios.tsx, NotFound.tsx
+  hooks/
+    use-auth.tsx           ← AuthProvider + useAuth (Supabase onAuthStateChange)
+  lib/
+    admin-users.ts         ← chama a Edge Function via supabase.functions.invoke
+    (admin-users.functions.ts REMOVIDO)
+  integrations/supabase/
+    client.ts              ← mantido (já existe)
+    (auth-attacher.ts, auth-middleware.ts, client.server.ts REMOVIDOS)
+  components/              ← mantidos (UI, dialogs, print-preview)
+  styles.css               ← mantido
+index.html                 ← novo (raiz do projeto, padrão Vite SPA)
+vite.config.ts             ← @vitejs/plugin-react + @tailwindcss/vite + tsconfig-paths
+.env.example               ← VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY
+.htaccess (em public/)     ← rewrite SPA p/ cPanel/Apache
+supabase/functions/admin-users/index.ts  ← Edge Function para CRUD de usuários
+```
 
-Sempre visíveis no rodapé: **Total / Pago / Falta**. Botão **Finalizar mesa** só habilita quando `pending = 0`. Lista de **Histórico de pagamentos** com botão de estornar (admin).
+## Passos da migração
 
-Cálculo de taxa cartão e troco mantidos.
+### 1. Limpeza de dependências e config
 
----
+Remover: `@tanstack/react-start`, `@tanstack/react-router`, `@tanstack/router-plugin`, `@cloudflare/vite-plugin`, `@lovable.dev/vite-tanstack-config`.
+Adicionar: `react-router-dom@^6`.
 
-## Fase 2 — Módulo Comandas (PDV leve)
+Reescrever `vite.config.ts`:
 
-### Banco
-- `customer_tabs` (id, company_id, tab_number sequencial por empresa, customer_name, status, opened_by, closed_by, opened_at, closed_at, subtotal, service_fee_percentage, service_fee_amount, discount, total, paid_amount, notes).
-- `tab_items` (id, company_id, tab_id, product_id nullable, product_name, category_name, item_type `fixo|peso|manual`, quantity, unit_price, price_per_kg, weight_grams, total_price, notes, created_by, canceled_at).
-- `tab_payments` (mesma estrutura de `payments` adaptada, com `tab_id`).
-- Alterar `products`: adicionar `is_weighted boolean default false`, `price_per_kg numeric`.
-- Sequence `customer_tabs_number_seq` por company (função RPC).
-- RLS em todas + realtime habilitado.
+```ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import tsconfigPaths from "vite-tsconfig-paths";
 
-### UI
-- Rota `/_app/comandas` — listagem com filtros (aberta, aguardando pagamento, paga, cancelada), busca por número, botão "Nova comanda".
-- `ComandaSheet` — adicionar itens:
-  - **Produto fixo**: busca/grade de produtos com preço fixo.
-  - **Por peso**: select produto pesável → input gramas/kg → calcula automaticamente (ou valor direto da balança).
-  - **Manual**: nome + valor.
-  - Lista de itens com remover.
-- `CheckoutTabDialog` — reaproveita as 4 abas de pagamento da mesa.
-- Impressão via `printThermal` já existente (reusa template).
-- Item no menu sidebar "Comandas".
+export default defineConfig({
+  plugins: [react(), tailwindcss(), tsconfigPaths()],
+  build: { outDir: "dist", emptyOutDir: true },
+});
+```
 
-### Produtos
-- Editar `produtos.tsx` para marcar `is_weighted` + `price_per_kg`.
-- Seed: criar categorias Sorvetes, Açaí, Cupuaçu, Bebidas + produtos exemplo (Sorvete/Açaí/Cupuaçu por kg, Água, Refrigerante).
+Apagar: `src/server.ts`, `src/start.ts`, `src/router.tsx`, `src/routeTree.gen.ts`, `wrangler.jsonc`, `worker-configuration.d.ts` (se existirem), `app.config.ts`.
 
----
+### 2. Novo `index.html` na raiz + `src/main.tsx`
 
-## Fase 3 — Dashboard / Relatórios consolidados
+`index.html` padrão Vite com `<div id="root">` e `<script type="module" src="/src/main.tsx">`.
+`main.tsx` faz `createRoot(...).render(<App />)`.
 
-- Cards no dashboard: comandas abertas, vendas de comandas hoje, ticket médio comanda, top categorias.
-- Aba "Relatórios" expandida: filtros por período + origem (mesa/comanda) + categoria + forma de pagamento.
-- Vendas de mesa **e** comandas alimentam o caixa aberto (registro em `payments`/`tab_payments` com `register_id`).
+### 3. App.tsx (providers + router)
 
----
+```tsx
+<QueryClientProvider client={qc}>
+  <TooltipProvider>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppRoutes />
+        <Toaster />
+      </BrowserRouter>
+    </AuthProvider>
+  </TooltipProvider>
+</QueryClientProvider>
+```
 
-## Tecnicalidades
+### 4. Conversão de rotas
 
-- Stack: TanStack Start + Supabase já configurados. Tudo via cliente browser + RLS (sem server functions novos).
-- Triggers PL/pgSQL para manter `paid_amount` e `paid_quantity` consistentes (verdade no banco, não no front).
-- Realtime nos canais novos (`customer_tabs`, `tab_items`, `tab_payments`).
-- Componentes seguem design tokens existentes (`bg-card`, `border-border`, `font-display`).
+Cada `src/routes/<x>.tsx` vira `src/pages/<X>.tsx` exportando um componente normal.
+`src/routes/_app.tsx` (layout com sidebar) vira `pages/AppLayout.tsx` e usa `<Outlet />` do `react-router-dom`.
 
----
+`routes.tsx`:
 
-## Pergunta antes de começar
+```tsx
+<Routes>
+  <Route path="/login" element={<Login />} />
+  <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
+    <Route path="/" element={<Navigate to="/mesas" replace />} />
+    <Route path="/mesas" element={<Mesas />} />
+    <Route path="/comandas" element={<Comandas />} />
+    <Route path="/cozinha" element={<Cozinha />} />
+    <Route path="/caixa" element={<Caixa />} />
+    <Route path="/dashboard" element={<RequireAdmin><Dashboard /></RequireAdmin>} />
+    <Route path="/produtos" element={<RequireAdmin><Produtos /></RequireAdmin>} />
+    <Route path="/grupos-opcoes" element={<RequireAdmin><GruposOpcoes /></RequireAdmin>} />
+    <Route path="/configuracoes" element={<RequireAdmin><Configuracoes /></RequireAdmin>} />
+    <Route path="/relatorios" element={<RequireAdmin><Relatorios /></RequireAdmin>} />
+    <Route path="/usuarios" element={<RequireAdmin><Usuarios /></RequireAdmin>} />
+  </Route>
+  <Route path="*" element={<NotFound />} />
+</Routes>
+```
 
-Esta entrega é grande (~15-20 arquivos novos + 3 migrações). Quer que eu:
+Substituições mecânicas em cada página:
+- `import { createFileRoute } from "@tanstack/react-router"` → remover
+- `export const Route = createFileRoute(...)({ component: X })` → `export default X`
+- `<Link to="/x">` do TanStack → `<Link to="/x">` do `react-router-dom` (mesmo nome)
+- `useNavigate`/`useLocation`/`useParams` → equivalentes do `react-router-dom`
+- `Route.useParams()` → `useParams()`
+- `Navigate` → do `react-router-dom`
 
-**(A)** Faça tudo de uma vez em uma única resposta longa (vai demorar e ficar mais difícil de revisar), ou
-**(B)** Entregue **Fase 1 agora** (pagamentos avançados de mesa, que já cobre 10 dos 18 critérios de aceite) e nas próximas mensagens entregue Fase 2 e Fase 3?
+### 5. Auth (sem server fn)
 
-Recomendo **(B)** — cada fase fica testável isoladamente e você valida o fluxo antes de seguir. Me confirme A ou B.
+`use-auth.tsx` cria contexto que escuta `supabase.auth.onAuthStateChange` e expõe `{ user, profile, role, loading, signIn, signOut }`. `profile` e `role` são carregados via `supabase.from('profiles').select(...)` e `supabase.from('user_roles').select(...)` — RLS já restringe ao próprio usuário.
+
+`RequireAuth` redireciona para `/login` se sem sessão. `RequireAdmin` redireciona para `/mesas` se `role !== 'admin'`.
+
+### 6. Edge Function `admin-users`
+
+Criar `supabase/functions/admin-users/index.ts` (Deno) que:
+- Valida o JWT do chamador (`supabase.auth.getUser(authHeader)`)
+- Confere que esse user é `admin` da mesma `company_id`
+- Usa `SUPABASE_SERVICE_ROLE_KEY` para `auth.admin.createUser`, `updateUserById`, `deleteUser`, `generateLink({type:'recovery'})`
+- Insere/atualiza `profiles` e `user_roles` conforme a ação
+- Aceita `{ action: 'create'|'update'|'reset'|'delete', payload: {...} }`
+
+Cliente: `src/lib/admin-users.ts` chama via `supabase.functions.invoke('admin-users', { body: ... })`. `src/pages/Usuarios.tsx` consome essa lib (substitui `useServerFn(adminUsers.xxx)`).
+
+`supabase/config.toml`: declarar `[functions.admin-users]` com `verify_jwt = true`.
+
+### 7. Remoção de `/api/public/seed-demo`
+
+Deletar `src/routes/api/public/seed-demo.ts` e qualquer botão/menção a ela. Cartão de credenciais demo do login já está restrito a `import.meta.env.DEV`; manter, sem chamadas a seed.
+
+### 8. Impressão
+
+`PrintPreviewDialog` e `src/lib/print-order.ts` já são 100% client-side (`window.print()` + CSS `@media print`). Só removo as referências de `@tanstack/react-router` se houver e mantenho intactos os layouts 58mm/80mm.
+
+### 9. SPA fallback no cPanel
+
+Criar `public/.htaccess` para Apache (cPanel) reescrever todas as rotas para `index.html`:
+
+```apache
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+```
+
+Vite copia `public/.htaccess` automaticamente para `dist/`.
+
+### 10. Variáveis de ambiente
+
+`.env.example`:
+
+```
+VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJ...
+```
+
+Manter `src/integrations/supabase/client.ts` como está (já usa `VITE_*`).
+
+### 11. Deploy no cPanel
+
+Após `npm run build`:
+1. Comprimir conteúdo de `dist/` em `.zip`.
+2. Upload para `public_html/` no cPanel.
+3. Extrair lá. O `.htaccess` já garante o roteamento SPA.
+
+## Pontos de atenção / trade-offs
+
+- A tela `/usuarios` passa a depender de uma Edge Function online. Sem internet/Supabase, ela não funciona — mesmo comportamento que antes.
+- `SUPABASE_SERVICE_ROLE_KEY` permanece exclusivamente no ambiente da Edge Function (nunca no bundle estático).
+- Como é SPA puro, não há mais pré-render/SEO; aceitável para um sistema interno de PDV.
+- Após a migração, a "Publish" do Lovable também passa a servir o mesmo bundle estático.
+
+Posso prosseguir com a implementação?
