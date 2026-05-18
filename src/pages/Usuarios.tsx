@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '@/components/ui/dialog';
-import { createUser, updateUser } from '@/lib/admin-users.functions';
+import { adminCreateUser, adminUpdateUser } from '@/lib/admin-users';
 import { Plus, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 
