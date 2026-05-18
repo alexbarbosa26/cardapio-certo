@@ -218,4 +218,4 @@ function OptionGroupsEditor({ productId, companyId }: { productId: string; compa
   );
 }
 
-export default Produtos;
+export default ProdutosPage;

@@ -166,4 +166,4 @@ function QuickLink({ to, icon: Icon, title, desc }: any) {
   );
 }
 
-export default Dashboard;
+export default DashboardPage;

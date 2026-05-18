@@ -147,4 +147,4 @@ function CozinhaPage() {
   );
 }
 
-export default Cozinha;
+export default CozinhaPage;

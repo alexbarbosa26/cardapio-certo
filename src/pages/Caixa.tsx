@@ -431,4 +431,4 @@ function Mini({ label, value, accent }: { label: string; value: string; accent?:
   );
 }
 
-export default Caixa;
+export default CaixaPage;

@@ -286,4 +286,4 @@ function RelatoriosPage() {
   );
 }
 
-export default Relatorios;
+export default RelatoriosPage;

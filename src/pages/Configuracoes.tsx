@@ -389,4 +389,4 @@ function TypographyTab() {
   );
 }
 
-export default Configuracoes;
+export default ConfigPage;

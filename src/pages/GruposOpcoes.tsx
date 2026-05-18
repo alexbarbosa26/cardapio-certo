@@ -177,4 +177,4 @@ function GruposOpcoesPage() {
   );
 }
 
-export default GruposOpcoes;
+export default GruposOpcoesPage;

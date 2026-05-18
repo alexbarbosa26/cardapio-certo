@@ -196,4 +196,4 @@ function StatusBadge({ status }: { status: TabRow['status'] }) {
   return <Badge className={cn('text-[10px]', c.cls)}>{c.label}</Badge>;
 }
 
-export default Comandas;
+export default ComandasPage;

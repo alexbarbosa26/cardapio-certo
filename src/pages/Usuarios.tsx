@@ -156,4 +156,4 @@ function UsuariosPage() {
   );
 }
 
-export default Usuarios;
+export default UsuariosPage;
