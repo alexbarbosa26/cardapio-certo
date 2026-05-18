@@ -18,8 +18,6 @@ function UsuariosPage() {
 
   const [users, setUsers] = useState<UserRow[]>([]);
   const [editing, setEditing] = useState<Partial<UserRow> & { password?: string } | null>(null);
-  const createFn = useServerFn(createUser);
-  const updateFn = useServerFn(updateUser);
 
   const load = async () => {
     if (!profile) return;
