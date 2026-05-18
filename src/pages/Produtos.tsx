@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -10,12 +10,6 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Navigate } from '@tanstack/react-router';
-
-export const Route = createFileRoute('/_app/produtos')({
-  component: ProdutosPage,
-});
-
 interface Product { id: string; name: string; price: number; status: string; sends_to_kitchen: boolean; category_id: string | null; is_weighted: boolean; price_per_kg: number; }
 interface Category { id: string; name: string; }
 
@@ -223,3 +217,5 @@ function OptionGroupsEditor({ productId, companyId }: { productId: string; compa
     </div>
   );
 }
+
+export default ProdutosPage;

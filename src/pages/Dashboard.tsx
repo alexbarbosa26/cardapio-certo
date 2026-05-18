@@ -1,13 +1,9 @@
-import { createFileRoute, Link, Navigate } from '@tanstack/react-router';
+import { Navigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtBRL } from '@/lib/format';
 import { TrendingUp, ShoppingBag, UtensilsCrossed, Receipt, ClipboardList, CreditCard } from 'lucide-react';
-
-export const Route = createFileRoute('/_app/dashboard')({
-  component: DashboardPage,
-});
 
 function DashboardPage() {
   const { profile } = useAuth();
@@ -169,3 +165,5 @@ function QuickLink({ to, icon: Icon, title, desc }: any) {
     </Link>
   );
 }
+
+export default DashboardPage;

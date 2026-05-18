@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -11,10 +11,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { ArrowDownCircle, ArrowUpCircle, Banknote, CreditCard, QrCode, Wallet, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-
-export const Route = createFileRoute('/_app/caixa')({
-  component: CaixaPage,
-});
 
 interface RegisterRow {
   id: string; opened_at: string; closed_at: string | null; opening_amount: number;
@@ -434,3 +430,5 @@ function Mini({ label, value, accent }: { label: string; value: string; accent?:
     </div>
   );
 }
+
+export default CaixaPage;

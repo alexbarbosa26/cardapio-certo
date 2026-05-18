@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -6,14 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle } from '@/components/ui/dialog';
-import { useServerFn } from '@tanstack/react-start';
-import { createUser, updateUser } from '@/lib/admin-users.functions';
+import { adminCreateUser, adminUpdateUser } from '@/lib/admin-users';
 import { Plus, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-export const Route = createFileRoute('/_app/usuarios')({
-  component: UsuariosPage,
-});
 
 interface UserRow { id: string; name: string; email: string; status: string; role: string | null; }
 
@@ -23,8 +18,6 @@ function UsuariosPage() {
 
   const [users, setUsers] = useState<UserRow[]>([]);
   const [editing, setEditing] = useState<Partial<UserRow> & { password?: string } | null>(null);
-  const createFn = useServerFn(createUser);
-  const updateFn = useServerFn(updateUser);
 
   const load = async () => {
     if (!profile) return;
@@ -54,21 +47,19 @@ function UsuariosPage() {
     if (!editing) return;
     try {
       if (editing.id) {
-        await updateFn({
-          data: {
-            user_id: editing.id, name: editing.name ?? '',
-            role: (editing.role as 'admin' | 'staff') ?? 'staff',
-            status: (editing.status as 'ativo' | 'inativo') ?? 'ativo',
-            password: editing.password || '',
-          },
+        await adminUpdateUser({
+          user_id: editing.id,
+          name: editing.name ?? '',
+          role: (editing.role as 'admin' | 'staff') ?? 'staff',
+          status: (editing.status as 'ativo' | 'inativo') ?? 'ativo',
+          password: editing.password || undefined,
         });
       } else {
-        await createFn({
-          data: {
-            name: editing.name ?? '', email: editing.email ?? '',
-            password: editing.password ?? '',
-            role: (editing.role as 'admin' | 'staff') ?? 'staff',
-          },
+        await adminCreateUser({
+          name: editing.name ?? '',
+          email: editing.email ?? '',
+          password: editing.password ?? '',
+          role: (editing.role as 'admin' | 'staff') ?? 'staff',
         });
       }
       toast.success('Salvo'); setEditing(null); load();
@@ -160,3 +151,5 @@ function UsuariosPage() {
     </div>
   );
 }
+
+export default UsuariosPage;

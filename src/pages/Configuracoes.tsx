@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -10,10 +10,6 @@ import { toast } from 'sonner';
 import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 import { applyTenantFontsPreview } from '@/hooks/use-tenant-typography';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-export const Route = createFileRoute('/_app/configuracoes')({
-  component: ConfigPage,
-});
 
 function ConfigPage() {
   const { profile } = useAuth();
@@ -392,3 +388,5 @@ function TypographyTab() {
     </div>
   );
 }
+
+export default ConfigPage;

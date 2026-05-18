@@ -1,4 +1,3 @@
-import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -9,10 +8,6 @@ import { Button } from '@/components/ui/button';
 import { OrderSheet } from '@/components/order-sheet';
 import { CheckoutDialog } from '@/components/checkout-dialog';
 import { toast } from 'sonner';
-
-export const Route = createFileRoute('/_app/mesas')({
-  component: MesasPage,
-});
 
 interface MesaCard {
   id: string;
@@ -206,3 +201,5 @@ function Legend({ color, label }: { color: string; label: string }) {
     </span>
   );
 }
+
+export default MesasPage;

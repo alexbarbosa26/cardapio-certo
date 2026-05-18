@@ -1,15 +1,11 @@
-import { createFileRoute, useNavigate, Navigate } from '@tanstack/react-router';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { ChefHat, Sparkles } from 'lucide-react';
-
-export const Route = createFileRoute('/login')({
-  component: LoginPage,
-});
+import { ChefHat } from 'lucide-react';
 
 function LoginPage() {
   const { user, signIn, loading } = useAuth();
@@ -17,10 +13,8 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [seeding, setSeeding] = useState(false);
-  const isDev = import.meta.env.DEV;
 
-  if (!loading && user) return <Navigate to="/" />;
+  if (!loading && user) return <Navigate to="/" replace />;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,27 +25,12 @@ function LoginPage() {
       toast.error(res.error);
     } else {
       toast.success('Bem-vindo de volta!');
-      navigate({ to: '/' });
-    }
-  };
-
-  const seed = async () => {
-    setSeeding(true);
-    try {
-      const r = await fetch('/api/public/seed-demo', { method: 'POST' });
-      const j = await r.json();
-      if (j.ok) toast.success('Dados de demonstração prontos. Use admin@gmail.com / admin123.');
-      else toast.error(j.error ?? 'Falha ao criar demo.');
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Erro de rede.');
-    } finally {
-      setSeeding(false);
+      navigate('/');
     }
   };
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      {/* Left — form */}
       <div className="flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16">
         <div className="mx-auto w-full max-w-sm">
           <div className="flex items-center gap-2">
@@ -82,22 +61,9 @@ function LoginPage() {
               {submitting ? 'Entrando…' : 'Entrar'}
             </Button>
           </form>
-
-          {isDev && (
-            <div className="mt-8 rounded-lg border border-dashed border-border bg-secondary/40 p-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2 font-medium text-foreground">
-                <Sparkles className="h-3.5 w-3.5 text-accent" /> Acesso de demonstração (dev)
-              </div>
-              <p className="mt-1">Disponível apenas em ambiente de desenvolvimento.</p>
-              <Button variant="outline" size="sm" disabled={seeding} onClick={seed} className="mt-3 w-full">
-                {seeding ? 'Preparando…' : 'Criar dados de demonstração'}
-              </Button>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Right — visual */}
       <div className="relative hidden lg:block bg-primary text-primary-foreground overflow-hidden">
         <div className="absolute inset-0 opacity-[0.06]" style={{
           backgroundImage:
@@ -122,3 +88,5 @@ function LoginPage() {
     </div>
   );
 }
+
+export default LoginPage;

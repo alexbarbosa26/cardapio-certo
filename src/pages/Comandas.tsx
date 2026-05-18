@@ -1,4 +1,3 @@
-import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -10,10 +9,6 @@ import { Plus, Search, Clock, Users, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ComandaSheet } from '@/components/comanda-sheet';
-
-export const Route = createFileRoute('/_app/comandas')({
-  component: ComandasPage,
-});
 
 type Status = 'todas' | 'aberta' | 'aguardando_pagamento' | 'paga' | 'cancelada';
 
@@ -200,3 +195,5 @@ function StatusBadge({ status }: { status: TabRow['status'] }) {
   const c = cfg[status];
   return <Badge className={cn('text-[10px]', c.cls)}>{c.label}</Badge>;
 }
+
+export default ComandasPage;

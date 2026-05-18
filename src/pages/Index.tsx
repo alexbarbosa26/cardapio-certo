@@ -1,9 +1,5 @@
-import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
-
-export const Route = createFileRoute('/')({
-  component: IndexRedirect,
-});
 
 function IndexRedirect() {
   const { loading, user, profile } = useAuth();
@@ -14,7 +10,9 @@ function IndexRedirect() {
       </div>
     );
   }
-  if (!user) return <Navigate to="/login" />;
-  if (profile?.role === 'admin') return <Navigate to="/dashboard" />;
-  return <Navigate to="/mesas" />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (profile?.role === 'admin') return <Navigate to="/dashboard" replace />;
+  return <Navigate to="/mesas" replace />;
 }
+
+export default IndexRedirect;

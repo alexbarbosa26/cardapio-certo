@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, Link, Navigate, useRouterState, useNavigate } from '@tanstack/react-router';
+import { Outlet, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenantTypography } from '@/hooks/use-tenant-typography';
 import {
@@ -10,10 +10,6 @@ import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-
-export const Route = createFileRoute('/_app')({
-  component: AppLayout,
-});
 
 interface NavItem { to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
 
@@ -43,21 +39,19 @@ function AppLayout() {
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
     </div>;
   }
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" replace />;
   if (!profile) return <div className="p-8 text-center text-muted-foreground">Carregando perfil…</div>;
 
   const items = NAV.filter((i) => !i.admin || profile.role === 'admin');
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden bg-background">
-      {/* Sidebar desktop */}
       <aside className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
         <BrandHeader companyName={profile.company_name ?? 'MesaChef'} />
         <NavList items={items} />
-        <UserCard name={profile.name} role={profile.role} onSignOut={async () => { await signOut(); navigate({ to: '/login' }); }} />
+        <UserCard name={profile.name} role={profile.role} onSignOut={async () => { await signOut(); navigate('/login'); }} />
       </aside>
 
-      {/* Mobile topbar + drawer */}
       <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <header className="lg:hidden sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/90 backdrop-blur px-4">
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -67,7 +61,7 @@ function AppLayout() {
             <SheetContent side="left" className="w-72 bg-sidebar text-sidebar-foreground border-sidebar-border p-0">
               <BrandHeader companyName={profile.company_name ?? 'MesaChef'} />
               <NavList items={items} onNavigate={() => setMobileOpen(false)} />
-              <UserCard name={profile.name} role={profile.role} onSignOut={async () => { setMobileOpen(false); await signOut(); navigate({ to: '/login' }); }} />
+              <UserCard name={profile.name} role={profile.role} onSignOut={async () => { setMobileOpen(false); await signOut(); navigate('/login'); }} />
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
@@ -101,7 +95,7 @@ function BrandHeader({ companyName }: { companyName: string }) {
 }
 
 function NavList({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => void }) {
-  const path = useRouterState({ select: (s) => s.location.pathname });
+  const path = useLocation().pathname;
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
       {items.map((it) => {
@@ -147,3 +141,5 @@ function UserCard({ name, role, onSignOut }: { name: string; role: string | null
     </div>
   );
 }
+
+export default AppLayout;
