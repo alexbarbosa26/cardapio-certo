@@ -47,21 +47,19 @@ function UsuariosPage() {
     if (!editing) return;
     try {
       if (editing.id) {
-        await updateFn({
-          data: {
-            user_id: editing.id, name: editing.name ?? '',
-            role: (editing.role as 'admin' | 'staff') ?? 'staff',
-            status: (editing.status as 'ativo' | 'inativo') ?? 'ativo',
-            password: editing.password || '',
-          },
+        await adminUpdateUser({
+          user_id: editing.id,
+          name: editing.name ?? '',
+          role: (editing.role as 'admin' | 'staff') ?? 'staff',
+          status: (editing.status as 'ativo' | 'inativo') ?? 'ativo',
+          password: editing.password || undefined,
         });
       } else {
-        await createFn({
-          data: {
-            name: editing.name ?? '', email: editing.email ?? '',
-            password: editing.password ?? '',
-            role: (editing.role as 'admin' | 'staff') ?? 'staff',
-          },
+        await adminCreateUser({
+          name: editing.name ?? '',
+          email: editing.email ?? '',
+          password: editing.password ?? '',
+          role: (editing.role as 'admin' | 'staff') ?? 'staff',
         });
       }
       toast.success('Salvo'); setEditing(null); load();
