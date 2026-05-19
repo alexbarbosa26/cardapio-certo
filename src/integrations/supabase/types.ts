@@ -868,10 +868,18 @@ export type Database = {
       }
       settings: {
         Row: {
+          accent_color: string | null
           company_id: string
           created_at: string
           credit_fee_percentage: number
           debit_fee_percentage: number
+          display_name: string | null
+          enable_kitchen_module: boolean
+          enable_printing: boolean
+          enable_service_fee: boolean
+          enable_tables_module: boolean
+          enable_tabs_module: boolean
+          establishment_data: Json
           font_body: string
           font_body_weights: string
           font_display: string
@@ -879,14 +887,25 @@ export type Database = {
           id: string
           kitchen_danger_minutes: number
           kitchen_warning_minutes: number
+          receipt_message: string | null
+          secondary_color: string | null
           service_fee_percentage: number
+          tab_numbering_mode: string
           updated_at: string
         }
         Insert: {
+          accent_color?: string | null
           company_id: string
           created_at?: string
           credit_fee_percentage?: number
           debit_fee_percentage?: number
+          display_name?: string | null
+          enable_kitchen_module?: boolean
+          enable_printing?: boolean
+          enable_service_fee?: boolean
+          enable_tables_module?: boolean
+          enable_tabs_module?: boolean
+          establishment_data?: Json
           font_body?: string
           font_body_weights?: string
           font_display?: string
@@ -894,14 +913,25 @@ export type Database = {
           id?: string
           kitchen_danger_minutes?: number
           kitchen_warning_minutes?: number
+          receipt_message?: string | null
+          secondary_color?: string | null
           service_fee_percentage?: number
+          tab_numbering_mode?: string
           updated_at?: string
         }
         Update: {
+          accent_color?: string | null
           company_id?: string
           created_at?: string
           credit_fee_percentage?: number
           debit_fee_percentage?: number
+          display_name?: string | null
+          enable_kitchen_module?: boolean
+          enable_printing?: boolean
+          enable_service_fee?: boolean
+          enable_tables_module?: boolean
+          enable_tabs_module?: boolean
+          establishment_data?: Json
           font_body?: string
           font_body_weights?: string
           font_display?: string
@@ -909,7 +939,10 @@ export type Database = {
           id?: string
           kitchen_danger_minutes?: number
           kitchen_warning_minutes?: number
+          receipt_message?: string | null
+          secondary_color?: string | null
           service_fee_percentage?: number
+          tab_numbering_mode?: string
           updated_at?: string
         }
         Relationships: [
