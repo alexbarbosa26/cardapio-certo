@@ -13,7 +13,8 @@ type Origin = 'todas' | 'mesa' | 'comanda';
 
 function RelatoriosPage() {
   const { profile } = useAuth();
-  if (profile && profile.role !== 'admin') return <Navigate to="/mesas" />;
+  const redirectNonAdmin = !!profile && profile.role !== 'admin';
+
 
   const [range, setRange] = useState<'7' | '30' | '90'>('7');
   const [origin, setOrigin] = useState<Origin>('todas');
@@ -150,6 +151,8 @@ function RelatoriosPage() {
   const total = payments.reduce((s, p) => s + p.amount, 0);
   const totalMesa = payments.filter((p) => p.origin === 'mesa').reduce((s, p) => s + p.amount, 0);
   const totalComanda = payments.filter((p) => p.origin === 'comanda').reduce((s, p) => s + p.amount, 0);
+
+  if (redirectNonAdmin) return <Navigate to="/mesas" />;
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto">

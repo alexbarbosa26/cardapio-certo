@@ -22,7 +22,8 @@ interface MovementRow { id: string; type: 'suprimento' | 'sangria'; amount: numb
 
 function CaixaPage() {
   const { profile } = useAuth();
-  if (profile && profile.role !== 'admin') return <Navigate to="/mesas" />;
+  const redirectNonAdmin = !!profile && profile.role !== 'admin';
+
 
   const [open, setOpen] = useState<RegisterRow | null>(null);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
@@ -77,6 +78,8 @@ function CaixaPage() {
     const expectedCash = (open?.opening_amount ?? 0) + byMethod.dinheiro + supr - sang;
     return { byMethod, supr, sang, totalVendas, expectedCash };
   })();
+
+  if (redirectNonAdmin) return <Navigate to="/mesas" />;
 
   return (
     <div className="w-full min-w-0 max-w-6xl mx-auto overflow-x-hidden px-3 py-4 sm:p-8">

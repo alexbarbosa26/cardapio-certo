@@ -14,7 +14,7 @@ interface UserRow { id: string; name: string; email: string; status: string; rol
 
 function UsuariosPage() {
   const { profile } = useAuth();
-  if (profile && profile.role !== 'admin') return <Navigate to="/mesas" />;
+  const redirectNonAdmin = !!profile && profile.role !== 'admin';
 
   const [users, setUsers] = useState<UserRow[]>([]);
   const [editing, setEditing] = useState<Partial<UserRow> & { password?: string } | null>(null);
