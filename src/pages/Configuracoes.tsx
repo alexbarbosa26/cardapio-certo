@@ -398,4 +398,198 @@ function TypographyTab() {
   );
 }
 
+function IdentityTab() {
+  const { profile } = useAuth();
+  const { refresh: refreshBranding } = useTenantBranding();
+  const [displayName, setDisplayName] = useState('');
+  const [primary, setPrimary] = useState('');
+  const [secondary, setSecondary] = useState('');
+  const [accent, setAccent] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (!profile) return;
+    (async () => {
+      const [{ data: c }, { data: s }] = await Promise.all([
+        supabase.from('companies').select('logo_url, primary_color, secondary_color, accent_color, trade_name, name').eq('id', profile.company_id).maybeSingle(),
+        supabase.from('settings').select('display_name, secondary_color, accent_color').eq('company_id', profile.company_id).maybeSingle(),
+      ]);
+      setLogoUrl(c?.logo_url ?? '');
+      setPrimary(c?.primary_color ?? '');
+      setSecondary(s?.secondary_color ?? c?.secondary_color ?? '');
+      setAccent(s?.accent_color ?? c?.accent_color ?? '');
+      setDisplayName(s?.display_name ?? c?.trade_name ?? c?.name ?? '');
+    })();
+  }, [profile?.company_id]);
+
+  const onUpload = async (file: File) => {
+    if (!profile) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('Imagem deve ter até 2MB'); return; }
+    setUploading(true);
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+    const path = `${profile.company_id}/logo-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from('branding').upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { toast.error(error.message); setUploading(false); return; }
+    const { data: pub } = supabase.storage.from('branding').getPublicUrl(path);
+    setLogoUrl(pub.publicUrl);
+    setUploading(false);
+    toast.success('Logo carregada — clique em Salvar');
+  };
+
+  const save = async () => {
+    if (!profile) return;
+    const norm = (v: string) => v.trim() || null;
+    const { error: e1 } = await supabase.from('companies').update({
+      logo_url: norm(logoUrl), primary_color: norm(primary),
+      secondary_color: norm(secondary), accent_color: norm(accent),
+    }).eq('id', profile.company_id);
+    const { error: e2 } = await supabase.from('settings').upsert({
+      company_id: profile.company_id,
+      display_name: norm(displayName),
+      secondary_color: norm(secondary),
+      accent_color: norm(accent),
+    }, { onConflict: 'company_id' });
+    if (e1 || e2) { toast.error((e1 ?? e2)!.message); return; }
+    toast.success('Identidade salva');
+    applyTenantColorsPreview(norm(primary), norm(accent), norm(secondary));
+    await refreshBranding();
+  };
+
+  const Color = (label: string, val: string, set: (v: string) => void) => (
+    <div className="space-y-1">
+      <Label>{label}</Label>
+      <div className="flex gap-2 items-center">
+        <input type="color" value={val || '#000000'} onChange={(e) => { set(e.target.value); }}
+          className="h-10 w-12 rounded border border-border bg-card cursor-pointer" />
+        <Input placeholder="#RRGGBB" value={val} onChange={(e) => set(e.target.value)} className="font-mono"/>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 space-y-5 mt-4">
+      <div>
+        <Label>Logo</Label>
+        <div className="flex items-center gap-3 mt-1">
+          <div className="h-20 w-20 rounded-md border border-border bg-background flex items-center justify-center overflow-hidden">
+            {logoUrl
+              ? <img src={logoUrl} alt="logo" className="max-h-full max-w-full object-contain"/>
+              : <span className="text-[10px] text-muted-foreground text-center px-1">Sem logo</span>}
+          </div>
+          <div className="flex flex-col gap-1 flex-1">
+            <Input type="file" accept="image/*" disabled={uploading}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); }} />
+            {logoUrl && <Button type="button" variant="ghost" size="sm" className="self-start" onClick={() => setLogoUrl('')}>Remover</Button>}
+            <p className="text-xs text-muted-foreground">PNG/JPG até 2MB. Aparece no menu, comanda e conta.</p>
+          </div>
+        </div>
+      </div>
+      <div>
+        <Label>Nome de exibição</Label>
+        <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Nome que aparece no app"/>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-3">
+        {Color('Cor primária', primary, setPrimary)}
+        {Color('Cor secundária', secondary, setSecondary)}
+        {Color('Cor de destaque', accent, setAccent)}
+      </div>
+      <p className="text-xs text-muted-foreground">As cores são aplicadas em botões, menus e destaques da interface.</p>
+      <Button onClick={save}>Salvar identidade</Button>
+    </div>
+  );
+}
+
+function OperationTab() {
+  const { profile } = useAuth();
+  const { refresh: refreshBranding } = useTenantBranding();
+  const [s, setS] = useState<any>(null);
+  useEffect(() => {
+    if (!profile) return;
+    (async () => {
+      const { data } = await supabase.from('settings').select('*').eq('company_id', profile.company_id).maybeSingle();
+      setS(data ?? { company_id: profile.company_id });
+    })();
+  }, [profile?.company_id]);
+  if (!s) return null;
+  const Toggle = (k: string, label: string, desc: string) => (
+    <div className="flex items-start justify-between gap-4 py-3 border-b border-border last:border-0">
+      <div>
+        <div className="text-sm font-medium">{label}</div>
+        <div className="text-xs text-muted-foreground">{desc}</div>
+      </div>
+      <Switch checked={s[k] ?? true} onCheckedChange={(v) => setS({ ...s, [k]: v })}/>
+    </div>
+  );
+  const save = async () => {
+    const { error } = await supabase.from('settings').upsert({ ...s, company_id: profile!.company_id }, { onConflict: 'company_id' });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Operação salva');
+    await refreshBranding();
+  };
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 mt-4 space-y-4">
+      <div>
+        {Toggle('enable_tables_module', 'Módulo de Mesas', 'Habilita o controle de mesas e o item no menu.')}
+        {Toggle('enable_tabs_module', 'Módulo de Comandas', 'Habilita comandas avulsas (sem mesa).')}
+        {Toggle('enable_kitchen_module', 'Módulo Cozinha (KDS)', 'Painel da cozinha em tempo real.')}
+        {Toggle('enable_printing', 'Impressão de comandas', 'Habilita botões de imprimir comanda/conta.')}
+        {Toggle('enable_service_fee', 'Cobrar taxa de serviço', 'Quando desligado, taxa não é adicionada ao total.')}
+      </div>
+      <div className="space-y-2">
+        <Label>Numeração de comandas</Label>
+        <Select value={s.tab_numbering_mode ?? 'manual'} onValueChange={(v) => setS({ ...s, tab_numbering_mode: v })}>
+          <SelectTrigger className="w-60"><SelectValue/></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="manual">Manual — operador digita o número</SelectItem>
+            <SelectItem value="auto">Automática — sistema gera sequencial</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <Button onClick={save}>Salvar operação</Button>
+    </div>
+  );
+}
+
+function ReceiptTab() {
+  const { profile } = useAuth();
+  const [message, setMessage] = useState('');
+  const [estab, setEstab] = useState<{ address?: string; phone?: string; cnpj?: string; site?: string }>({});
+  useEffect(() => {
+    if (!profile) return;
+    (async () => {
+      const { data } = await supabase.from('settings').select('receipt_message, establishment_data').eq('company_id', profile.company_id).maybeSingle();
+      setMessage(data?.receipt_message ?? '');
+      setEstab((data?.establishment_data as any) ?? {});
+    })();
+  }, [profile?.company_id]);
+  const save = async () => {
+    const { error } = await supabase.from('settings').upsert({
+      company_id: profile!.company_id,
+      receipt_message: message || null,
+      establishment_data: estab,
+    }, { onConflict: 'company_id' });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Comprovante salvo');
+  };
+  const F = (k: keyof typeof estab, label: string) => (
+    <div><Label>{label}</Label><Input value={estab[k] ?? ''} onChange={(e) => setEstab({ ...estab, [k]: e.target.value })}/></div>
+  );
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 mt-4 space-y-4">
+      <div className="grid sm:grid-cols-2 gap-3">
+        {F('address', 'Endereço')}
+        {F('phone', 'Telefone')}
+        {F('cnpj', 'CNPJ')}
+        {F('site', 'Site / Instagram')}
+      </div>
+      <div>
+        <Label>Mensagem do rodapé</Label>
+        <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Ex.: Obrigado pela preferência! Volte sempre."/>
+      </div>
+      <Button onClick={save}>Salvar comprovante</Button>
+    </div>
+  );
+}
+
 export default ConfigPage;
