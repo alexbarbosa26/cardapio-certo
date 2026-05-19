@@ -127,7 +127,7 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-baseline gap-2">
             <span className="font-display text-2xl">Comanda #{tab.tab_number}</span>
@@ -135,6 +135,8 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
             {quitada && <Badge className="bg-success text-success-foreground ml-auto">Quitada</Badge>}
           </DialogTitle>
         </DialogHeader>
+        <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-4">
+
 
         <div className="grid grid-cols-3 gap-2 rounded-lg border border-border bg-secondary/40 p-3">
           <Box label="Total" value={fmtBRL(total)} />
