@@ -179,7 +179,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             <TabsTrigger value="parcial">Parcial</TabsTrigger>
           </TabsList>
 
-          <div className="mt-3 max-h-[42vh] overflow-y-auto">
+          <div className="mt-3">
             <TabsContent value="total" className="m-0">
               <PayTotalTab pending={pending} orderId={orderId} companyId={order.company_id} onPaid={load} />
             </TabsContent>
