@@ -15,7 +15,8 @@ interface Category { id: string; name: string; }
 
 function ProdutosPage() {
   const { profile } = useAuth();
-  if (profile && profile.role !== 'admin') return <Navigate to="/mesas" />;
+  const redirectNonAdmin = !!profile && profile.role !== 'admin';
+
 
   const [products, setProducts] = useState<Product[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
@@ -57,6 +58,8 @@ function ProdutosPage() {
     toast.success('Salvo');
     load();
   };
+
+  if (redirectNonAdmin) return <Navigate to="/mesas" />;
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl mx-auto">

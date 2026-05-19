@@ -18,7 +18,8 @@ interface OG {
 
 function GruposOpcoesPage() {
   const { profile } = useAuth();
-  if (profile && profile.role !== 'admin') return <Navigate to="/mesas" />;
+  const redirectNonAdmin = !!profile && profile.role !== 'admin';
+
 
   const [groups, setGroups] = useState<OG[]>([]);
   const [open, setOpen] = useState<Record<string, boolean>>({});
@@ -84,6 +85,8 @@ function GruposOpcoesPage() {
     await supabase.from('option_items').delete().eq('id', id);
     load();
   };
+
+  if (redirectNonAdmin) return <Navigate to="/mesas" />;
 
   return (
     <div className="p-4 sm:p-8 max-w-4xl mx-auto">

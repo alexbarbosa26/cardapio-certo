@@ -7,7 +7,7 @@ import { TrendingUp, ShoppingBag, UtensilsCrossed, Receipt, ClipboardList, Credi
 
 function DashboardPage() {
   const { profile } = useAuth();
-  if (profile && profile.role !== 'admin') return <Navigate to="/mesas" />;
+  const redirectNonAdmin = !!profile && profile.role !== 'admin';
   const [stats, setStats] = useState({
     vendas: 0,
     vendasMesa: 0,
@@ -92,6 +92,8 @@ function DashboardPage() {
       });
     })();
   }, [profile?.company_id]);
+
+  if (redirectNonAdmin) return <Navigate to="/mesas" />;
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto">
