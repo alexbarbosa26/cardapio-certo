@@ -7,7 +7,8 @@ export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'suspended
 
 export interface AuthProfile {
   id: string;
-  company_id: string | null;
+  /** Empty string for super admins (no company). */
+  company_id: string;
   name: string;
   email: string;
   status: string;
@@ -53,7 +54,7 @@ async function loadProfile(userId: string): Promise<AuthProfile | null> {
     .maybeSingle();
   return {
     id: p.id,
-    company_id: p.company_id ?? null,
+    company_id: p.company_id ?? '',
     name: p.name,
     email: p.email,
     status: p.status,
