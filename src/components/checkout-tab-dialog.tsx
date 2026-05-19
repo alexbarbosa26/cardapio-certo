@@ -109,11 +109,17 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
   const pending = Math.max(0, total - paid);
   const quitada = pending <= 0.005 && total > 0;
 
+  const jaFinalizada = tab.status === 'paga';
+  const cancelada = tab.status === 'cancelada';
+
   const finalize = async () => {
+    if (jaFinalizada) { toast.error('Comanda já finalizada.'); return; }
+    if (cancelada) { toast.error('Comanda cancelada.'); return; }
     if (!quitada) { toast.error('Ainda há valor pendente.'); return; }
-    await supabase.from('customer_tabs').update({
+    const { error } = await supabase.from('customer_tabs').update({
       status: 'paga', closed_at: new Date().toISOString(), closed_by: profile?.id,
-    }).eq('id', tab.id);
+    }).eq('id', tab.id).neq('status', 'paga');
+    if (error) { toast.error(error.message); return; }
     toast.success(`Comanda #${tab.tab_number} finalizada.`);
     onOpenChange(false);
     onFinalized?.();
@@ -201,8 +207,9 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
             ],
             footer: quitada ? 'Conta quitada · Obrigado!' : 'Obrigado pela preferência!',
           })}><Printer className="h-4 w-4 mr-1" />Imprimir</Button>
-          <Button onClick={finalize} disabled={!quitada}>
-            <CheckCircle2 className="h-4 w-4 mr-1" />Finalizar comanda
+          <Button onClick={finalize} disabled={!quitada || jaFinalizada || cancelada}>
+            <CheckCircle2 className="h-4 w-4 mr-1" />
+            {jaFinalizada ? 'Já finalizada' : 'Finalizar comanda'}
           </Button>
         </DialogFooter>
       </DialogContent>
