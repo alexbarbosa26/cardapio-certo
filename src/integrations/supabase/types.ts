@@ -1022,7 +1022,7 @@ export type Database = {
       recalc_order_payments: { Args: { _order_id: string }; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "staff"
+      app_role: "admin" | "staff" | "super_admin"
       cash_movement_type: "suprimento" | "sangria"
       cash_register_status: "aberto" | "fechado"
       customer_tab_status:
@@ -1177,7 +1177,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff"],
+      app_role: ["admin", "staff", "super_admin"],
       cash_movement_type: ["suprimento", "sangria"],
       cash_register_status: ["aberto", "fechado"],
       customer_tab_status: [
