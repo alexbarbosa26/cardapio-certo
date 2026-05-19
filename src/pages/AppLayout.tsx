@@ -35,6 +35,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   useTenantTypography();
+  const branding = useTenantBranding();
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-background">
@@ -44,12 +45,20 @@ function AppLayout() {
   if (!user) return <Navigate to="/login" replace />;
   if (!profile) return <div className="p-8 text-center text-muted-foreground">Carregando perfil…</div>;
 
-  const items = NAV.filter((i) => !i.admin || profile.role === 'admin');
+  const isAllowed = (k: NavKey) => {
+    if (k === 'mesas') return branding.plan.allowTables && branding.enableTables;
+    if (k === 'comandas') return branding.plan.allowTabs && branding.enableTabs;
+    if (k === 'cozinha') return branding.plan.allowKitchen && branding.enableKitchen;
+    if (k === 'dashboard') return branding.plan.allowAdvancedDashboard;
+    return true;
+  };
+  const items = NAV.filter((i) => (!i.admin || profile.role === 'admin') && isAllowed(i.key));
+  const companyName = branding.displayName ?? profile.company_name ?? 'MesaChef';
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden bg-background">
       <aside className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-        <BrandHeader companyName={profile.company_name ?? 'MesaChef'} />
+        <BrandHeader companyName={companyName} logoUrl={branding.logoUrl} />
         <NavList items={items} />
         <UserCard name={profile.name} role={profile.role} onSignOut={async () => { await signOut(); navigate('/login'); }} />
       </aside>
