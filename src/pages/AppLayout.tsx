@@ -16,18 +16,18 @@ type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'gru
 interface NavItem { key: NavKey; to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
 
 const NAV: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true },
-  { to: '/mesas', label: 'Mesas', icon: UtensilsCrossed },
-  { to: '/comandas', label: 'Comandas', icon: ClipboardList },
-  { to: '/cozinha', label: 'Cozinha', icon: ChefHat },
-  { to: '/produtos', label: 'Produtos', icon: Package, admin: true },
-  { to: '/grupos-opcoes', label: 'Grupos de opções', icon: ListPlus, admin: true },
-  { to: '/usuarios', label: 'Usuários', icon: Users, admin: true },
-  { to: '/caixa', label: 'Caixa', icon: Wallet, admin: true },
-  { to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
-  { to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
-  { to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
-  { to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
+  { key: 'dashboard', to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true },
+  { key: 'mesas', to: '/mesas', label: 'Mesas', icon: UtensilsCrossed },
+  { key: 'comandas', to: '/comandas', label: 'Comandas', icon: ClipboardList },
+  { key: 'cozinha', to: '/cozinha', label: 'Cozinha', icon: ChefHat },
+  { key: 'produtos', to: '/produtos', label: 'Produtos', icon: Package, admin: true },
+  { key: 'grupos', to: '/grupos-opcoes', label: 'Grupos de opções', icon: ListPlus, admin: true },
+  { key: 'usuarios', to: '/usuarios', label: 'Usuários', icon: Users, admin: true },
+  { key: 'caixa', to: '/caixa', label: 'Caixa', icon: Wallet, admin: true },
+  { key: 'relatorios', to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
+  { key: 'config', to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
+  { key: 'wpp', to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
+  { key: 'nf', to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
 ];
 
 function AppLayout() {
