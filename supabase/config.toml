@@ -2,3 +2,9 @@ project_id = "cemxunknyvqvzudrxwih"
 
 [functions.admin-users]
 verify_jwt = true
+
+[functions.admin-companies]
+verify_jwt = true
+
+[functions.bootstrap-super-admin]
+verify_jwt = false
