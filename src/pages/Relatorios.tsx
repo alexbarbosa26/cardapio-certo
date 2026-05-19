@@ -75,7 +75,7 @@ function RelatoriosPage() {
 
       const cats = new Set<string>();
       allItems.forEach((i) => cats.add(i.category));
-      setCategories(Array.from(cats).sort());
+      setCategories(Array.from(cats).sort((a, b) => a.localeCompare(b)));
     })();
   }, [profile?.company_id, range]);
 
