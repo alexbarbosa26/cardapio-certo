@@ -164,7 +164,7 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
             <TabsTrigger value="dividir">Dividir</TabsTrigger>
             <TabsTrigger value="parcial">Parcial</TabsTrigger>
           </TabsList>
-          <div className="mt-3 max-h-[40vh] overflow-y-auto">
+          <div className="mt-3">
             <TabsContent value="total" className="m-0">
               <PayTotalTab pending={pending} tabId={tabId} companyId={tab.company_id} onPaid={load} />
             </TabsContent>
