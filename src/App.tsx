@@ -78,6 +78,7 @@ export default function App() {
             <PrintPreviewDialog />
             <Toaster richColors position="top-right" />
           </BrowserRouter>
+          </TenantBrandingProvider>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
