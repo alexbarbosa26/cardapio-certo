@@ -207,8 +207,9 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
             ],
             footer: quitada ? 'Conta quitada · Obrigado!' : 'Obrigado pela preferência!',
           })}><Printer className="h-4 w-4 mr-1" />Imprimir</Button>
-          <Button onClick={finalize} disabled={!quitada}>
-            <CheckCircle2 className="h-4 w-4 mr-1" />Finalizar comanda
+          <Button onClick={finalize} disabled={!quitada || jaFinalizada || cancelada}>
+            <CheckCircle2 className="h-4 w-4 mr-1" />
+            {jaFinalizada ? 'Já finalizada' : 'Finalizar comanda'}
           </Button>
         </DialogFooter>
       </DialogContent>
