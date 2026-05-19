@@ -321,7 +321,7 @@ function PaySplitTab({ pending, tabId, companyId, onPaid }: { pending: number; t
   const shares = useMemo(() => {
     const cents = Math.round(pending * 100);
     const base = Math.floor(cents / people);
-    const arr = new Array(people).fill(base / 100);
+    const arr = Array(people).fill(base / 100);
     const rest = (cents - base * people) / 100;
     arr[people - 1] = +(arr[people - 1] + rest).toFixed(2);
     return arr;

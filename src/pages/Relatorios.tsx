@@ -11,8 +11,6 @@ const COLORS = ['var(--accent)', 'var(--chart-3)', 'var(--chart-4)', 'var(--char
 
 type Origin = 'todas' | 'mesa' | 'comanda';
 
-const compareAlphabetically = (a: string, b: string) => a.localeCompare(b, 'pt-BR');
-
 function RelatoriosPage() {
   const { profile } = useAuth();
   const redirectNonAdmin = !!profile && profile.role !== 'admin';
@@ -77,7 +75,7 @@ function RelatoriosPage() {
 
       const cats = new Set<string>();
       allItems.forEach((i) => cats.add(i.category));
-      setCategories(Array.from(cats).sort(compareAlphabetically));
+      setCategories(Array.from(cats).sort());
     })();
   }, [profile?.company_id, range]);
 
