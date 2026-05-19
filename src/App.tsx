@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { AuthProvider, useAuth } from '@/hooks/use-auth';
+import { AuthProvider } from '@/hooks/use-auth';
 import { PrintPreviewDialog } from '@/components/print-preview-dialog';
+import { RequireAuth, RequireSuperAdmin, RequireCompanyAccess } from '@/components/route-guards';
 import AppLayout from '@/pages/AppLayout';
 import Login from '@/pages/Login';
 import Index from '@/pages/Index';
@@ -18,15 +19,15 @@ import GruposOpcoes from '@/pages/GruposOpcoes';
 import Configuracoes from '@/pages/Configuracoes';
 import Relatorios from '@/pages/Relatorios';
 import Usuarios from '@/pages/Usuarios';
+import AssinaturaSuspensa from '@/pages/AssinaturaSuspensa';
+import GlobalAdminLayout from '@/pages/global/GlobalAdminLayout';
+import GlobalDashboard from '@/pages/global/GlobalDashboard';
+import GlobalEmpresas from '@/pages/global/GlobalEmpresas';
+import GlobalPlanos from '@/pages/global/GlobalPlanos';
+import GlobalAssinaturas from '@/pages/global/GlobalAssinaturas';
+import GlobalAuditoria from '@/pages/global/GlobalAuditoria';
 
 const queryClient = new QueryClient();
-
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  return <>{children}</>;
-}
 
 export default function App() {
   return (
@@ -36,19 +37,40 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
+
+              {/* Tela informativa de bloqueio – exige login mas não exige assinatura ativa */}
+              <Route element={<RequireAuth />}>
+                <Route path="/assinatura-suspensa" element={<AssinaturaSuspensa />} />
                 <Route path="/" element={<Index />} />
-                <Route path="/mesas" element={<Mesas />} />
-                <Route path="/comandas" element={<Comandas />} />
-                <Route path="/cozinha" element={<Cozinha />} />
-                <Route path="/caixa" element={<Caixa />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/produtos" element={<Produtos />} />
-                <Route path="/grupos-opcoes" element={<GruposOpcoes />} />
-                <Route path="/configuracoes" element={<Configuracoes />} />
-                <Route path="/relatorios" element={<Relatorios />} />
-                <Route path="/usuarios" element={<Usuarios />} />
               </Route>
+
+              {/* Painel global do dono do SaaS */}
+              <Route element={<RequireSuperAdmin />}>
+                <Route element={<GlobalAdminLayout />}>
+                  <Route path="/global/dashboard" element={<GlobalDashboard />} />
+                  <Route path="/global/empresas" element={<GlobalEmpresas />} />
+                  <Route path="/global/planos" element={<GlobalPlanos />} />
+                  <Route path="/global/assinaturas" element={<GlobalAssinaturas />} />
+                  <Route path="/global/auditoria" element={<GlobalAuditoria />} />
+                </Route>
+              </Route>
+
+              {/* App operacional da empresa */}
+              <Route element={<RequireCompanyAccess />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/mesas" element={<Mesas />} />
+                  <Route path="/comandas" element={<Comandas />} />
+                  <Route path="/cozinha" element={<Cozinha />} />
+                  <Route path="/caixa" element={<Caixa />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/produtos" element={<Produtos />} />
+                  <Route path="/grupos-opcoes" element={<GruposOpcoes />} />
+                  <Route path="/configuracoes" element={<Configuracoes />} />
+                  <Route path="/relatorios" element={<Relatorios />} />
+                  <Route path="/usuarios" element={<Usuarios />} />
+                </Route>
+              </Route>
+
               <Route path="*" element={<NotFound />} />
             </Routes>
             <PrintPreviewDialog />

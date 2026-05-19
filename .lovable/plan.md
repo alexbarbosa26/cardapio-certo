@@ -1,191 +1,164 @@
+# Plano: Base SaaS White Label — domínio único
 
-# Migração TanStack Start → Vite React SPA (cPanel)
+Objetivo: transformar o MesaChef em SaaS multi-empresa real, **sem** subdomínios nem domínios próprios. Tudo acessado por `mesachef.com.br`, com identificação da empresa via `company_id` do usuário autenticado.
 
-## Resultado esperado
+Esta é uma etapa grande. Sugiro entregar em **3 fases sequenciais**, cada uma testável de ponta a ponta. Cada fase termina com critérios de aceite verificáveis antes de iniciar a próxima.
 
-- `npm run build` gera apenas `dist/index.html` + `dist/assets/*` (mais favicon e demais estáticos), pronto para upload em `public_html` do cPanel.
-- Sem `dist/server`, `server/index.js`, `wrangler.jsonc`, Cloudflare Worker ou SSR.
-- App continua usando React 19 + TS + Tailwind v4 + shadcn/ui + Supabase + React Query.
-- Todas as telas atuais funcionam (login, dashboard, mesas, comandas, cozinha, caixa, produtos, grupos-opcoes, configurações, relatórios, usuários).
-- Impressão térmica 58/80mm e `PrintPreviewDialog` continuam funcionando (são puro browser, sem dependência de SSR).
-- Multi-tenant e RLS preservados — Supabase client direto com a anon/publishable key.
+---
 
-## Arquitetura final
+## Fase 1 — Fundação: Super Admin, Planos, Assinaturas e Bloqueio
 
-```text
-src/
-  main.tsx                 ← novo entry (ReactDOM.createRoot)
-  App.tsx                  ← <BrowserRouter> + providers (QueryClient, Tooltip, Toaster, AuthProvider)
-  routes.tsx               ← tabela de <Routes>/<Route> do react-router-dom
-  pages/
-    Login.tsx              ← migrado de routes/login.tsx
-    Index.tsx              ← migrado de routes/index.tsx (redirect)
-    AppLayout.tsx          ← migrado de routes/_app.tsx (sidebar + Outlet)
-    Mesas.tsx, Comandas.tsx, Cozinha.tsx, Caixa.tsx, Dashboard.tsx,
-    Produtos.tsx, GruposOpcoes.tsx, Configuracoes.tsx,
-    Relatorios.tsx, Usuarios.tsx, NotFound.tsx
-  hooks/
-    use-auth.tsx           ← AuthProvider + useAuth (Supabase onAuthStateChange)
-  lib/
-    admin-users.ts         ← chama a Edge Function via supabase.functions.invoke
-    (admin-users.functions.ts REMOVIDO)
-  integrations/supabase/
-    client.ts              ← mantido (já existe)
-    (auth-attacher.ts, auth-middleware.ts, client.server.ts REMOVIDOS)
-  components/              ← mantidos (UI, dialogs, print-preview)
-  styles.css               ← mantido
-index.html                 ← novo (raiz do projeto, padrão Vite SPA)
-vite.config.ts             ← @vitejs/plugin-react + @tailwindcss/vite + tsconfig-paths
-.env.example               ← VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY
-.htaccess (em public/)     ← rewrite SPA p/ cPanel/Apache
-supabase/functions/admin-users/index.ts  ← Edge Function para CRUD de usuários
-```
+Foco: criar o esqueleto que permite vender o SaaS. Sem ela, nada do resto faz sentido.
 
-## Passos da migração
+### Banco de dados (migração única)
 
-### 1. Limpeza de dependências e config
+Novas tabelas:
+- **`plans`** — `name, description, monthly_price, annual_price, max_users, max_tables, max_open_tabs, allow_tables_module, allow_tabs_module, allow_kitchen_module, allow_advanced_dashboard, status`.
+- **`subscriptions`** — `company_id, plan_id, status (trialing|active|past_due|suspended|canceled|expired), billing_cycle, current_period_start, current_period_end, trial_ends_at, canceled_at, suspended_at, payment_provider, external_subscription_id, last_payment_status, next_billing_date`. Uma assinatura ativa por empresa (unique parcial).
+- **`audit_logs`** — `actor_user_id, actor_role, company_id, action, entity_type, entity_id, old_value (jsonb), new_value (jsonb), created_at`.
 
-Remover: `@tanstack/react-start`, `@tanstack/react-router`, `@tanstack/router-plugin`, `@cloudflare/vite-plugin`, `@lovable.dev/vite-tanstack-config`.
-Adicionar: `react-router-dom@^6`.
+Ajustes em tabelas existentes:
+- **`companies`**: adicionar `trade_name` (já existe), `responsible_name, responsible_email, responsible_phone, city, state, secondary_color, accent_color`. Já tem `status`, `logo_url`, `primary_color`.
+- **`app_role` enum**: adicionar `'super_admin'`.
+- **`profiles`**: permitir `company_id` nulo (para super admins internos).
+- **`current_company_id()`**: continua igual, mas super admin terá `company_id` nulo → não vê dados operacionais por RLS padrão.
 
-Reescrever `vite.config.ts`:
+### RLS / segurança
 
-```ts
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
-import tsconfigPaths from "vite-tsconfig-paths";
+- Nova função `is_super_admin()` (SECURITY DEFINER, usa `has_role(auth.uid(),'super_admin')`).
+- `plans`: SELECT autenticado; INSERT/UPDATE/DELETE só super admin.
+- `subscriptions`: SELECT empresa própria OU super admin; mutações só super admin.
+- `audit_logs`: SELECT só super admin (ou empresa própria nas ações relativas à própria empresa); INSERT via edge function.
+- `companies`: adicionar política de SELECT/INSERT/UPDATE/DELETE para super admin (todas as empresas).
+- `profiles` e `user_roles`: super admin pode gerenciar globalmente.
+- `tables` (`public.tables`): manter `staff updates table status` mas continuar exigindo mesma empresa — já está OK.
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), tsconfigPaths()],
-  build: { outDir: "dist", emptyOutDir: true },
-});
-```
+### Edge function (estende `admin-users`)
 
-Apagar: `src/server.ts`, `src/start.ts`, `src/router.tsx`, `src/routeTree.gen.ts`, `wrangler.jsonc`, `worker-configuration.d.ts` (se existirem), `app.config.ts`.
+Nova função **`admin-companies`** com ações:
+- `create_company` — cria empresa, settings padrão, assinatura trial (14 dias), usuário admin inicial, role `admin`.
+- `update_company` — dados, branding, status.
+- `set_subscription` — define plano, status, datas.
+- `suspend_company` / `reactivate_company` — atalho de status.
 
-### 2. Novo `index.html` na raiz + `src/main.tsx`
+Toda ação registra em `audit_logs`. Validação: o caller precisa ter role `super_admin` (verificado via JWT + `has_role`).
 
-`index.html` padrão Vite com `<div id="root">` e `<script type="module" src="/src/main.tsx">`.
-`main.tsx` faz `createRoot(...).render(<App />)`.
+### Frontend — Super Admin
 
-### 3. App.tsx (providers + router)
+Rotas novas (todas dentro de `BrowserRouter`, prefixo `/global`):
+- `/global` → redireciona conforme role.
+- `/global/dashboard` — métricas globais (contagem por status, total usuários, total pedidos).
+- `/global/empresas` — lista + criar/editar/suspender/reativar.
+- `/global/empresas/:id` — detalhe + assinatura + branding.
+- `/global/planos` — CRUD de planos.
+- `/global/assinaturas` — visão consolidada.
+- `/global/auditoria` — lista de `audit_logs` com filtros.
 
-```tsx
-<QueryClientProvider client={qc}>
-  <TooltipProvider>
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-        <Toaster />
-      </BrowserRouter>
-    </AuthProvider>
-  </TooltipProvider>
-</QueryClientProvider>
-```
+Guards:
+- `<RequireSuperAdmin>` — só `super_admin`.
+- `<RequireCompanyAccess>` — usuário tem `company_id` E assinatura permite acesso (`active`/`trialing`); senão redireciona para `/assinatura-suspensa`.
 
-### 4. Conversão de rotas
+Hook `useAuth` estendido: carrega assinatura ativa da empresa e expõe `subscriptionStatus`, `planLimits`, `isSuperAdmin`.
 
-Cada `src/routes/<x>.tsx` vira `src/pages/<X>.tsx` exportando um componente normal.
-`src/routes/_app.tsx` (layout com sidebar) vira `pages/AppLayout.tsx` e usa `<Outlet />` do `react-router-dom`.
+### Tela de bloqueio
 
-`routes.tsx`:
+`/assinatura-suspensa` — mensagem amigável + botão WhatsApp suporte + logout. Mostrada quando assinatura ≠ `active`/`trialing` para usuários de empresa.
 
-```tsx
-<Routes>
-  <Route path="/login" element={<Login />} />
-  <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
-    <Route path="/" element={<Navigate to="/mesas" replace />} />
-    <Route path="/mesas" element={<Mesas />} />
-    <Route path="/comandas" element={<Comandas />} />
-    <Route path="/cozinha" element={<Cozinha />} />
-    <Route path="/caixa" element={<Caixa />} />
-    <Route path="/dashboard" element={<RequireAdmin><Dashboard /></RequireAdmin>} />
-    <Route path="/produtos" element={<RequireAdmin><Produtos /></RequireAdmin>} />
-    <Route path="/grupos-opcoes" element={<RequireAdmin><GruposOpcoes /></RequireAdmin>} />
-    <Route path="/configuracoes" element={<RequireAdmin><Configuracoes /></RequireAdmin>} />
-    <Route path="/relatorios" element={<RequireAdmin><Relatorios /></RequireAdmin>} />
-    <Route path="/usuarios" element={<RequireAdmin><Usuarios /></RequireAdmin>} />
-  </Route>
-  <Route path="*" element={<NotFound />} />
-</Routes>
-```
+### Seeds de demonstração
 
-Substituições mecânicas em cada página:
-- `import { createFileRoute } from "@tanstack/react-router"` → remover
-- `export const Route = createFileRoute(...)({ component: X })` → `export default X`
-- `<Link to="/x">` do TanStack → `<Link to="/x">` do `react-router-dom` (mesmo nome)
-- `useNavigate`/`useLocation`/`useParams` → equivalentes do `react-router-dom`
-- `Route.useParams()` → `useParams()`
-- `Navigate` → do `react-router-dom`
+Via migração `INSERT … ON CONFLICT DO NOTHING`:
+- Plano "Profissional" padrão.
+- Super admin: `superadmin@mesachef.com.br / superadmin` (criar via edge function pós-deploy ou seed SQL com `auth.users`).
+- Manter `admin@gmail.com / admin` e `staff@gmail.com / staff` já existentes.
 
-### 5. Auth (sem server fn)
+### Critérios de aceite Fase 1
+- Login como super admin → vai para `/global/dashboard`.
+- Super admin cria empresa + admin inicial.
+- Login do novo admin → vê apenas dados da própria empresa.
+- Super admin suspende assinatura → admin é bloqueado em `/assinatura-suspensa` no próximo acesso.
+- Reativar → acesso volta.
+- `audit_logs` registra criação, suspensão e reativação.
 
-`use-auth.tsx` cria contexto que escuta `supabase.auth.onAuthStateChange` e expõe `{ user, profile, role, loading, signIn, signOut }`. `profile` e `role` são carregados via `supabase.from('profiles').select(...)` e `supabase.from('user_roles').select(...)` — RLS já restringe ao próprio usuário.
+---
 
-`RequireAuth` redireciona para `/login` se sem sessão. `RequireAdmin` redireciona para `/mesas` se `role !== 'admin'`.
+## Fase 2 — White Label visual por empresa + Configurações expandidas
 
-### 6. Edge Function `admin-users`
+Foco: cada empresa enxerga sua marca dentro do mesmo domínio.
 
-Criar `supabase/functions/admin-users/index.ts` (Deno) que:
-- Valida o JWT do chamador (`supabase.auth.getUser(authHeader)`)
-- Confere que esse user é `admin` da mesma `company_id`
-- Usa `SUPABASE_SERVICE_ROLE_KEY` para `auth.admin.createUser`, `updateUserById`, `deleteUser`, `generateLink({type:'recovery'})`
-- Insere/atualiza `profiles` e `user_roles` conforme a ação
-- Aceita `{ action: 'create'|'update'|'reset'|'delete', payload: {...} }`
+### Banco
 
-Cliente: `src/lib/admin-users.ts` chama via `supabase.functions.invoke('admin-users', { body: ... })`. `src/pages/Usuarios.tsx` consome essa lib (substitui `useServerFn(adminUsers.xxx)`).
+- Estender `settings` (não criar `company_settings` separado — evita duplicação com `settings` atual):
+  - `display_name, secondary_color, accent_color, enable_tables_module, enable_tabs_module, enable_printing, enable_service_fee, tab_numbering_mode (manual|auto), receipt_message, establishment_data (jsonb)`.
 
-`supabase/config.toml`: declarar `[functions.admin-users]` com `verify_jwt = true`.
+### Frontend
 
-### 7. Remoção de `/api/public/seed-demo`
+- Hook `useTenantBranding` — carrega logo + cores da empresa, injeta variáveis CSS (`--primary`, `--accent`, etc.) no `:root` após login.
+- `AppLayout` mostra logo + nome da empresa configurada.
+- Tela `/configuracoes` ganha abas: **Identidade** (logo, nome, cores), **Operação** (taxas, módulos, impressão), **Comprovante** (mensagem, dados estabelecimento).
+- Rodapé discreto "Powered by MesaChef".
+- Itens de menu condicionados a `settings.enable_*` E `plan.allow_*`.
 
-Deletar `src/routes/api/public/seed-demo.ts` e qualquer botão/menção a ela. Cartão de credenciais demo do login já está restrito a `import.meta.env.DEV`; manter, sem chamadas a seed.
+### Critérios de aceite Fase 2
+- Empresa A com logo azul, empresa B com logo verde — cada admin vê a sua sem mudar domínio.
+- Desabilitar módulo de comandas no plano remove o item do menu.
 
-### 8. Impressão
+---
 
-`PrintPreviewDialog` e `src/lib/print-order.ts` já são 100% client-side (`window.print()` + CSS `@media print`). Só removo as referências de `@tanstack/react-router` se houver e mantenho intactos os layouts 58mm/80mm.
+## Fase 3 — Limites de plano, "Minha Assinatura", permissões granulares
 
-### 9. SPA fallback no cPanel
+Foco: amarrar plano às operações.
 
-Criar `public/.htaccess` para Apache (cPanel) reescrever todas as rotas para `index.html`:
+### Backend
 
-```apache
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-  RewriteRule ^index\.html$ - [L]
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /index.html [L]
-</IfModule>
-```
+- Triggers ou checks na edge `admin-users` para `max_users`.
+- Trigger em `tables` INSERT para `max_tables`.
+- Trigger em `customer_tabs` INSERT (status='aberta') para `max_open_tabs`.
+- Erro amigável: `"Seu plano atual não permite adicionar mais X."`
 
-Vite copia `public/.htaccess` automaticamente para `dist/`.
+### Frontend
 
-### 10. Variáveis de ambiente
+- `/app/assinatura` (admin da empresa) — plano atual, status, vencimento, contadores de uso vs limite, botão "Falar com suporte".
+- `/app/suporte` — WhatsApp/email + dados técnicos copiáveis.
+- Camada `usePermissions()` baseada em role + plano. Componente `<Can permission="...">` para esconder ações.
 
-`.env.example`:
+### Reestruturação de rotas (opcional, requer cuidado)
 
-```
-VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJ...
-```
+Mover rotas atuais (`/mesas`, `/comandas` etc.) para prefixo `/app/*` conforme pedido. **Risco**: links existentes/bookmarks quebram. Sugiro manter rotas atuais como aliases que redirecionam para `/app/*` por 1–2 versões.
 
-Manter `src/integrations/supabase/client.ts` como está (já usa `VITE_*`).
+### Critérios de aceite Fase 3
+- Plano com `max_users=3` impede criar 4º usuário com mensagem clara.
+- Admin vê tela `/app/assinatura` com uso real.
+- Staff sem permissão `manage_cash_register` não vê o item Caixa.
 
-### 11. Deploy no cPanel
+---
 
-Após `npm run build`:
-1. Comprimir conteúdo de `dist/` em `.zip`.
-2. Upload para `public_html/` no cPanel.
-3. Extrair lá. O `.htaccess` já garante o roteamento SPA.
+## Detalhes técnicos
 
-## Pontos de atenção / trade-offs
+**Stack mantida:** React 18 + Vite + React Router v6 + Supabase (Lovable Cloud) + Tailwind + shadcn. Sem mudança de framework.
 
-- A tela `/usuarios` passa a depender de uma Edge Function online. Sem internet/Supabase, ela não funciona — mesmo comportamento que antes.
-- `SUPABASE_SERVICE_ROLE_KEY` permanece exclusivamente no ambiente da Edge Function (nunca no bundle estático).
-- Como é SPA puro, não há mais pré-render/SEO; aceitável para um sistema interno de PDV.
-- Após a migração, a "Publish" do Lovable também passa a servir o mesmo bundle estático.
+**Migração de dados existentes:** todas as empresas atuais recebem assinatura `active` no plano "Profissional" via migração, para não quebrar nada.
 
-Posso prosseguir com a implementação?
+**Roles:** `app_role` enum existente `('admin','staff')` ganha `'super_admin'`. `admin` continua sendo admin **da empresa** (não global). Documentar isso em `mem://`.
+
+**Super admin sem company_id:** RLS atual usa `current_company_id()` que retorna NULL para ele → naturalmente não vê dados operacionais a menos que use telas `/global/*` que consultam via edge function com service role OU via policies específicas com `is_super_admin()`.
+
+**Auditoria:** toda mutação sensível (criar/suspender empresa, alterar plano, alterar role) passa pela edge function que insere em `audit_logs` com `actor_user_id = auth.uid()`.
+
+**Domínio único:** nenhum código lê `window.location.hostname` para roteamento. Identificação 100% via JWT → `profiles.company_id`.
+
+---
+
+## O que NÃO está incluído nesta etapa
+
+- Cobrança real (Stripe/Mercado Pago/Asaas) — estrutura pronta, integração depois.
+- "Acessar ambiente como" (impersonation de super admin) — fica para fase futura, exige cuidado de segurança.
+- WhatsApp, NF-e, gateway de pagamento real.
+- Permissões 100% customizáveis (granular por usuário) — perfis fixos por role + plano nesta etapa.
+
+---
+
+## Próximo passo
+
+Confirme se posso começar pela **Fase 1** (Super Admin + Planos + Assinaturas + Bloqueio). É a base — sem ela as fases 2 e 3 não têm sentido. Cada fase tem ~1 migração + ~1 edge function + ~5–10 arquivos React, então fica testável de forma isolada.
+
+Se quiser ajustar escopo antes de eu começar (ex.: pular auditoria, juntar fases, mudar nomes de rotas), me diga agora.

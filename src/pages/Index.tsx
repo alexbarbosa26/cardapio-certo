@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 
 function IndexRedirect() {
-  const { loading, user, profile } = useAuth();
+  const { loading, user, profile, isSuperAdmin, isCompanyAccessAllowed } = useAuth();
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -11,6 +11,8 @@ function IndexRedirect() {
     );
   }
   if (!user) return <Navigate to="/login" replace />;
+  if (isSuperAdmin) return <Navigate to="/global/dashboard" replace />;
+  if (!isCompanyAccessAllowed) return <Navigate to="/assinatura-suspensa" replace />;
   if (profile?.role === 'admin') return <Navigate to="/dashboard" replace />;
   return <Navigate to="/mesas" replace />;
 }

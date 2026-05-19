@@ -2,10 +2,12 @@ import { useEffect, useState, createContext, useContext, type ReactNode } from '
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
-export type AppRole = 'admin' | 'staff';
+export type AppRole = 'admin' | 'staff' | 'super_admin';
+export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'suspended' | 'canceled' | 'expired';
 
 export interface AuthProfile {
   id: string;
+  /** Empty string for super admins (no company). */
   company_id: string;
   name: string;
   email: string;
@@ -14,10 +16,22 @@ export interface AuthProfile {
   role: AppRole | null;
 }
 
+export interface ActiveSubscription {
+  id: string;
+  status: SubscriptionStatus;
+  plan_id: string;
+  plan_name?: string;
+  current_period_end: string | null;
+  trial_ends_at: string | null;
+}
+
 interface AuthCtx {
   user: User | null;
   session: Session | null;
   profile: AuthProfile | null;
+  subscription: ActiveSubscription | null;
+  isSuperAdmin: boolean;
+  isCompanyAccessAllowed: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
@@ -40,12 +54,32 @@ async function loadProfile(userId: string): Promise<AuthProfile | null> {
     .maybeSingle();
   return {
     id: p.id,
-    company_id: p.company_id,
+    company_id: p.company_id ?? '',
     name: p.name,
     email: p.email,
     status: p.status,
-    company_name: (p as any).companies?.name,
+    company_name: (p as { companies?: { name?: string } }).companies?.name,
     role: (r?.role as AppRole) ?? null,
+  };
+}
+
+async function loadSubscription(companyId: string): Promise<ActiveSubscription | null> {
+  const { data } = await supabase
+    .from('subscriptions')
+    .select('id, status, plan_id, current_period_end, trial_ends_at, plans(name)')
+    .eq('company_id', companyId)
+    .in('status', ['trialing', 'active', 'past_due', 'suspended'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    id: data.id,
+    status: data.status as SubscriptionStatus,
+    plan_id: data.plan_id,
+    plan_name: (data as { plans?: { name?: string } }).plans?.name,
+    current_period_end: data.current_period_end,
+    trial_ends_at: data.trial_ends_at,
   };
 }
 
@@ -53,18 +87,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
+  const [subscription, setSubscription] = useState<ActiveSubscription | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const hydrate = async (sess: Session | null) => {
+    if (!sess?.user) {
+      setProfile(null);
+      setSubscription(null);
+      return;
+    }
+    const p = await loadProfile(sess.user.id);
+    setProfile(p);
+    if (p?.company_id) {
+      const sub = await loadSubscription(p.company_id);
+      setSubscription(sub);
+    } else {
+      setSubscription(null);
+    }
+  };
 
   const refresh = async () => {
     const { data } = await supabase.auth.getSession();
     setSession(data.session);
     setUser(data.session?.user ?? null);
-    if (data.session?.user) {
-      const p = await loadProfile(data.session.user.id);
-      setProfile(p);
-    } else {
-      setProfile(null);
-    }
+    await hydrate(data.session);
     setLoading(false);
   };
 
@@ -72,12 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, sess) => {
       setSession(sess);
       setUser(sess?.user ?? null);
-      if (sess?.user) {
-        // não bloquear callback
-        setTimeout(() => loadProfile(sess.user.id).then(setProfile), 0);
-      } else {
-        setProfile(null);
-      }
+      setTimeout(() => { void hydrate(sess); }, 0);
     });
     refresh();
     return () => sub.subscription.unsubscribe();
@@ -93,10 +134,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setSubscription(null);
   };
 
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const isCompanyAccessAllowed =
+    isSuperAdmin ||
+    (!!profile?.company_id &&
+      !!subscription &&
+      (subscription.status === 'active' || subscription.status === 'trialing'));
+
   return (
-    <Ctx.Provider value={{ user, session, profile, loading, signIn, signOut, refresh }}>
+    <Ctx.Provider value={{
+      user, session, profile, subscription,
+      isSuperAdmin, isCompanyAccessAllowed,
+      loading, signIn, signOut, refresh,
+    }}>
       {children}
     </Ctx.Provider>
   );
