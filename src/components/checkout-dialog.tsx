@@ -145,7 +145,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-baseline gap-2">
             <span className="font-display text-2xl">{tableName}</span>
@@ -153,6 +153,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             {quitada && <Badge className="bg-success text-success-foreground ml-auto">Conta quitada</Badge>}
           </DialogTitle>
         </DialogHeader>
+        <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-4">
 
         <Totals total={total} paid={activePaid} pending={pending} />
 
@@ -178,7 +179,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             <TabsTrigger value="parcial">Parcial</TabsTrigger>
           </TabsList>
 
-          <div className="mt-3 max-h-[42vh] overflow-y-auto">
+          <div className="mt-3">
             <TabsContent value="total" className="m-0">
               <PayTotalTab pending={pending} orderId={orderId} companyId={order.company_id} onPaid={load} />
             </TabsContent>
@@ -204,6 +205,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             if (error) toast.error(error.message); else { toast.success('Pagamento estornado.'); load(); }
           }}
         />
+        </div>
 
         <DialogFooter className="gap-2 flex-wrap">
           <Button variant="outline" onClick={() => printThermal({
