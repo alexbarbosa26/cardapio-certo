@@ -186,6 +186,7 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
             if (error) toast.error(error.message); else { toast.success('Pagamento estornado.'); load(); }
           }}
         />
+        </div>
 
         <DialogFooter className="gap-2 flex-wrap">
           <Button variant="outline" onClick={() => printThermal({
