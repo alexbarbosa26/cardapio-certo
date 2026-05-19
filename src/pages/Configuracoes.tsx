@@ -25,10 +25,13 @@ function ConfigPage() {
         <h1 className="font-display text-3xl sm:text-4xl mt-1">Configurações</h1>
       </header>
 
-      <Tabs defaultValue="empresa">
+      <Tabs defaultValue="identidade">
         <div className="-mx-4 sm:mx-0 overflow-x-auto">
           <TabsList className="w-max sm:w-full inline-flex sm:flex mx-4 sm:mx-0">
+            <TabsTrigger value="identidade">Identidade</TabsTrigger>
             <TabsTrigger value="empresa">Empresa</TabsTrigger>
+            <TabsTrigger value="operacao">Operação</TabsTrigger>
+            <TabsTrigger value="comprovante">Comprovante</TabsTrigger>
             <TabsTrigger value="financeiro">Financeiro & Cozinha</TabsTrigger>
             <TabsTrigger value="tipografia">Tipografia</TabsTrigger>
             <TabsTrigger value="mesas">Mesas</TabsTrigger>
@@ -36,7 +39,10 @@ function ConfigPage() {
           </TabsList>
         </div>
 
+        <TabsContent value="identidade"><IdentityTab/></TabsContent>
         <TabsContent value="empresa"><CompanyTab/></TabsContent>
+        <TabsContent value="operacao"><OperationTab/></TabsContent>
+        <TabsContent value="comprovante"><ReceiptTab/></TabsContent>
         <TabsContent value="financeiro"><SettingsTab/></TabsContent>
         <TabsContent value="tipografia"><TypographyTab/></TabsContent>
         <TabsContent value="mesas"><TablesTab/></TabsContent>
