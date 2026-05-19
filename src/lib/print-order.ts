@@ -187,5 +187,5 @@ export function printThermal(opts: PrintOptions) {
 }
 
 function esc(s: string) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]!));
+  return String(s).replaceAll(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]!));
 }
