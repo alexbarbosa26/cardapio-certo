@@ -35,6 +35,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
+          <TenantBrandingProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
