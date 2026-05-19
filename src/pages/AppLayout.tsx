@@ -70,35 +70,46 @@ function AppLayout() {
               <Button variant="ghost" size="icon"><Menu className="h-5 w-5"/></Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 bg-sidebar text-sidebar-foreground border-sidebar-border p-0">
-              <BrandHeader companyName={profile.company_name ?? 'MesaChef'} />
+              <BrandHeader companyName={companyName} logoUrl={branding.logoUrl} />
               <NavList items={items} onNavigate={() => setMobileOpen(false)} />
               <UserCard name={profile.name} role={profile.role} onSignOut={async () => { setMobileOpen(false); await signOut(); navigate('/login'); }} />
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
-            <span className="font-semibold">MesaChef</span>
-            <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground"><Logo className="h-4 w-4" /></div>
+            <span className="font-semibold">{companyName}</span>
+            {branding.logoUrl ? (
+              <img src={branding.logoUrl} alt="logo" className="h-7 w-7 rounded-md object-contain bg-card border border-border" />
+            ) : (
+              <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground"><Logo className="h-4 w-4" /></div>
+            )}
           </div>
         </header>
 
         <main className="min-w-0 flex-1 overflow-x-hidden">
           <Outlet />
         </main>
+        <footer className="py-2 text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
+          Powered by MesaChef
+        </footer>
       </div>
     </div>
   );
 }
 
-function BrandHeader({ companyName }: { companyName: string }) {
+function BrandHeader({ companyName, logoUrl }: { companyName: string; logoUrl: string | null }) {
   return (
     <div className="px-5 py-5 border-b border-sidebar-border">
       <div className="flex items-center gap-2">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Logo className="h-5 w-5" />
-        </div>
-        <div className="leading-tight">
-          <div className="text-sm font-semibold">MesaChef</div>
-          <div className="text-[11px] text-sidebar-foreground/60">{companyName}</div>
+        {logoUrl ? (
+          <img src={logoUrl} alt="logo" className="h-9 w-9 rounded-lg object-contain bg-sidebar-accent" />
+        ) : (
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <Logo className="h-5 w-5" />
+          </div>
+        )}
+        <div className="leading-tight min-w-0">
+          <div className="text-sm font-semibold truncate">{companyName}</div>
+          <div className="text-[11px] text-sidebar-foreground/60">MesaChef</div>
         </div>
       </div>
     </div>
