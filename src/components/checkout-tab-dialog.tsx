@@ -118,8 +118,7 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
     if (!quitada) { toast.error('Ainda há valor pendente.'); return; }
     const { error } = await supabase.from('customer_tabs').update({
       status: 'paga', closed_at: new Date().toISOString(), closed_by: profile?.id,
-    }).eq('id', tab.id).eq('status', 'aguardando_pagamento').neq('status', 'paga');
-    // fallback: also allow from 'aberta'
+    }).eq('id', tab.id).neq('status', 'paga');
     if (error) { toast.error(error.message); return; }
     toast.success(`Comanda #${tab.tab_number} finalizada.`);
     onOpenChange(false);
