@@ -68,6 +68,8 @@ function UsuariosPage() {
     }
   };
 
+  if (redirectNonAdmin) return <Navigate to="/mesas" />;
+
   return (
     <div className="p-4 sm:p-8 max-w-4xl mx-auto">
       <header className="mb-6 flex items-end justify-between flex-wrap gap-3">
