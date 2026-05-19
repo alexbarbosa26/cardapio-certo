@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          actor_role: string | null
+          actor_user_id: string | null
+          company_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          new_value: Json | null
+          old_value: Json | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_role?: string | null
+          actor_user_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_role?: string | null
+          actor_user_id?: string | null
+          company_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       cash_movements: {
         Row: {
           amount: number
@@ -140,34 +185,55 @@ export type Database = {
       }
       companies: {
         Row: {
+          accent_color: string | null
+          city: string | null
           created_at: string
           document: string | null
           id: string
           logo_url: string | null
           name: string
           primary_color: string | null
+          responsible_email: string | null
+          responsible_name: string | null
+          responsible_phone: string | null
+          secondary_color: string | null
+          state: string | null
           status: string
           trade_name: string | null
           updated_at: string
         }
         Insert: {
+          accent_color?: string | null
+          city?: string | null
           created_at?: string
           document?: string | null
           id?: string
           logo_url?: string | null
           name: string
           primary_color?: string | null
+          responsible_email?: string | null
+          responsible_name?: string | null
+          responsible_phone?: string | null
+          secondary_color?: string | null
+          state?: string | null
           status?: string
           trade_name?: string | null
           updated_at?: string
         }
         Update: {
+          accent_color?: string | null
+          city?: string | null
           created_at?: string
           document?: string | null
           id?: string
           logo_url?: string | null
           name?: string
           primary_color?: string | null
+          responsible_email?: string | null
+          responsible_name?: string | null
+          responsible_phone?: string | null
+          secondary_color?: string | null
+          state?: string | null
           status?: string
           trade_name?: string | null
           updated_at?: string
@@ -603,6 +669,60 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          allow_advanced_dashboard: boolean
+          allow_kitchen_module: boolean
+          allow_tables_module: boolean
+          allow_tabs_module: boolean
+          annual_price: number
+          created_at: string
+          description: string | null
+          id: string
+          max_open_tabs: number | null
+          max_tables: number | null
+          max_users: number | null
+          monthly_price: number
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          allow_advanced_dashboard?: boolean
+          allow_kitchen_module?: boolean
+          allow_tables_module?: boolean
+          allow_tabs_module?: boolean
+          annual_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_open_tabs?: number | null
+          max_tables?: number | null
+          max_users?: number | null
+          monthly_price?: number
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_advanced_dashboard?: boolean
+          allow_kitchen_module?: boolean
+          allow_tables_module?: boolean
+          allow_tabs_module?: boolean
+          annual_price?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          max_open_tabs?: number | null
+          max_tables?: number | null
+          max_users?: number | null
+          monthly_price?: number
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_option_groups: {
         Row: {
           created_at: string
@@ -710,7 +830,7 @@ export type Database = {
       }
       profiles: {
         Row: {
-          company_id: string
+          company_id: string | null
           created_at: string
           email: string
           id: string
@@ -719,7 +839,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          company_id: string
+          company_id?: string | null
           created_at?: string
           email: string
           id: string
@@ -728,7 +848,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          company_id?: string
+          company_id?: string | null
           created_at?: string
           email?: string
           id?: string
@@ -798,6 +918,78 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: true
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          billing_cycle: string
+          canceled_at: string | null
+          company_id: string
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          external_subscription_id: string | null
+          id: string
+          last_payment_status: string | null
+          next_billing_date: string | null
+          payment_provider: string | null
+          plan_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          suspended_at: string | null
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string
+          canceled_at?: string | null
+          company_id: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          external_subscription_id?: string | null
+          id?: string
+          last_payment_status?: string | null
+          next_billing_date?: string | null
+          payment_provider?: string | null
+          plan_id: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          suspended_at?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          canceled_at?: string | null
+          company_id?: string
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          external_subscription_id?: string | null
+          id?: string
+          last_payment_status?: string | null
+          next_billing_date?: string | null
+          payment_provider?: string | null
+          plan_id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          suspended_at?: string | null
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
         ]
@@ -1018,6 +1210,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
       recalc_customer_tab: { Args: { _tab_id: string }; Returns: undefined }
       recalc_order_payments: { Args: { _order_id: string }; Returns: undefined }
     }
@@ -1042,6 +1235,13 @@ export type Database = {
       order_status: "aberto" | "fechado" | "cancelado"
       payment_method: "dinheiro" | "pix" | "debito" | "credito"
       payment_status: "ativo" | "cancelado"
+      subscription_status:
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "suspended"
+        | "canceled"
+        | "expired"
       tab_item_type: "fixo" | "peso" | "manual"
       table_status:
         | "livre"
@@ -1199,6 +1399,14 @@ export const Constants = {
       order_status: ["aberto", "fechado", "cancelado"],
       payment_method: ["dinheiro", "pix", "debito", "credito"],
       payment_status: ["ativo", "cancelado"],
+      subscription_status: [
+        "trialing",
+        "active",
+        "past_due",
+        "suspended",
+        "canceled",
+        "expired",
+      ],
       tab_item_type: ["fixo", "peso", "manual"],
       table_status: [
         "livre",
