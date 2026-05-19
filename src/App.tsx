@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/hooks/use-auth';
+import { TenantBrandingProvider } from '@/hooks/use-tenant-branding';
 import { PrintPreviewDialog } from '@/components/print-preview-dialog';
 import { RequireAuth, RequireSuperAdmin, RequireCompanyAccess } from '@/components/route-guards';
 import AppLayout from '@/pages/AppLayout';
