@@ -264,8 +264,12 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
                 })}>
                   <Printer className="h-4 w-4 mr-1" />Imprimir
                 </Button>
-                <Button onClick={() => setCheckoutOpen(true)} disabled={items.length === 0}>
-                  <Receipt className="h-4 w-4 mr-1" />Fechar
+                <Button
+                  onClick={() => setCheckoutOpen(true)}
+                  disabled={items.length === 0 || tab.status === 'paga' || tab.status === 'cancelada'}
+                >
+                  <Receipt className="h-4 w-4 mr-1" />
+                  {tab.status === 'paga' ? 'Finalizada' : tab.status === 'cancelada' ? 'Cancelada' : 'Fechar'}
                 </Button>
               </div>
             </div>
