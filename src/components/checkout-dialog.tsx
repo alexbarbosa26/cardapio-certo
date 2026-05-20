@@ -98,15 +98,15 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
 
   // Realtime refresh
   useEffect(() => {
-    if (!open) return;
-    const ch = supabase.channel(`checkout-${orderId}`)
+    if (!open || !profile) return;
+    const ch = supabase.channel(`co:${profile.company_id}:checkout-${orderId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments', filter: `order_id=eq.${orderId}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `order_id=eq.${orderId}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line
-  }, [open, orderId]);
+  }, [open, orderId, profile?.company_id]);
 
   const itemsSubtotal = useMemo(() => items.reduce((s, i) => s + i.total_price, 0), [items]);
   const fee = withFee ? itemsSubtotal * (feePct / 100) : 0;
