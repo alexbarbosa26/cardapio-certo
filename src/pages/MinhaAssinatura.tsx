@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenantBranding } from '@/hooks/use-tenant-branding';
-import { MessageCircle, Mail, ExternalLink } from 'lucide-react';
+import { billing } from '@/lib/payments';
+import { toast } from 'sonner';
+import { MessageCircle, Mail, ExternalLink, ArrowRightLeft, XCircle, RefreshCw } from 'lucide-react';
 
 interface PlanFull {
   name: string;
