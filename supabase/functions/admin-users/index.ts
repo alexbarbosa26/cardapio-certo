@@ -106,6 +106,19 @@ Deno.serve(async (req) => {
       await admin.from("user_roles").delete().eq("user_id", user_id);
       await admin.from("user_roles").insert({ user_id, role: newRole });
 
+      // Sync access at the Auth layer so deactivated users cannot log in.
+      if (status === "inativo") {
+        const { error: bErr } = await admin.auth.admin.updateUserById(user_id, {
+          ban_duration: "876000h", // ~100 years (Supabase requires a duration string)
+        });
+        if (bErr) return json({ error: bErr.message }, 400);
+      } else {
+        const { error: uErr } = await admin.auth.admin.updateUserById(user_id, {
+          ban_duration: "none",
+        });
+        if (uErr) return json({ error: uErr.message }, 400);
+      }
+
       if (password && password.length >= 6) {
         const { error: pErr } = await admin.auth.admin.updateUserById(user_id, { password });
         if (pErr) return json({ error: pErr.message }, 400);
