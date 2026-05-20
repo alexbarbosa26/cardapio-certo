@@ -53,8 +53,6 @@ function AppLayout() {
     if (k === 'dashboard') return branding.plan.allowAdvancedDashboard;
     return true;
   };
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  void isAllowed;
   const items = NAV.filter((i) => (!i.admin || profile.role === 'admin') && isAllowed(i.key));
   const companyName = branding.displayName ?? profile.company_name ?? 'MesaChef';
 
