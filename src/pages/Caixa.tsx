@@ -61,7 +61,7 @@ function CaixaPage() {
   useEffect(() => { load(); }, [profile?.company_id]);
   useEffect(() => {
     if (!profile) return;
-    const ch = supabase.channel('caixa-rt')
+    const ch = supabase.channel(`co:${profile.company_id}:caixa-rt`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_registers' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_movements' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, load)
