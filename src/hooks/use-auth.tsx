@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
 export type AppRole = 'admin' | 'staff' | 'super_admin';
-export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'suspended' | 'canceled' | 'expired';
+export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'suspended' | 'canceled' | 'expired' | 'pending_payment' | 'failed';
 
 export interface AuthProfile {
   id: string;
