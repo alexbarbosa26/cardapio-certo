@@ -23,6 +23,9 @@ import Configuracoes from '@/pages/Configuracoes';
 import Relatorios from '@/pages/Relatorios';
 import Usuarios from '@/pages/Usuarios';
 import AssinaturaSuspensa from '@/pages/AssinaturaSuspensa';
+import Landing from '@/pages/Landing';
+import Contratar from '@/pages/Contratar';
+import Checkout from '@/pages/Checkout';
 import GlobalAdminLayout from '@/pages/global/GlobalAdminLayout';
 import GlobalDashboard from '@/pages/global/GlobalDashboard';
 import GlobalEmpresas from '@/pages/global/GlobalEmpresas';
@@ -41,12 +44,15 @@ export default function App() {
           <PermissionsProvider>
           <BrowserRouter>
             <Routes>
+              {/* Públicas */}
+              <Route path="/" element={<Index />} />
+              <Route path="/contratar/:planSlug" element={<Contratar />} />
+              <Route path="/checkout/:sessionId" element={<Checkout />} />
               <Route path="/login" element={<Login />} />
 
               {/* Tela informativa de bloqueio – exige login mas não exige assinatura ativa */}
               <Route element={<RequireAuth />}>
                 <Route path="/assinatura-suspensa" element={<AssinaturaSuspensa />} />
-                <Route path="/" element={<Index />} />
               </Route>
 
               {/* Painel global do dono do SaaS */}

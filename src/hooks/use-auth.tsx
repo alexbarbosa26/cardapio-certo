@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
 export type AppRole = 'admin' | 'staff' | 'super_admin';
-export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'suspended' | 'canceled' | 'expired';
+export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'suspended' | 'canceled' | 'expired' | 'pending_payment' | 'failed';
 
 export interface AuthProfile {
   id: string;
@@ -68,7 +68,6 @@ async function loadSubscription(companyId: string): Promise<ActiveSubscription |
     .from('subscriptions')
     .select('id, status, plan_id, current_period_end, trial_ends_at, plans(name)')
     .eq('company_id', companyId)
-    .in('status', ['trialing', 'active', 'past_due', 'suspended'])
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -142,7 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSuperAdmin ||
     (!!profile?.company_id &&
       !!subscription &&
-      (subscription.status === 'active' || subscription.status === 'trialing'));
+      (subscription.status === 'active' ||
+        subscription.status === 'trialing' ||
+        subscription.status === 'past_due'));
 
   return (
     <Ctx.Provider value={{

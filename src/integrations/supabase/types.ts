@@ -183,6 +183,54 @@ export type Database = {
           },
         ]
       }
+      checkout_sessions: {
+        Row: {
+          amount: number
+          billing_cycle: string
+          checkout_url: string | null
+          company_id: string
+          created_at: string
+          expires_at: string | null
+          external_session_id: string | null
+          id: string
+          plan_id: string
+          provider: string
+          status: string
+          subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          billing_cycle?: string
+          checkout_url?: string | null
+          company_id: string
+          created_at?: string
+          expires_at?: string | null
+          external_session_id?: string | null
+          id?: string
+          plan_id: string
+          provider?: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          billing_cycle?: string
+          checkout_url?: string | null
+          company_id?: string
+          created_at?: string
+          expires_at?: string | null
+          external_session_id?: string | null
+          id?: string
+          plan_id?: string
+          provider?: string
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           accent_color: string | null
@@ -190,6 +238,7 @@ export type Database = {
           created_at: string
           document: string | null
           id: string
+          internal_notes: string | null
           logo_url: string | null
           name: string
           primary_color: string | null
@@ -208,6 +257,7 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: string
+          internal_notes?: string | null
           logo_url?: string | null
           name: string
           primary_color?: string | null
@@ -226,6 +276,7 @@ export type Database = {
           created_at?: string
           document?: string | null
           id?: string
+          internal_notes?: string | null
           logo_url?: string | null
           name?: string
           primary_color?: string | null
@@ -601,6 +652,39 @@ export type Database = {
           },
         ]
       }
+      payment_providers: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          is_mock: boolean
+          name: string
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_mock?: boolean
+          name: string
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_mock?: boolean
+          name?: string
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount: number
@@ -672,53 +756,89 @@ export type Database = {
       plans: {
         Row: {
           allow_advanced_dashboard: boolean
+          allow_cash_register_module: boolean
           allow_kitchen_module: boolean
+          allow_reports: boolean
           allow_tables_module: boolean
           allow_tabs_module: boolean
+          allow_visual_customization: boolean
           annual_price: number
           created_at: string
           description: string | null
+          display_order: number
+          full_description: string | null
           id: string
+          is_featured: boolean
           max_open_tabs: number | null
+          max_products: number | null
           max_tables: number | null
           max_users: number | null
           monthly_price: number
           name: string
+          short_description: string | null
+          show_on_landing_page: boolean
+          slug: string | null
           status: string
+          support_level: string
+          trial_days: number
           updated_at: string
         }
         Insert: {
           allow_advanced_dashboard?: boolean
+          allow_cash_register_module?: boolean
           allow_kitchen_module?: boolean
+          allow_reports?: boolean
           allow_tables_module?: boolean
           allow_tabs_module?: boolean
+          allow_visual_customization?: boolean
           annual_price?: number
           created_at?: string
           description?: string | null
+          display_order?: number
+          full_description?: string | null
           id?: string
+          is_featured?: boolean
           max_open_tabs?: number | null
+          max_products?: number | null
           max_tables?: number | null
           max_users?: number | null
           monthly_price?: number
           name: string
+          short_description?: string | null
+          show_on_landing_page?: boolean
+          slug?: string | null
           status?: string
+          support_level?: string
+          trial_days?: number
           updated_at?: string
         }
         Update: {
           allow_advanced_dashboard?: boolean
+          allow_cash_register_module?: boolean
           allow_kitchen_module?: boolean
+          allow_reports?: boolean
           allow_tables_module?: boolean
           allow_tabs_module?: boolean
+          allow_visual_customization?: boolean
           annual_price?: number
           created_at?: string
           description?: string | null
+          display_order?: number
+          full_description?: string | null
           id?: string
+          is_featured?: boolean
           max_open_tabs?: number | null
+          max_products?: number | null
           max_tables?: number | null
           max_users?: number | null
           monthly_price?: number
           name?: string
+          short_description?: string | null
+          show_on_landing_page?: boolean
+          slug?: string | null
           status?: string
+          support_level?: string
+          trial_days?: number
           updated_at?: string
         }
         Relationships: []
@@ -955,10 +1075,109 @@ export type Database = {
           },
         ]
       }
+      subscription_events: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          event_type: string
+          id: string
+          new_plan_id: string | null
+          new_status: string | null
+          old_plan_id: string | null
+          old_status: string | null
+          subscription_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          new_plan_id?: string | null
+          new_status?: string | null
+          old_plan_id?: string | null
+          old_status?: string | null
+          subscription_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          new_plan_id?: string | null
+          new_status?: string | null
+          old_plan_id?: string | null
+          old_status?: string | null
+          subscription_id?: string | null
+        }
+        Relationships: []
+      }
+      subscription_payments: {
+        Row: {
+          amount: number
+          checkout_session_id: string | null
+          company_id: string
+          created_at: string
+          currency: string
+          due_date: string | null
+          external_payment_id: string | null
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          provider: string
+          raw_response: Json | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          checkout_session_id?: string | null
+          company_id: string
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          external_payment_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          provider?: string
+          raw_response?: Json | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          checkout_session_id?: string | null
+          company_id?: string
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          external_payment_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          provider?: string
+          raw_response?: Json | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
+          amount: number
           billing_cycle: string
+          cancel_at_period_end: boolean
           canceled_at: string | null
+          cancellation_reason: string | null
           company_id: string
           created_at: string
           current_period_end: string | null
@@ -972,11 +1191,15 @@ export type Database = {
           status: Database["public"]["Enums"]["subscription_status"]
           suspended_at: string | null
           trial_ends_at: string | null
+          trial_starts_at: string | null
           updated_at: string
         }
         Insert: {
+          amount?: number
           billing_cycle?: string
+          cancel_at_period_end?: boolean
           canceled_at?: string | null
+          cancellation_reason?: string | null
           company_id: string
           created_at?: string
           current_period_end?: string | null
@@ -990,11 +1213,15 @@ export type Database = {
           status?: Database["public"]["Enums"]["subscription_status"]
           suspended_at?: string | null
           trial_ends_at?: string | null
+          trial_starts_at?: string | null
           updated_at?: string
         }
         Update: {
+          amount?: number
           billing_cycle?: string
+          cancel_at_period_end?: boolean
           canceled_at?: string | null
+          cancellation_reason?: string | null
           company_id?: string
           created_at?: string
           current_period_end?: string | null
@@ -1008,6 +1235,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["subscription_status"]
           suspended_at?: string | null
           trial_ends_at?: string | null
+          trial_starts_at?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1216,6 +1444,39 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          external_id: string | null
+          id: string
+          payload: Json
+          processed: boolean
+          processed_at: string | null
+          provider: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          external_id?: string | null
+          id?: string
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+          provider: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          external_id?: string | null
+          id?: string
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+          provider?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1283,6 +1544,8 @@ export type Database = {
         | "suspended"
         | "canceled"
         | "expired"
+        | "pending_payment"
+        | "failed"
       tab_item_type: "fixo" | "peso" | "manual"
       table_status:
         | "livre"
@@ -1447,6 +1710,8 @@ export const Constants = {
         "suspended",
         "canceled",
         "expired",
+        "pending_payment",
+        "failed",
       ],
       tab_item_type: ["fixo", "peso", "manual"],
       table_status: [

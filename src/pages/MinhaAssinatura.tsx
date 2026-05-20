@@ -2,10 +2,15 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenantBranding } from '@/hooks/use-tenant-branding';
-import { MessageCircle, Mail, ExternalLink } from 'lucide-react';
+import { billing } from '@/lib/payments';
+import { toast } from 'sonner';
+import { MessageCircle, Mail, ExternalLink, ArrowRightLeft, XCircle, RefreshCw } from 'lucide-react';
 
 interface PlanFull {
   name: string;
@@ -54,25 +59,67 @@ function UsageRow({ label, used, max }: { label: string; used: number; max: numb
   );
 }
 
+interface AvailablePlan {
+  id: string; name: string; slug: string; short_description: string | null;
+  monthly_price: number; annual_price: number;
+  max_users: number | null; max_tables: number | null; max_open_tabs: number | null;
+}
+interface PaymentRow { id: string; amount: number; status: string; paid_at: string | null; created_at: string; payment_method: string | null; }
+interface EventRow { id: string; event_type: string; description: string | null; created_at: string; }
+
 export default function MinhaAssinatura() {
-  const { profile, subscription } = useAuth();
+  const { profile, subscription, refresh } = useAuth();
   const branding = useTenantBranding();
   const [plan, setPlan] = useState<PlanFull | null>(null);
   const [usage, setUsage] = useState<Usage>({ users: 0, tables: 0, openTabs: 0 });
+  const [available, setAvailable] = useState<AvailablePlan[]>([]);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      if (!subscription?.plan_id || !profile?.company_id) return;
-      const [{ data: p }, users, tables, openTabs] = await Promise.all([
-        supabase.from('plans').select('*').eq('id', subscription.plan_id).maybeSingle(),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id),
-        supabase.from('tables').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id),
-        supabase.from('customer_tabs').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id).eq('status', 'aberta'),
-      ]);
-      setPlan(p as PlanFull | null);
-      setUsage({ users: users.count ?? 0, tables: tables.count ?? 0, openTabs: openTabs.count ?? 0 });
-    })();
-  }, [subscription?.plan_id, profile?.company_id]);
+  const reload = async () => {
+    if (!subscription?.plan_id || !profile?.company_id) return;
+    const [{ data: p }, users, tables, openTabs, { data: plans }, { data: pays }, { data: evs }] = await Promise.all([
+      supabase.from('plans').select('*').eq('id', subscription.plan_id).maybeSingle(),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id),
+      supabase.from('tables').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id),
+      supabase.from('customer_tabs').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id).eq('status', 'aberta'),
+      supabase.from('plans').select('id,name,slug,short_description,monthly_price,annual_price,max_users,max_tables,max_open_tabs').eq('status', 'ativo').order('display_order'),
+      supabase.from('subscription_payments').select('id,amount,status,paid_at,created_at,payment_method').eq('company_id', profile.company_id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('subscription_events').select('id,event_type,description,created_at').eq('company_id', profile.company_id).order('created_at', { ascending: false }).limit(20),
+    ]);
+    setPlan(p as PlanFull | null);
+    setUsage({ users: users.count ?? 0, tables: tables.count ?? 0, openTabs: openTabs.count ?? 0 });
+    setAvailable((plans ?? []) as AvailablePlan[]);
+    setPayments((pays ?? []) as PaymentRow[]);
+    setEvents((evs ?? []) as EventRow[]);
+  };
+
+  useEffect(() => { void reload(); /* eslint-disable-next-line */ }, [subscription?.plan_id, profile?.company_id]);
+
+  const changePlan = async (newPlanId: string) => {
+    if (newPlanId === subscription?.plan_id) return;
+    setBusy(true);
+    try { await billing.changePlan(newPlanId); toast.success('Plano alterado com sucesso.'); await refresh(); await reload(); }
+    catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  const doCancel = async () => {
+    setBusy(true);
+    try { await billing.cancelSubscription({ reason: cancelReason, cancel_at_period_end: true });
+      toast.success('Cancelamento agendado para o fim do período.');
+      setCancelOpen(false); setCancelReason(''); await refresh(); await reload();
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
+
+  const doReactivate = async () => {
+    setBusy(true);
+    try { await billing.reactivateSubscription(); toast.success('Assinatura reativada.'); await refresh(); await reload(); }
+    catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
 
   const waMsg = encodeURIComponent(`Olá, sou ${profile?.name} da empresa ${branding.displayName ?? profile?.company_name}. Preciso de suporte com minha assinatura MesaChef.`);
 
@@ -150,6 +197,95 @@ export default function MinhaAssinatura() {
           </ul>
         </Card>
       )}
+
+
+      {/* Alterar plano */}
+      <Card className="p-5 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-display text-lg flex items-center gap-2"><ArrowRightLeft className="h-4 w-4" /> Alterar plano</h3>
+          {subscription?.status === 'canceled' ? (
+            <Button size="sm" variant="outline" onClick={doReactivate} disabled={busy}>
+              <RefreshCw className="h-4 w-4" /> Reativar assinatura
+            </Button>
+          ) : (
+            <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="text-destructive border-destructive/40 hover:bg-destructive/10">
+                  <XCircle className="h-4 w-4" /> Cancelar assinatura
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Cancelar assinatura</DialogTitle></DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Você manterá acesso até o fim do período atual. Após isso, os módulos operacionais serão bloqueados.
+                </p>
+                <Textarea placeholder="Motivo do cancelamento (opcional)" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setCancelOpen(false)}>Voltar</Button>
+                  <Button variant="destructive" onClick={doCancel} disabled={busy}>Confirmar cancelamento</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {available.map((ap) => {
+            const isCurrent = ap.id === subscription?.plan_id;
+            return (
+              <div key={ap.id} className={`rounded-lg border p-4 ${isCurrent ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                <div className="flex items-baseline justify-between">
+                  <div className="font-semibold">{ap.name}</div>
+                  {isCurrent && <Badge variant="outline" className="text-xs">Atual</Badge>}
+                </div>
+                {ap.short_description && <p className="text-xs text-muted-foreground mt-1">{ap.short_description}</p>}
+                <div className="mt-2 font-display text-lg">R$ {Number(ap.monthly_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-xs text-muted-foreground"> /mês</span></div>
+                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5">
+                  <li>Usuários: {ap.max_users ?? 'ilimitado'}</li>
+                  <li>Mesas: {ap.max_tables ?? 'ilimitado'}</li>
+                  <li>Comandas: {ap.max_open_tabs ?? 'ilimitado'}</li>
+                </ul>
+                <Button size="sm" className="w-full mt-3" variant={isCurrent ? 'outline' : 'default'} disabled={isCurrent || busy} onClick={() => changePlan(ap.id)}>
+                  {isCurrent ? 'Plano atual' : 'Mudar para este plano'}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Histórico */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="p-5 space-y-2">
+          <h3 className="font-display text-lg">Histórico de pagamentos</h3>
+          {payments.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum pagamento registrado.</p> : (
+            <ul className="text-sm divide-y divide-border">
+              {payments.map((p) => (
+                <li key={p.id} className="py-2 flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">R$ {Number(p.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                    <div className="text-xs text-muted-foreground">{new Date(p.paid_at ?? p.created_at).toLocaleString('pt-BR')} · {p.payment_method ?? '—'}</div>
+                  </div>
+                  <Badge variant="outline" className="text-xs uppercase">{p.status}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+        <Card className="p-5 space-y-2">
+          <h3 className="font-display text-lg">Eventos da assinatura</h3>
+          {events.length === 0 ? <p className="text-sm text-muted-foreground">Sem eventos.</p> : (
+            <ul className="text-sm divide-y divide-border">
+              {events.map((ev) => (
+                <li key={ev.id} className="py-2">
+                  <div className="font-medium">{ev.event_type}</div>
+                  {ev.description && <div className="text-xs text-muted-foreground">{ev.description}</div>}
+                  <div className="text-xs text-muted-foreground">{new Date(ev.created_at).toLocaleString('pt-BR')}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
 
       <Card className="p-5 text-sm space-y-2 bg-muted/30">
         <div className="flex items-center gap-2 font-medium"><ExternalLink className="h-4 w-4" /> Dados técnicos (para suporte)</div>
