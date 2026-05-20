@@ -59,25 +59,67 @@ function UsageRow({ label, used, max }: { label: string; used: number; max: numb
   );
 }
 
+interface AvailablePlan {
+  id: string; name: string; slug: string; short_description: string | null;
+  monthly_price: number; annual_price: number;
+  max_users: number | null; max_tables: number | null; max_open_tabs: number | null;
+}
+interface PaymentRow { id: string; amount: number; status: string; paid_at: string | null; created_at: string; payment_method: string | null; }
+interface EventRow { id: string; event_type: string; description: string | null; created_at: string; }
+
 export default function MinhaAssinatura() {
-  const { profile, subscription } = useAuth();
+  const { profile, subscription, refresh } = useAuth();
   const branding = useTenantBranding();
   const [plan, setPlan] = useState<PlanFull | null>(null);
   const [usage, setUsage] = useState<Usage>({ users: 0, tables: 0, openTabs: 0 });
+  const [available, setAvailable] = useState<AvailablePlan[]>([]);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [events, setEvents] = useState<EventRow[]>([]);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      if (!subscription?.plan_id || !profile?.company_id) return;
-      const [{ data: p }, users, tables, openTabs] = await Promise.all([
-        supabase.from('plans').select('*').eq('id', subscription.plan_id).maybeSingle(),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id),
-        supabase.from('tables').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id),
-        supabase.from('customer_tabs').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id).eq('status', 'aberta'),
-      ]);
-      setPlan(p as PlanFull | null);
-      setUsage({ users: users.count ?? 0, tables: tables.count ?? 0, openTabs: openTabs.count ?? 0 });
-    })();
-  }, [subscription?.plan_id, profile?.company_id]);
+  const reload = async () => {
+    if (!subscription?.plan_id || !profile?.company_id) return;
+    const [{ data: p }, users, tables, openTabs, { data: plans }, { data: pays }, { data: evs }] = await Promise.all([
+      supabase.from('plans').select('*').eq('id', subscription.plan_id).maybeSingle(),
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id),
+      supabase.from('tables').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id),
+      supabase.from('customer_tabs').select('id', { count: 'exact', head: true }).eq('company_id', profile.company_id).eq('status', 'aberta'),
+      supabase.from('plans').select('id,name,slug,short_description,monthly_price,annual_price,max_users,max_tables,max_open_tabs').eq('status', 'ativo').order('display_order'),
+      supabase.from('subscription_payments').select('id,amount,status,paid_at,created_at,payment_method').eq('company_id', profile.company_id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('subscription_events').select('id,event_type,description,created_at').eq('company_id', profile.company_id).order('created_at', { ascending: false }).limit(20),
+    ]);
+    setPlan(p as PlanFull | null);
+    setUsage({ users: users.count ?? 0, tables: tables.count ?? 0, openTabs: openTabs.count ?? 0 });
+    setAvailable((plans ?? []) as AvailablePlan[]);
+    setPayments((pays ?? []) as PaymentRow[]);
+    setEvents((evs ?? []) as EventRow[]);
+  };
+
+  useEffect(() => { void reload(); /* eslint-disable-next-line */ }, [subscription?.plan_id, profile?.company_id]);
+
+  const changePlan = async (newPlanId: string) => {
+    if (newPlanId === subscription?.plan_id) return;
+    setBusy(true);
+    try { await billing.changePlan(newPlanId); toast.success('Plano alterado com sucesso.'); await refresh(); await reload(); }
+    catch (e) { toast.error((e as Error).message); }
+    finally { setBusy(false); }
+  };
+
+  const doCancel = async () => {
+    setBusy(true);
+    try { await billing.cancelSubscription({ reason: cancelReason, cancel_at_period_end: true });
+      toast.success('Cancelamento agendado para o fim do período.');
+      setCancelOpen(false); setCancelReason(''); await refresh(); await reload();
+    } catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
+
+  const doReactivate = async () => {
+    setBusy(true);
+    try { await billing.reactivateSubscription(); toast.success('Assinatura reativada.'); await refresh(); await reload(); }
+    catch (e) { toast.error((e as Error).message); } finally { setBusy(false); }
+  };
 
   const waMsg = encodeURIComponent(`Olá, sou ${profile?.name} da empresa ${branding.displayName ?? profile?.company_name}. Preciso de suporte com minha assinatura MesaChef.`);
 
