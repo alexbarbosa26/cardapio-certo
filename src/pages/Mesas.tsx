@@ -55,7 +55,7 @@ function MesasPage() {
   useEffect(() => {
     if (!profile) return;
     const ch = supabase
-      .channel('mesas-rt')
+      .channel(`co:${profile.company_id}:mesas-rt`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tables' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, load)

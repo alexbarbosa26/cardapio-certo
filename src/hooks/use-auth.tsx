@@ -96,6 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const p = await loadProfile(sess.user.id);
+    if (p && p.status === 'inativo') {
+      await supabase.auth.signOut();
+      setProfile(null);
+      setSubscription(null);
+      return;
+    }
     setProfile(p);
     if (p?.company_id) {
       const sub = await loadSubscription(p.company_id);
@@ -126,6 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn: AuthCtx['signIn'] = async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: 'E-mail ou senha incorretos.' };
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      const p = await loadProfile(data.user.id);
+      if (p && p.status === 'inativo') {
+        await supabase.auth.signOut();
+        return { error: 'Usuário inativo. Procure o administrador.' };
+      }
+    }
     await refresh();
     return {};
   };

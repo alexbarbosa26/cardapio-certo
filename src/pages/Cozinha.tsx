@@ -53,7 +53,7 @@ function CozinhaPage() {
 
   useEffect(() => {
     if (!profile) return;
-    const ch = supabase.channel('kds')
+    const ch = supabase.channel(`co:${profile.company_id}:kds`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };

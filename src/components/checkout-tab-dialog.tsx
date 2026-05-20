@@ -83,15 +83,15 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
   useEffect(() => { if (open) load(); /* eslint-disable-next-line */ }, [open, tabId]);
 
   useEffect(() => {
-    if (!open) return;
-    const ch = supabase.channel(`tab-checkout-${tabId}`)
+    if (!open || !profile) return;
+    const ch = supabase.channel(`co:${profile.company_id}:tab-checkout-${tabId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tab_payments', filter: `tab_id=eq.${tabId}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tab_items', filter: `tab_id=eq.${tabId}` }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_tabs', filter: `id=eq.${tabId}` }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line
-  }, [open, tabId]);
+  }, [open, tabId, profile?.company_id]);
 
   // persist fee/discount changes
   useEffect(() => {

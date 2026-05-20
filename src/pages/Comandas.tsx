@@ -50,7 +50,7 @@ function ComandasPage() {
 
   useEffect(() => {
     if (!profile) return;
-    const ch = supabase.channel('comandas-rt')
+    const ch = supabase.channel(`co:${profile.company_id}:comandas-rt`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_tabs' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tab_items' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tab_payments' }, load)
