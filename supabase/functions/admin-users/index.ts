@@ -59,16 +59,31 @@ Deno.serve(async (req) => {
       if (!name || !email || !password || !newRole) return json({ error: "Campos obrigatórios" }, 400);
       if (password.length < 6) return json({ error: "Senha mínima 6 caracteres" }, 400);
 
+      // Pre-check plan limit for a friendlier error before creating the auth user
+      const { data: lim } = await admin.rpc("company_plan_limits", { _company: companyId });
+      const maxUsers = (lim?.[0]?.max_users ?? null) as number | null;
+      if (maxUsers != null) {
+        const { count } = await admin.from("profiles").select("id", { count: "exact", head: true }).eq("company_id", companyId);
+        if ((count ?? 0) >= maxUsers) {
+          return json({ error: `Seu plano atual não permite adicionar mais usuários (limite: ${maxUsers}).` }, 400);
+        }
+      }
+
       const { data: created, error } = await admin.auth.admin.createUser({
         email, password, email_confirm: true, user_metadata: { name },
       });
       if (error) return json({ error: error.message }, 400);
       const uid = created.user!.id;
 
-      await admin.from("profiles").upsert(
+      const { error: pErr } = await admin.from("profiles").upsert(
         { id: uid, company_id: companyId, name, email, status: "ativo" },
         { onConflict: "id" },
       );
+      if (pErr) {
+        // Cleanup the auth user if profile insert fails (e.g. plan limit race)
+        await admin.auth.admin.deleteUser(uid);
+        return json({ error: pErr.message }, 400);
+      }
       await admin.from("user_roles").upsert(
         { user_id: uid, role: newRole },
         { onConflict: "user_id,role" },

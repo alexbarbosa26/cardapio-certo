@@ -4,6 +4,8 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { AuthProvider } from '@/hooks/use-auth';
 import { TenantBrandingProvider } from '@/hooks/use-tenant-branding';
+import { PermissionsProvider } from '@/hooks/use-permissions';
+import MinhaAssinatura from '@/pages/MinhaAssinatura';
 import { PrintPreviewDialog } from '@/components/print-preview-dialog';
 import { RequireAuth, RequireSuperAdmin, RequireCompanyAccess } from '@/components/route-guards';
 import AppLayout from '@/pages/AppLayout';
@@ -36,6 +38,7 @@ export default function App() {
       <TooltipProvider>
         <AuthProvider>
           <TenantBrandingProvider>
+          <PermissionsProvider>
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
@@ -70,6 +73,7 @@ export default function App() {
                   <Route path="/configuracoes" element={<Configuracoes />} />
                   <Route path="/relatorios" element={<Relatorios />} />
                   <Route path="/usuarios" element={<Usuarios />} />
+                  <Route path="/assinatura" element={<MinhaAssinatura />} />
                 </Route>
               </Route>
 
@@ -78,6 +82,7 @@ export default function App() {
             <PrintPreviewDialog />
             <Toaster richColors position="top-right" />
           </BrowserRouter>
+          </PermissionsProvider>
           </TenantBrandingProvider>
         </AuthProvider>
       </TooltipProvider>
