@@ -1,6 +1,7 @@
 import { Outlet, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import { useTenantTypography } from '@/hooks/use-tenant-typography';
+import { useTenantBranding } from '@/hooks/use-tenant-branding';
 import {
   LayoutDashboard, UtensilsCrossed, ChefHat, Package, Users, Wallet,
   BarChart3, Settings as SettingsIcon, MessageSquare, Receipt, LogOut, Menu, ChefHat as Logo, ListPlus,
@@ -11,21 +12,22 @@ import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-interface NavItem { to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
+type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'relatorios' | 'config' | 'wpp' | 'nf';
+interface NavItem { key: NavKey; to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
 
 const NAV: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true },
-  { to: '/mesas', label: 'Mesas', icon: UtensilsCrossed },
-  { to: '/comandas', label: 'Comandas', icon: ClipboardList },
-  { to: '/cozinha', label: 'Cozinha', icon: ChefHat },
-  { to: '/produtos', label: 'Produtos', icon: Package, admin: true },
-  { to: '/grupos-opcoes', label: 'Grupos de opções', icon: ListPlus, admin: true },
-  { to: '/usuarios', label: 'Usuários', icon: Users, admin: true },
-  { to: '/caixa', label: 'Caixa', icon: Wallet, admin: true },
-  { to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
-  { to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
-  { to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
-  { to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
+  { key: 'dashboard', to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, admin: true },
+  { key: 'mesas', to: '/mesas', label: 'Mesas', icon: UtensilsCrossed },
+  { key: 'comandas', to: '/comandas', label: 'Comandas', icon: ClipboardList },
+  { key: 'cozinha', to: '/cozinha', label: 'Cozinha', icon: ChefHat },
+  { key: 'produtos', to: '/produtos', label: 'Produtos', icon: Package, admin: true },
+  { key: 'grupos', to: '/grupos-opcoes', label: 'Grupos de opções', icon: ListPlus, admin: true },
+  { key: 'usuarios', to: '/usuarios', label: 'Usuários', icon: Users, admin: true },
+  { key: 'caixa', to: '/caixa', label: 'Caixa', icon: Wallet, admin: true },
+  { key: 'relatorios', to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
+  { key: 'config', to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
+  { key: 'wpp', to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
+  { key: 'nf', to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
 ];
 
 function AppLayout() {
@@ -33,6 +35,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   useTenantTypography();
+  const branding = useTenantBranding();
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-background">
@@ -42,12 +45,20 @@ function AppLayout() {
   if (!user) return <Navigate to="/login" replace />;
   if (!profile) return <div className="p-8 text-center text-muted-foreground">Carregando perfil…</div>;
 
-  const items = NAV.filter((i) => !i.admin || profile.role === 'admin');
+  const isAllowed = (k: NavKey) => {
+    if (k === 'mesas') return branding.plan.allowTables && branding.enableTables;
+    if (k === 'comandas') return branding.plan.allowTabs && branding.enableTabs;
+    if (k === 'cozinha') return branding.plan.allowKitchen && branding.enableKitchen;
+    if (k === 'dashboard') return branding.plan.allowAdvancedDashboard;
+    return true;
+  };
+  const items = NAV.filter((i) => (!i.admin || profile.role === 'admin') && isAllowed(i.key));
+  const companyName = branding.displayName ?? profile.company_name ?? 'MesaChef';
 
   return (
     <div className="flex min-h-screen w-full overflow-x-hidden bg-background">
       <aside className="hidden lg:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
-        <BrandHeader companyName={profile.company_name ?? 'MesaChef'} />
+        <BrandHeader companyName={companyName} logoUrl={branding.logoUrl} />
         <NavList items={items} />
         <UserCard name={profile.name} role={profile.role} onSignOut={async () => { await signOut(); navigate('/login'); }} />
       </aside>
@@ -59,35 +70,46 @@ function AppLayout() {
               <Button variant="ghost" size="icon"><Menu className="h-5 w-5"/></Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 bg-sidebar text-sidebar-foreground border-sidebar-border p-0">
-              <BrandHeader companyName={profile.company_name ?? 'MesaChef'} />
+              <BrandHeader companyName={companyName} logoUrl={branding.logoUrl} />
               <NavList items={items} onNavigate={() => setMobileOpen(false)} />
               <UserCard name={profile.name} role={profile.role} onSignOut={async () => { setMobileOpen(false); await signOut(); navigate('/login'); }} />
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
-            <span className="font-semibold">MesaChef</span>
-            <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground"><Logo className="h-4 w-4" /></div>
+            <span className="font-semibold">{companyName}</span>
+            {branding.logoUrl ? (
+              <img src={branding.logoUrl} alt="logo" className="h-7 w-7 rounded-md object-contain bg-card border border-border" />
+            ) : (
+              <div className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground"><Logo className="h-4 w-4" /></div>
+            )}
           </div>
         </header>
 
         <main className="min-w-0 flex-1 overflow-x-hidden">
           <Outlet />
         </main>
+        <footer className="py-2 text-center text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">
+          Powered by MesaChef
+        </footer>
       </div>
     </div>
   );
 }
 
-function BrandHeader({ companyName }: { companyName: string }) {
+function BrandHeader({ companyName, logoUrl }: { companyName: string; logoUrl: string | null }) {
   return (
     <div className="px-5 py-5 border-b border-sidebar-border">
       <div className="flex items-center gap-2">
-        <div className="grid h-9 w-9 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-          <Logo className="h-5 w-5" />
-        </div>
-        <div className="leading-tight">
-          <div className="text-sm font-semibold">MesaChef</div>
-          <div className="text-[11px] text-sidebar-foreground/60">{companyName}</div>
+        {logoUrl ? (
+          <img src={logoUrl} alt="logo" className="h-9 w-9 rounded-lg object-contain bg-sidebar-accent" />
+        ) : (
+          <div className="grid h-9 w-9 place-items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+            <Logo className="h-5 w-5" />
+          </div>
+        )}
+        <div className="leading-tight min-w-0">
+          <div className="text-sm font-semibold truncate">{companyName}</div>
+          <div className="text-[11px] text-sidebar-foreground/60">MesaChef</div>
         </div>
       </div>
     </div>
