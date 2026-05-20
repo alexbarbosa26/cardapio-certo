@@ -203,7 +203,7 @@ export default function MinhaAssinatura() {
       <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h3 className="font-display text-lg flex items-center gap-2"><ArrowRightLeft className="h-4 w-4" /> Alterar plano</h3>
-          {subscription?.cancel_at_period_end || subscription?.status === 'canceled' ? (
+          {subscription?.status === 'canceled' ? (
             <Button size="sm" variant="outline" onClick={doReactivate} disabled={busy}>
               <RefreshCw className="h-4 w-4" /> Reativar assinatura
             </Button>
