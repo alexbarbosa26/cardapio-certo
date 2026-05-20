@@ -1221,6 +1221,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      company_plan_limits: {
+        Args: { _company: string }
+        Returns: {
+          max_open_tabs: number
+          max_tables: number
+          max_users: number
+        }[]
+      }
       current_company_id: { Args: never; Returns: string }
       current_open_register: { Args: { _company: string }; Returns: string }
       get_public_settings: {
