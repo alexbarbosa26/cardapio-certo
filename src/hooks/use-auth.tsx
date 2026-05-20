@@ -96,6 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const p = await loadProfile(sess.user.id);
+    if (p && p.status === 'inativo') {
+      await supabase.auth.signOut();
+      setProfile(null);
+      setSubscription(null);
+      return;
+    }
     setProfile(p);
     if (p?.company_id) {
       const sub = await loadSubscription(p.company_id);
