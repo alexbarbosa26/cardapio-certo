@@ -198,6 +198,95 @@ export default function MinhaAssinatura() {
         </Card>
       )}
 
+
+      {/* Alterar plano */}
+      <Card className="p-5 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-display text-lg flex items-center gap-2"><ArrowRightLeft className="h-4 w-4" /> Alterar plano</h3>
+          {subscription?.cancel_at_period_end || subscription?.status === 'canceled' ? (
+            <Button size="sm" variant="outline" onClick={doReactivate} disabled={busy}>
+              <RefreshCw className="h-4 w-4" /> Reativar assinatura
+            </Button>
+          ) : (
+            <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="text-destructive border-destructive/40 hover:bg-destructive/10">
+                  <XCircle className="h-4 w-4" /> Cancelar assinatura
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Cancelar assinatura</DialogTitle></DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                  Você manterá acesso até o fim do período atual. Após isso, os módulos operacionais serão bloqueados.
+                </p>
+                <Textarea placeholder="Motivo do cancelamento (opcional)" value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} />
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setCancelOpen(false)}>Voltar</Button>
+                  <Button variant="destructive" onClick={doCancel} disabled={busy}>Confirmar cancelamento</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {available.map((ap) => {
+            const isCurrent = ap.id === subscription?.plan_id;
+            return (
+              <div key={ap.id} className={`rounded-lg border p-4 ${isCurrent ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                <div className="flex items-baseline justify-between">
+                  <div className="font-semibold">{ap.name}</div>
+                  {isCurrent && <Badge variant="outline" className="text-xs">Atual</Badge>}
+                </div>
+                {ap.short_description && <p className="text-xs text-muted-foreground mt-1">{ap.short_description}</p>}
+                <div className="mt-2 font-display text-lg">R$ {Number(ap.monthly_price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}<span className="text-xs text-muted-foreground"> /mês</span></div>
+                <ul className="mt-2 text-xs text-muted-foreground space-y-0.5">
+                  <li>Usuários: {ap.max_users ?? 'ilimitado'}</li>
+                  <li>Mesas: {ap.max_tables ?? 'ilimitado'}</li>
+                  <li>Comandas: {ap.max_open_tabs ?? 'ilimitado'}</li>
+                </ul>
+                <Button size="sm" className="w-full mt-3" variant={isCurrent ? 'outline' : 'default'} disabled={isCurrent || busy} onClick={() => changePlan(ap.id)}>
+                  {isCurrent ? 'Plano atual' : 'Mudar para este plano'}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Histórico */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="p-5 space-y-2">
+          <h3 className="font-display text-lg">Histórico de pagamentos</h3>
+          {payments.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum pagamento registrado.</p> : (
+            <ul className="text-sm divide-y divide-border">
+              {payments.map((p) => (
+                <li key={p.id} className="py-2 flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">R$ {Number(p.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                    <div className="text-xs text-muted-foreground">{new Date(p.paid_at ?? p.created_at).toLocaleString('pt-BR')} · {p.payment_method ?? '—'}</div>
+                  </div>
+                  <Badge variant="outline" className="text-xs uppercase">{p.status}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+        <Card className="p-5 space-y-2">
+          <h3 className="font-display text-lg">Eventos da assinatura</h3>
+          {events.length === 0 ? <p className="text-sm text-muted-foreground">Sem eventos.</p> : (
+            <ul className="text-sm divide-y divide-border">
+              {events.map((ev) => (
+                <li key={ev.id} className="py-2">
+                  <div className="font-medium">{ev.event_type}</div>
+                  {ev.description && <div className="text-xs text-muted-foreground">{ev.description}</div>}
+                  <div className="text-xs text-muted-foreground">{new Date(ev.created_at).toLocaleString('pt-BR')}</div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
+
       <Card className="p-5 text-sm space-y-2 bg-muted/30">
         <div className="flex items-center gap-2 font-medium"><ExternalLink className="h-4 w-4" /> Dados técnicos (para suporte)</div>
         <div className="text-muted-foreground">Empresa: <code>{profile?.company_id}</code></div>
