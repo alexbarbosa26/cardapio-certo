@@ -141,7 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSuperAdmin ||
     (!!profile?.company_id &&
       !!subscription &&
-      (subscription.status === 'active' || subscription.status === 'trialing'));
+      (subscription.status === 'active' ||
+        subscription.status === 'trialing' ||
+        subscription.status === 'past_due'));
 
   return (
     <Ctx.Provider value={{
