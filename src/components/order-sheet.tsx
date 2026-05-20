@@ -85,12 +85,12 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   }, [open, profile?.company_id]);
 
   useEffect(() => {
-    if (!open) return;
-    const ch = supabase.channel(`order-${orderId}`)
+    if (!open || !profile) return;
+    const ch = supabase.channel(`co:${profile.company_id}:order-${orderId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items', filter: `order_id=eq.${orderId}` }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [open, orderId]);
+  }, [open, orderId, profile?.company_id]);
 
   const filtered = useMemo(
     () => activeCat === 'all' ? products : products.filter((p) => p.category_id === activeCat),
