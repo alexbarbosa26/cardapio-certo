@@ -68,7 +68,6 @@ async function loadSubscription(companyId: string): Promise<ActiveSubscription |
     .from('subscriptions')
     .select('id, status, plan_id, current_period_end, trial_ends_at, plans(name)')
     .eq('company_id', companyId)
-    .in('status', ['trialing', 'active', 'past_due', 'suspended'])
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
