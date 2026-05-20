@@ -24,7 +24,7 @@ export const simulatedProvider: PaymentProvider = {
   slug: 'simulated',
   isMock: true,
   async signupAndCheckout(input: SignupAndCheckoutInput) {
-    return call<{ checkout_session_id: string }>('signup_and_checkout', input);
+    return call<{ checkout_session_id: string }>('signup_and_checkout', { ...input });
   },
   async getCheckoutSession(session_id) {
     const r = await call<{ session: CheckoutSession }>('get_session', { session_id });
