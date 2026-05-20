@@ -102,20 +102,29 @@ function RelatoriosPage() {
   }, [orderPays, tabPays]);
 
   const daily = useMemo(() => {
+    const localKey = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
     const map = new Map<string, number>();
     const days = Number(range);
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
-      map.set(d.toISOString().slice(0, 10), 0);
+      map.set(localKey(d), 0);
     }
     for (const p of payments) {
-      const k = new Date(p.created_at).toISOString().slice(0, 10);
+      const k = localKey(new Date(p.created_at));
       if (map.has(k)) map.set(k, (map.get(k) ?? 0) + p.amount);
     }
-    return Array.from(map.entries()).map(([d, v]) => ({
-      date: new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-      total: v,
-    }));
+    return Array.from(map.entries()).map(([d, v]) => {
+      const [y, m, day] = d.split('-').map(Number);
+      return {
+        date: new Date(y, m - 1, day).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        total: v,
+      };
+    });
   }, [payments, range]);
 
   const byMethod = useMemo(() => {
