@@ -124,16 +124,36 @@ Deno.serve(async (req) => {
       }
 
       case 'update_company': {
-        const { company_id, ...fields } = payload ?? {};
+        const { company_id, settings: settingsPatch, ...fields } = payload ?? {};
         if (!company_id) return json({ error: 'company_id obrigatório' }, 400);
         const allowed = ['name','trade_name','document','responsible_name','responsible_email',
           'responsible_phone','city','state','logo_url','primary_color','secondary_color',
-          'accent_color','status'];
+          'accent_color','status','internal_notes'];
         const update: Record<string, unknown> = {};
         for (const k of allowed) if (k in fields) update[k] = fields[k];
-        const { error } = await admin.from('companies').update(update).eq('id', company_id);
-        if (error) return json({ error: error.message }, 400);
-        await audit(admin, userId, 'update_company', { company_id, entity_type: 'company', entity_id: company_id, changes: update });
+        const { data: before } = await admin.from('companies').select('*').eq('id', company_id).maybeSingle();
+        if (Object.keys(update).length) {
+          const { error } = await admin.from('companies').update(update).eq('id', company_id);
+          if (error) return json({ error: error.message }, 400);
+        }
+        if (settingsPatch && typeof settingsPatch === 'object') {
+          const settingsAllowed = ['display_name','receipt_message'];
+          const sUpdate: Record<string, unknown> = {};
+          for (const k of settingsAllowed) if (k in settingsPatch) sUpdate[k] = (settingsPatch as Record<string, unknown>)[k];
+          if (Object.keys(sUpdate).length) {
+            const { data: sExist } = await admin.from('settings').select('id').eq('company_id', company_id).maybeSingle();
+            if (sExist) {
+              await admin.from('settings').update(sUpdate).eq('company_id', company_id);
+            } else {
+              await admin.from('settings').insert({ company_id, ...sUpdate });
+            }
+          }
+        }
+        await admin.from('audit_logs').insert({
+          actor_user_id: userId, actor_role: 'super_admin', company_id,
+          action: 'update_company', entity_type: 'company', entity_id: company_id,
+          old_value: before, new_value: { ...update, settings: settingsPatch ?? null },
+        });
         return json({ ok: true });
       }
 
