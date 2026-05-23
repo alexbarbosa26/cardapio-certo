@@ -215,6 +215,46 @@ function ComandasPage() {
       {openTabId && (
         <ComandaSheet tabId={openTabId} open onOpenChange={(o) => { if (!o) { setOpenTabId(null); load(); } }} />
       )}
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Nova comanda</DialogTitle>
+            <DialogDescription>
+              Numeração manual ativa — informe o número da comanda física.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="manual-num">Número *</Label>
+              <Input
+                id="manual-num"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                autoFocus
+                value={manualNum}
+                onChange={(e) => setManualNum(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !manualBusy) void confirmManual(); }}
+                placeholder="ex: 12"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="manual-name">Cliente (opcional)</Label>
+              <Input
+                id="manual-name"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                placeholder="Nome do cliente"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManualOpen(false)} disabled={manualBusy}>Cancelar</Button>
+            <Button onClick={confirmManual} disabled={manualBusy}>Abrir comanda</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
