@@ -87,7 +87,7 @@ function ComandasPage() {
     };
   }, [tabs]);
 
-  const createTab = async () => {
+  const createTabAuto = async () => {
     if (!profile) return;
     const { data, error } = await supabase.from('customer_tabs').insert({
       company_id: profile.company_id, opened_by: profile.id, status: 'aberta',
@@ -95,6 +95,45 @@ function ComandasPage() {
     if (error || !data) { toast.error(error?.message ?? 'Erro'); return; }
     setOpenTabId(data.id);
   };
+
+  const onNovaComanda = () => {
+    if (tabNumberingMode === 'manual') {
+      setManualNum('');
+      setManualName('');
+      setManualOpen(true);
+    } else {
+      void createTabAuto();
+    }
+  };
+
+  const confirmManual = async () => {
+    if (!profile) return;
+    const n = Number(manualNum);
+    if (!Number.isInteger(n) || n <= 0) { toast.error('Informe um número válido'); return; }
+    setManualBusy(true);
+    try {
+      // Bloqueia número repetido entre comandas em aberto/aguardando pagamento
+      const { data: dup } = await supabase
+        .from('customer_tabs')
+        .select('id')
+        .eq('company_id', profile.company_id)
+        .eq('tab_number', n)
+        .in('status', ['aberta', 'aguardando_pagamento'])
+        .maybeSingle();
+      if (dup) { toast.error(`Comanda #${n} já está aberta`); setManualBusy(false); return; }
+
+      const { data, error } = await supabase.from('customer_tabs').insert({
+        company_id: profile.company_id, opened_by: profile.id, status: 'aberta',
+        tab_number: n, customer_name: manualName.trim() || null,
+      }).select('id').single();
+      if (error || !data) { toast.error(error?.message ?? 'Erro'); setManualBusy(false); return; }
+      setManualOpen(false);
+      setOpenTabId(data.id);
+    } finally {
+      setManualBusy(false);
+    }
+  };
+
 
   const cancelTab = async (id: string) => {
     if (!confirm('Cancelar esta comanda? Itens permanecem registrados.')) return;
