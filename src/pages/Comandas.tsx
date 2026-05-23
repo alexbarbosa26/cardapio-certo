@@ -9,6 +9,11 @@ import { Plus, Search, Clock, Users, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ComandaSheet } from '@/components/comanda-sheet';
+import { useTenantBranding } from '@/hooks/use-tenant-branding';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 type Status = 'todas' | 'aberta' | 'aguardando_pagamento' | 'paga' | 'cancelada';
 
