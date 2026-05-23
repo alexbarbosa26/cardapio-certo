@@ -169,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{
       user, session, profile, subscription,
       isSuperAdmin, isCompanyAccessAllowed,
-      loading, signIn, signOut, refresh,
+      loading: loading || hydrating, signIn, signOut, refresh,
     }}>
       {children}
     </Ctx.Provider>
