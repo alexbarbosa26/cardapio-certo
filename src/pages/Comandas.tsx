@@ -9,6 +9,11 @@ import { Plus, Search, Clock, Users, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { ComandaSheet } from '@/components/comanda-sheet';
+import { useTenantBranding } from '@/hooks/use-tenant-branding';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 type Status = 'todas' | 'aberta' | 'aguardando_pagamento' | 'paga' | 'cancelada';
 
@@ -22,12 +27,17 @@ interface TabRow {
 
 function ComandasPage() {
   const { profile } = useAuth();
+  const { tabNumberingMode } = useTenantBranding();
   const isAdmin = profile?.role === 'admin';
   const [tabs, setTabs] = useState<TabRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<Status>('aberta');
   const [search, setSearch] = useState('');
   const [openTabId, setOpenTabId] = useState<string | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualNum, setManualNum] = useState('');
+  const [manualName, setManualName] = useState('');
+  const [manualBusy, setManualBusy] = useState(false);
 
   const load = async () => {
     if (!profile) return;
@@ -77,7 +87,7 @@ function ComandasPage() {
     };
   }, [tabs]);
 
-  const createTab = async () => {
+  const createTabAuto = async () => {
     if (!profile) return;
     const { data, error } = await supabase.from('customer_tabs').insert({
       company_id: profile.company_id, opened_by: profile.id, status: 'aberta',
@@ -85,6 +95,45 @@ function ComandasPage() {
     if (error || !data) { toast.error(error?.message ?? 'Erro'); return; }
     setOpenTabId(data.id);
   };
+
+  const onNovaComanda = () => {
+    if (tabNumberingMode === 'manual') {
+      setManualNum('');
+      setManualName('');
+      setManualOpen(true);
+    } else {
+      void createTabAuto();
+    }
+  };
+
+  const confirmManual = async () => {
+    if (!profile) return;
+    const n = Number(manualNum);
+    if (!Number.isInteger(n) || n <= 0) { toast.error('Informe um número válido'); return; }
+    setManualBusy(true);
+    try {
+      // Bloqueia número repetido entre comandas em aberto/aguardando pagamento
+      const { data: dup } = await supabase
+        .from('customer_tabs')
+        .select('id')
+        .eq('company_id', profile.company_id)
+        .eq('tab_number', n)
+        .in('status', ['aberta', 'aguardando_pagamento'])
+        .maybeSingle();
+      if (dup) { toast.error(`Comanda #${n} já está aberta`); setManualBusy(false); return; }
+
+      const { data, error } = await supabase.from('customer_tabs').insert({
+        company_id: profile.company_id, opened_by: profile.id, status: 'aberta',
+        tab_number: n, customer_name: manualName.trim() || null,
+      }).select('id').single();
+      if (error || !data) { toast.error(error?.message ?? 'Erro'); setManualBusy(false); return; }
+      setManualOpen(false);
+      setOpenTabId(data.id);
+    } finally {
+      setManualBusy(false);
+    }
+  };
+
 
   const cancelTab = async (id: string) => {
     if (!confirm('Cancelar esta comanda? Itens permanecem registrados.')) return;
@@ -102,7 +151,7 @@ function ComandasPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">PDV leve</p>
           <h1 className="font-display text-3xl sm:text-4xl mt-1">Comandas</h1>
         </div>
-        <Button onClick={createTab}><Plus className="h-4 w-4 mr-1" />Nova comanda</Button>
+        <Button onClick={onNovaComanda}><Plus className="h-4 w-4 mr-1" />Nova comanda</Button>
       </header>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -166,6 +215,46 @@ function ComandasPage() {
       {openTabId && (
         <ComandaSheet tabId={openTabId} open onOpenChange={(o) => { if (!o) { setOpenTabId(null); load(); } }} />
       )}
+
+      <Dialog open={manualOpen} onOpenChange={setManualOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">Nova comanda</DialogTitle>
+            <DialogDescription>
+              Numeração manual ativa — informe o número da comanda física.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="manual-num">Número *</Label>
+              <Input
+                id="manual-num"
+                type="number"
+                min={1}
+                inputMode="numeric"
+                autoFocus
+                value={manualNum}
+                onChange={(e) => setManualNum(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !manualBusy) void confirmManual(); }}
+                placeholder="ex: 12"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="manual-name">Cliente (opcional)</Label>
+              <Input
+                id="manual-name"
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                placeholder="Nome do cliente"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManualOpen(false)} disabled={manualBusy}>Cancelar</Button>
+            <Button onClick={confirmManual} disabled={manualBusy}>Abrir comanda</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
