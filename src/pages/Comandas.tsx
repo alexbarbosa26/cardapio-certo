@@ -151,7 +151,7 @@ function ComandasPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">PDV leve</p>
           <h1 className="font-display text-3xl sm:text-4xl mt-1">Comandas</h1>
         </div>
-        <Button onClick={createTab}><Plus className="h-4 w-4 mr-1" />Nova comanda</Button>
+        <Button onClick={onNovaComanda}><Plus className="h-4 w-4 mr-1" />Nova comanda</Button>
       </header>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
