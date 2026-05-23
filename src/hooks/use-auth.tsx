@@ -88,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [subscription, setSubscription] = useState<ActiveSubscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hydrating, setHydrating] = useState(false);
 
   const hydrate = async (sess: Session | null) => {
     if (!sess?.user) {
@@ -95,19 +96,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSubscription(null);
       return;
     }
-    const p = await loadProfile(sess.user.id);
-    if (p && p.status === 'inativo') {
-      await supabase.auth.signOut();
-      setProfile(null);
-      setSubscription(null);
-      return;
-    }
-    setProfile(p);
-    if (p?.company_id) {
-      const sub = await loadSubscription(p.company_id);
+    setHydrating(true);
+    try {
+      const p = await loadProfile(sess.user.id);
+      if (p && p.status === 'inativo') {
+        await supabase.auth.signOut();
+        setProfile(null);
+        setSubscription(null);
+        return;
+      }
+      let sub: ActiveSubscription | null = null;
+      if (p?.company_id) {
+        sub = await loadSubscription(p.company_id);
+      }
+      // Set both atomically so guards never see profile without subscription.
+      setProfile(p);
       setSubscription(sub);
-    } else {
-      setSubscription(null);
+    } finally {
+      setHydrating(false);
     }
   };
 
