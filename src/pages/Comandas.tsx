@@ -27,12 +27,17 @@ interface TabRow {
 
 function ComandasPage() {
   const { profile } = useAuth();
+  const { tabNumberingMode } = useTenantBranding();
   const isAdmin = profile?.role === 'admin';
   const [tabs, setTabs] = useState<TabRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<Status>('aberta');
   const [search, setSearch] = useState('');
   const [openTabId, setOpenTabId] = useState<string | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualNum, setManualNum] = useState('');
+  const [manualName, setManualName] = useState('');
+  const [manualBusy, setManualBusy] = useState(false);
 
   const load = async () => {
     if (!profile) return;
