@@ -17,6 +17,18 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function safeDbError(err: unknown, fallback = 'Não foi possível concluir a operação.'): string {
+  const e = err as { code?: string; message?: string } | null;
+  console.error('admin-plans db error', e);
+  const code = e?.code;
+  if (code === '23505') return 'Registro já existe.';
+  if (code === '23503') return 'Referência inválida.';
+  if (code === '23502') return 'Campo obrigatório ausente.';
+  if (code === '23514') return 'Valor inválido.';
+  if (code === '22P02') return 'Formato inválido.';
+  return fallback;
+}
+
 async function audit(
   admin: SupabaseClient,
   actorId: string,
