@@ -109,10 +109,6 @@ export default function Checkout() {
               <div className="text-xs uppercase text-muted-foreground">Status</div>
               <div className="font-medium uppercase">{session.status}</div>
             </div>
-            <div>
-              <div className="text-xs uppercase text-muted-foreground">Status</div>
-              <div className="font-medium uppercase">{session.status}</div>
-            </div>
           </div>
 
           <div className="mt-6 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
