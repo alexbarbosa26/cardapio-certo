@@ -288,7 +288,7 @@ async function rejectPayment(a: SupabaseClient, session: SessionRow) {
 }
 
 async function handleSimulatePayment(a: SupabaseClient, actorId: string | null, p: Record<string, unknown>) {
-  const simEnabled = (Deno.env.get('PAYMENT_SIMULATION_ENABLED') ?? 'true').toLowerCase() === 'true';
+  const simEnabled = (Deno.env.get('PAYMENT_SIMULATION_ENABLED') ?? 'false').toLowerCase() === 'true';
   if (!simEnabled) return json({ error: 'Simulação de pagamento desabilitada.' }, 403);
 
   const { session_id, outcome } = p as { session_id?: string; outcome?: string };
