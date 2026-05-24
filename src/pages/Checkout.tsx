@@ -106,10 +106,6 @@ export default function Checkout() {
               <div className="font-display text-xl font-semibold">{formatBRL(Number(session.amount))}</div>
             </div>
             <div>
-              <div className="text-xs uppercase text-muted-foreground">E-mail de acesso</div>
-              <div className="font-medium">{session.companies?.responsible_email ?? '—'}</div>
-            </div>
-            <div>
               <div className="text-xs uppercase text-muted-foreground">Status</div>
               <div className="font-medium uppercase">{session.status}</div>
             </div>

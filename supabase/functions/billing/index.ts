@@ -174,19 +174,23 @@ Deno.serve(async (req) => {
         });
       }
 
-      // ---------------- PUBLIC: read checkout session
+      // ---------------- PUBLIC: read checkout session (no sensitive fields)
       case 'get_session': {
         const { session_id } = payload ?? {};
         if (!session_id) return json({ error: 'session_id obrigatório' }, 400);
         const { data, error } = await a.from('checkout_sessions')
-          .select('id, status, billing_cycle, amount, plan_id, company_id, subscription_id, plans(name, slug), companies(name, responsible_email)')
+          .select('id, status, billing_cycle, amount, plan_id, company_id, subscription_id, plans(name, slug), companies(name)')
           .eq('id', session_id).maybeSingle();
         if (error || !data) return json({ error: 'Sessão não encontrada.' }, 404);
         return json({ session: data });
       }
 
-      // ---------------- PUBLIC: simulate payment outcome
+      // ---------------- simulate payment outcome (gated by env flag)
       case 'simulate_payment': {
+        const simEnabled = (Deno.env.get('PAYMENT_SIMULATION_ENABLED') ?? 'true').toLowerCase() === 'true';
+        if (!simEnabled) {
+          return json({ error: 'Simulação de pagamento desabilitada.' }, 403);
+        }
         const { session_id, outcome } = payload ?? {};
         if (!session_id || !['approve', 'pending', 'reject'].includes(outcome)) {
           return json({ error: 'Parâmetros inválidos.' }, 400);
@@ -194,6 +198,10 @@ Deno.serve(async (req) => {
         const { data: session } = await a.from('checkout_sessions')
           .select('*').eq('id', session_id).maybeSingle();
         if (!session) return json({ error: 'Sessão não encontrada.' }, 404);
+        // Only allow simulating a session that is still pending — prevents toggling existing paid subs.
+        if (session.status !== 'pending') {
+          return json({ error: 'Sessão não está pendente.' }, 409);
+        }
 
         const cycle = (session.billing_cycle === 'annual' ? 'annual' : 'monthly') as Cycle;
 

@@ -1,5 +1,6 @@
-// Bootstrap one-time: cria o super admin de demonstração se NENHUM existir ainda.
-// Sem necessidade de autenticação por ser idempotente e auto-limitada.
+// Bootstrap one-time: cria o super admin se nenhum existir ainda.
+// Requer header `Authorization: Bearer <BOOTSTRAP_SECRET>` para impedir
+// que qualquer pessoa na internet possa disparar a criação.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -8,49 +9,58 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
 };
 
-const DEFAULT_EMAIL = 'superadmin@mesachef.com.br';
-const DEFAULT_PASSWORD = 'superadmin';
-const DEFAULT_NAME = 'Super Admin Demo';
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-  // Bloqueia se já existir qualquer super admin.
-  const { data: existing } = await admin.from('user_roles').select('user_id').eq('role', 'super_admin').limit(1);
-  if (existing && existing.length > 0) {
-    return new Response(JSON.stringify({ ok: false, error: 'Super admin já existe; use o login.' }), {
-      status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  const BOOTSTRAP_SECRET = Deno.env.get('BOOTSTRAP_SECRET');
+  const BOOTSTRAP_EMAIL = Deno.env.get('BOOTSTRAP_EMAIL');
+  const BOOTSTRAP_PASSWORD = Deno.env.get('BOOTSTRAP_PASSWORD');
+  const BOOTSTRAP_NAME = Deno.env.get('BOOTSTRAP_NAME') ?? 'Super Admin';
+
+  if (!BOOTSTRAP_SECRET || !BOOTSTRAP_EMAIL || !BOOTSTRAP_PASSWORD) {
+    return json({ error: 'Bootstrap não configurado.' }, 503);
   }
 
-  // Cria ou recupera usuário de auth.
+  const auth = req.headers.get('Authorization') ?? '';
+  const provided = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  // Constant-time-ish comparison
+  if (provided.length !== BOOTSTRAP_SECRET.length || provided !== BOOTSTRAP_SECRET) {
+    return json({ error: 'Unauthorized' }, 401);
+  }
+
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+  const { data: existing } = await admin.from('user_roles').select('user_id').eq('role', 'super_admin').limit(1);
+  if (existing && existing.length > 0) {
+    return json({ ok: false, error: 'Super admin já existe.' }, 409);
+  }
+
   let userId: string | null = null;
   const { data: list } = await admin.auth.admin.listUsers();
-  const found = list.users.find((u) => u.email?.toLowerCase() === DEFAULT_EMAIL);
+  const found = list.users.find((u) => u.email?.toLowerCase() === BOOTSTRAP_EMAIL.toLowerCase());
   if (found) {
     userId = found.id;
-    await admin.auth.admin.updateUserById(userId, { password: DEFAULT_PASSWORD });
+    await admin.auth.admin.updateUserById(userId, { password: BOOTSTRAP_PASSWORD });
   } else {
     const { data: created, error } = await admin.auth.admin.createUser({
-      email: DEFAULT_EMAIL, password: DEFAULT_PASSWORD, email_confirm: true,
-      user_metadata: { name: DEFAULT_NAME },
+      email: BOOTSTRAP_EMAIL, password: BOOTSTRAP_PASSWORD, email_confirm: true,
+      user_metadata: { name: BOOTSTRAP_NAME },
     });
-    if (error || !created.user) {
-      return new Response(JSON.stringify({ error: error?.message ?? 'falha' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (error || !created.user) return json({ error: error?.message ?? 'falha' }, 400);
     userId = created.user.id;
   }
 
   await admin.from('profiles').upsert({
-    id: userId, company_id: null, name: DEFAULT_NAME, email: DEFAULT_EMAIL, status: 'ativo',
+    id: userId, company_id: null, name: BOOTSTRAP_NAME, email: BOOTSTRAP_EMAIL, status: 'ativo',
   });
   await admin.from('user_roles').insert({ user_id: userId, role: 'super_admin' });
 
-  return new Response(JSON.stringify({
-    ok: true, email: DEFAULT_EMAIL, password: DEFAULT_PASSWORD,
-    note: 'Faça login e troque a senha em produção.',
-  }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  return json({ ok: true });
 });
