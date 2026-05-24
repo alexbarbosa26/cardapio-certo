@@ -153,7 +153,7 @@ async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unkn
     responsible_name: p.responsible_name, responsible_email: p.admin_email,
     responsible_phone: p.responsible_phone, city: p.city, state: p.state, status: 'trial',
   }).select().single();
-  if (cErr) return json({ error: cErr.message }, 400);
+  if (cErr) return json({ error: safeDbError(cErr, 'Falha ao criar empresa.') }, 400);
 
   await a.from('settings').insert({ company_id: company.id });
 
@@ -163,7 +163,8 @@ async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unkn
   });
   if (uErr || !created.user) {
     await a.from('companies').delete().eq('id', company.id);
-    return json({ error: uErr?.message ?? 'Falha ao criar usuário (e-mail já em uso?).' }, 400);
+    console.error('billing createUser error', uErr);
+    return json({ error: 'Falha ao criar usuário (e-mail já em uso?).' }, 400);
   }
   await a.from('profiles').insert({
     id: created.user.id, company_id: company.id,
@@ -181,7 +182,7 @@ async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unkn
     current_period_end: trialEnd.toISOString(),
     payment_provider: 'simulated',
   }).select().single();
-  if (sErr) return json({ error: sErr.message }, 400);
+  if (sErr) return json({ error: safeDbError(sErr, 'Falha ao criar assinatura.') }, 400);
 
   const { data: session, error: chErr } = await a.from('checkout_sessions').insert({
     company_id: company.id, plan_id: plan.id, subscription_id: sub.id,
@@ -189,7 +190,8 @@ async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unkn
     billing_cycle: cycle, amount,
     expires_at: new Date(Date.now() + 86400000).toISOString(),
   }).select().single();
-  if (chErr) return json({ error: chErr.message }, 400);
+  if (chErr) return json({ error: safeDbError(chErr, 'Falha ao iniciar checkout.') }, 400);
+
 
   await logEvent(a, {
     company_id: company.id, subscription_id: sub.id,
