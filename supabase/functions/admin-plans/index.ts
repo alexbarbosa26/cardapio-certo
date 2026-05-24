@@ -17,6 +17,18 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function safeDbError(err: unknown, fallback = 'Não foi possível concluir a operação.'): string {
+  const e = err as { code?: string; message?: string } | null;
+  console.error('admin-plans db error', e);
+  const code = e?.code;
+  if (code === '23505') return 'Registro já existe.';
+  if (code === '23503') return 'Referência inválida.';
+  if (code === '23502') return 'Campo obrigatório ausente.';
+  if (code === '23514') return 'Valor inválido.';
+  if (code === '22P02') return 'Formato inválido.';
+  return fallback;
+}
+
 async function audit(
   admin: SupabaseClient,
   actorId: string,
@@ -67,7 +79,7 @@ async function handleCreatePlan(admin: SupabaseClient, userId: string, payload: 
     return json({ error: 'Já existe um plano com este slug.' }, 400);
   }
   const { data, error } = await admin.from('plans').insert(fields).select().single();
-  if (error) return json({ error: error.message }, 400);
+  if (error) return json({ error: safeDbError(error) }, 400);
   await audit(admin, userId, 'create_plan', data.id, null, data);
   return json({ plan: data });
 }
@@ -81,7 +93,7 @@ async function handleUpdatePlan(admin: SupabaseClient, userId: string, payload: 
   }
   const { data: before } = await admin.from('plans').select('*').eq('id', plan_id).maybeSingle();
   const { data, error } = await admin.from('plans').update(fields).eq('id', plan_id).select().single();
-  if (error) return json({ error: error.message }, 400);
+  if (error) return json({ error: safeDbError(error) }, 400);
   await audit(admin, userId, 'update_plan', String(plan_id), before, data);
   return json({ plan: data });
 }
@@ -92,7 +104,7 @@ async function handleSetPlanStatus(admin: SupabaseClient, userId: string, payloa
   if (!['ativo', 'inativo'].includes(String(status))) return json({ error: 'status inválido' }, 400);
   const { data: before } = await admin.from('plans').select('status').eq('id', plan_id).maybeSingle();
   const { data, error } = await admin.from('plans').update({ status }).eq('id', plan_id).select().single();
-  if (error) return json({ error: error.message }, 400);
+  if (error) return json({ error: safeDbError(error) }, 400);
   await audit(admin, userId, 'set_plan_status', String(plan_id), before, { status });
   return json({ plan: data });
 }
@@ -106,7 +118,7 @@ async function handleDeletePlan(admin: SupabaseClient, userId: string, payload: 
   }
   const { data: before } = await admin.from('plans').select('*').eq('id', plan_id).maybeSingle();
   const { error } = await admin.from('plans').delete().eq('id', plan_id);
-  if (error) return json({ error: error.message }, 400);
+  if (error) return json({ error: safeDbError(error) }, 400);
   await audit(admin, userId, 'delete_plan', String(plan_id), before, null);
   return json({ ok: true });
 }
@@ -146,6 +158,6 @@ Deno.serve(async (req) => {
     return await handler(auth.admin, auth.userId, payload ?? {});
   } catch (e) {
     console.error('admin-plans error', e);
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: "Erro interno. Tente novamente em instantes." }, 500);
   }
 });

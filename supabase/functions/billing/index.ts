@@ -21,6 +21,42 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Map known Postgres / Supabase error codes to safe, generic user-facing messages.
+// Raw DB errors (which can leak schema details) are logged server-side only.
+function safeDbError(err: unknown, fallback = 'Não foi possível concluir a operação.'): string {
+  const e = err as { code?: string; message?: string } | null;
+  console.error('billing db error', e);
+  const code = e?.code;
+  if (code === '23505') return 'Registro já existe.';
+  if (code === '23503') return 'Referência inválida.';
+  if (code === '23502') return 'Campo obrigatório ausente.';
+  if (code === '23514') return 'Valor inválido.';
+  if (code === '22P02') return 'Formato inválido.';
+  return fallback;
+}
+
+// Best-effort in-memory IP rate limit for public signup. Distributed protection
+// would require Redis/Upstash; this still blocks naive scripted abuse per instance.
+const SIGNUP_WINDOW_MS = 60_000;
+const SIGNUP_MAX_PER_WINDOW = 5;
+const signupHits = new Map<string, number[]>();
+function rateLimitSignup(ip: string): boolean {
+  const now = Date.now();
+  const arr = (signupHits.get(ip) ?? []).filter((t) => now - t < SIGNUP_WINDOW_MS);
+  if (arr.length >= SIGNUP_MAX_PER_WINDOW) {
+    signupHits.set(ip, arr);
+    return false;
+  }
+  arr.push(now);
+  signupHits.set(ip, arr);
+  return true;
+}
+function clientIp(req: Request): string {
+  const xf = req.headers.get('x-forwarded-for');
+  if (xf) return xf.split(',')[0].trim();
+  return req.headers.get('cf-connecting-ip') ?? 'unknown';
+}
+
 type Cycle = 'monthly' | 'annual';
 
 function admin() {
@@ -117,7 +153,7 @@ async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unkn
     responsible_name: p.responsible_name, responsible_email: p.admin_email,
     responsible_phone: p.responsible_phone, city: p.city, state: p.state, status: 'trial',
   }).select().single();
-  if (cErr) return json({ error: cErr.message }, 400);
+  if (cErr) return json({ error: safeDbError(cErr, 'Falha ao criar empresa.') }, 400);
 
   await a.from('settings').insert({ company_id: company.id });
 
@@ -127,7 +163,8 @@ async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unkn
   });
   if (uErr || !created.user) {
     await a.from('companies').delete().eq('id', company.id);
-    return json({ error: uErr?.message ?? 'Falha ao criar usuário (e-mail já em uso?).' }, 400);
+    console.error('billing createUser error', uErr);
+    return json({ error: 'Falha ao criar usuário (e-mail já em uso?).' }, 400);
   }
   await a.from('profiles').insert({
     id: created.user.id, company_id: company.id,
@@ -145,7 +182,7 @@ async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unkn
     current_period_end: trialEnd.toISOString(),
     payment_provider: 'simulated',
   }).select().single();
-  if (sErr) return json({ error: sErr.message }, 400);
+  if (sErr) return json({ error: safeDbError(sErr, 'Falha ao criar assinatura.') }, 400);
 
   const { data: session, error: chErr } = await a.from('checkout_sessions').insert({
     company_id: company.id, plan_id: plan.id, subscription_id: sub.id,
@@ -153,7 +190,8 @@ async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unkn
     billing_cycle: cycle, amount,
     expires_at: new Date(Date.now() + 86400000).toISOString(),
   }).select().single();
-  if (chErr) return json({ error: chErr.message }, 400);
+  if (chErr) return json({ error: safeDbError(chErr, 'Falha ao iniciar checkout.') }, 400);
+
 
   await logEvent(a, {
     company_id: company.id, subscription_id: sub.id,
@@ -250,7 +288,7 @@ async function rejectPayment(a: SupabaseClient, session: SessionRow) {
 }
 
 async function handleSimulatePayment(a: SupabaseClient, actorId: string | null, p: Record<string, unknown>) {
-  const simEnabled = (Deno.env.get('PAYMENT_SIMULATION_ENABLED') ?? 'true').toLowerCase() === 'true';
+  const simEnabled = (Deno.env.get('PAYMENT_SIMULATION_ENABLED') ?? 'false').toLowerCase() === 'true';
   if (!simEnabled) return json({ error: 'Simulação de pagamento desabilitada.' }, 403);
 
   const { session_id, outcome } = p as { session_id?: string; outcome?: string };
@@ -412,7 +450,12 @@ Deno.serve(async (req) => {
     const p = (payload ?? {}) as Record<string, unknown>;
 
     switch (action) {
-      case 'signup_and_checkout': return await handleSignupAndCheckout(a, p);
+      case 'signup_and_checkout': {
+        if (!rateLimitSignup(clientIp(req))) {
+          return json({ error: 'Muitas tentativas. Aguarde alguns instantes e tente novamente.' }, 429);
+        }
+        return await handleSignupAndCheckout(a, p);
+      }
       case 'get_session': return await handleGetSession(a, p);
       case 'simulate_payment': return await handleSimulatePayment(a, actorId, p);
       case 'change_plan': return await handleChangePlan(a, actorId, p);
@@ -422,6 +465,6 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error('billing error', e);
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: 'Erro interno. Tente novamente em instantes.' }, 500);
   }
 });
