@@ -450,7 +450,12 @@ Deno.serve(async (req) => {
     const p = (payload ?? {}) as Record<string, unknown>;
 
     switch (action) {
-      case 'signup_and_checkout': return await handleSignupAndCheckout(a, p);
+      case 'signup_and_checkout': {
+        if (!rateLimitSignup(clientIp(req))) {
+          return json({ error: 'Muitas tentativas. Aguarde alguns instantes e tente novamente.' }, 429);
+        }
+        return await handleSignupAndCheckout(a, p);
+      }
       case 'get_session': return await handleGetSession(a, p);
       case 'simulate_payment': return await handleSimulatePayment(a, actorId, p);
       case 'change_plan': return await handleChangePlan(a, actorId, p);
@@ -460,6 +465,6 @@ Deno.serve(async (req) => {
     }
   } catch (e) {
     console.error('billing error', e);
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: 'Erro interno. Tente novamente em instantes.' }, 500);
   }
 });
