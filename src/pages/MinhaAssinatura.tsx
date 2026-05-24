@@ -97,7 +97,8 @@ export default function MinhaAssinatura() {
     setEvents((evs ?? []) as EventRow[]);
   };
 
-  useEffect(() => { void reload(); /* eslint-disable-next-line */ }, [subscription?.plan_id, profile?.company_id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void reload(); }, [subscription?.plan_id, profile?.company_id]);
 
   const changePlan = async (newPlanId: string) => {
     if (newPlanId === subscription?.plan_id) return;

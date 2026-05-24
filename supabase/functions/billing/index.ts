@@ -2,7 +2,7 @@
 // Public endpoints (signup_and_checkout, get_session, simulate_payment) do not require JWT.
 // Authenticated endpoints (change_plan, cancel_subscription, reactivate_subscription)
 // validate the JWT in code.
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient, SupabaseClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,12 +38,12 @@ async function getUser(authHeader: string | null) {
 }
 
 async function logEvent(
-  a: ReturnType<typeof admin>,
+  a: SupabaseClient,
   ev: {
     company_id: string;
     subscription_id?: string | null;
     event_type: string;
-    description?: string;
+    description?: string | null;
     old_status?: string | null;
     new_status?: string | null;
     old_plan_id?: string | null;
@@ -55,7 +55,7 @@ async function logEvent(
 }
 
 async function audit(
-  a: ReturnType<typeof admin>,
+  a: SupabaseClient,
   actorId: string | null,
   action: string,
   payload: Record<string, unknown>,
@@ -78,6 +78,330 @@ function periodEnd(cycle: Cycle, from = new Date()): Date {
   return d;
 }
 
+async function requireCompanyAdmin(a: SupabaseClient, actorId: string | null): Promise<{ company_id: string } | Response> {
+  if (!actorId) return json({ error: 'Unauthorized' }, 401);
+  const { data: prof } = await a.from('profiles').select('company_id').eq('id', actorId).maybeSingle();
+  if (!prof?.company_id) return json({ error: 'Sem empresa.' }, 403);
+  const { data: isAdmin } = await a.rpc('has_role', { _user_id: actorId, _role: 'admin' });
+  if (!isAdmin) return json({ error: 'Apenas admin pode executar esta ação.' }, 403);
+  return { company_id: prof.company_id };
+}
+
+// ---------------- signup_and_checkout helpers ----------------
+
+function validateSignupPayload(p: Record<string, unknown>): string | null {
+  const { plan_slug, company_name, responsible_name, admin_email, admin_password } = p;
+  if (!plan_slug || !company_name || !responsible_name || !admin_email || !admin_password) {
+    return 'Campos obrigatórios ausentes.';
+  }
+  if (String(admin_password).length < 6) return 'A senha deve ter pelo menos 6 caracteres.';
+  return null;
+}
+
+async function handleSignupAndCheckout(a: SupabaseClient, p: Record<string, unknown>) {
+  const err = validateSignupPayload(p);
+  if (err) return json({ error: err }, 400);
+
+  const cycle: Cycle = p.billing_cycle === 'annual' ? 'annual' : 'monthly';
+
+  const { data: plan } = await a.from('plans')
+    .select('id, name, slug, monthly_price, annual_price, trial_days, status, show_on_landing_page')
+    .eq('slug', p.plan_slug).maybeSingle();
+  if (!plan || plan.status !== 'ativo' || !plan.show_on_landing_page) {
+    return json({ error: 'Plano não disponível para contratação.' }, 400);
+  }
+  const amount = cycle === 'annual' ? Number(plan.annual_price) : Number(plan.monthly_price);
+
+  const { data: company, error: cErr } = await a.from('companies').insert({
+    name: p.company_name, trade_name: p.trade_name, document: p.document,
+    responsible_name: p.responsible_name, responsible_email: p.admin_email,
+    responsible_phone: p.responsible_phone, city: p.city, state: p.state, status: 'trial',
+  }).select().single();
+  if (cErr) return json({ error: cErr.message }, 400);
+
+  await a.from('settings').insert({ company_id: company.id });
+
+  const { data: created, error: uErr } = await a.auth.admin.createUser({
+    email: String(p.admin_email), password: String(p.admin_password), email_confirm: true,
+    user_metadata: { name: p.responsible_name },
+  });
+  if (uErr || !created.user) {
+    await a.from('companies').delete().eq('id', company.id);
+    return json({ error: uErr?.message ?? 'Falha ao criar usuário (e-mail já em uso?).' }, 400);
+  }
+  await a.from('profiles').insert({
+    id: created.user.id, company_id: company.id,
+    name: p.responsible_name, email: p.admin_email, status: 'ativo',
+  });
+  await a.from('user_roles').insert({ user_id: created.user.id, role: 'admin' });
+
+  const trialEnd = new Date(Date.now() + (plan.trial_days ?? 7) * 86400000);
+  const { data: sub, error: sErr } = await a.from('subscriptions').insert({
+    company_id: company.id, plan_id: plan.id,
+    status: 'trialing', billing_cycle: cycle, amount,
+    trial_starts_at: new Date().toISOString(),
+    trial_ends_at: trialEnd.toISOString(),
+    current_period_start: new Date().toISOString(),
+    current_period_end: trialEnd.toISOString(),
+    payment_provider: 'simulated',
+  }).select().single();
+  if (sErr) return json({ error: sErr.message }, 400);
+
+  const { data: session, error: chErr } = await a.from('checkout_sessions').insert({
+    company_id: company.id, plan_id: plan.id, subscription_id: sub.id,
+    provider: 'simulated', status: 'pending',
+    billing_cycle: cycle, amount,
+    expires_at: new Date(Date.now() + 86400000).toISOString(),
+  }).select().single();
+  if (chErr) return json({ error: chErr.message }, 400);
+
+  await logEvent(a, {
+    company_id: company.id, subscription_id: sub.id,
+    event_type: 'subscription_created', description: `Assinatura criada (${plan.name})`,
+    new_status: 'trialing', new_plan_id: plan.id, created_by_user_id: created.user.id,
+  });
+  await audit(a, created.user.id, 'signup_and_checkout', {
+    company_id: company.id, entity_type: 'subscription', entity_id: sub.id,
+    plan_slug: p.plan_slug, cycle,
+  });
+
+  return json({
+    checkout_session_id: session.id,
+    company_id: company.id,
+    user_id: created.user.id,
+  });
+}
+
+async function handleGetSession(a: SupabaseClient, p: Record<string, unknown>) {
+  const { session_id } = p;
+  if (!session_id) return json({ error: 'session_id obrigatório' }, 400);
+  const { data, error } = await a.from('checkout_sessions')
+    .select('id, status, billing_cycle, amount, plan_id, company_id, subscription_id, plans(name, slug), companies(name)')
+    .eq('id', session_id).maybeSingle();
+  if (error || !data) return json({ error: 'Sessão não encontrada.' }, 404);
+  return json({ session: data });
+}
+
+// ---------------- simulate_payment helpers ----------------
+
+type SessionRow = {
+  id: string; company_id: string; subscription_id: string;
+  billing_cycle: string; amount: number; status: string;
+};
+
+async function approvePayment(a: SupabaseClient, session: SessionRow, cycle: Cycle) {
+  const periodStart = new Date();
+  const periodEndDate = periodEnd(cycle, periodStart);
+  await a.from('subscription_payments').insert({
+    company_id: session.company_id, subscription_id: session.subscription_id,
+    checkout_session_id: session.id, provider: 'simulated',
+    amount: session.amount, status: 'paid', payment_method: 'simulated_card',
+    paid_at: new Date().toISOString(),
+    raw_response: { simulated: true, outcome: 'approve' },
+  });
+  await a.from('checkout_sessions').update({ status: 'paid' }).eq('id', session.id);
+  await a.from('subscriptions').update({
+    status: 'active', billing_cycle: cycle,
+    current_period_start: periodStart.toISOString(),
+    current_period_end: periodEndDate.toISOString(),
+    next_billing_date: periodEndDate.toISOString(),
+    cancel_at_period_end: false, suspended_at: null, canceled_at: null,
+  }).eq('id', session.subscription_id);
+  await a.from('companies').update({ status: 'ativo' }).eq('id', session.company_id);
+  await logEvent(a, {
+    company_id: session.company_id, subscription_id: session.subscription_id,
+    event_type: 'payment_approved', new_status: 'active',
+    description: 'Pagamento simulado aprovado',
+  });
+}
+
+async function pendPayment(a: SupabaseClient, session: SessionRow) {
+  await a.from('subscription_payments').insert({
+    company_id: session.company_id, subscription_id: session.subscription_id,
+    checkout_session_id: session.id, provider: 'simulated',
+    amount: session.amount, status: 'pending',
+    due_date: new Date(Date.now() + 3 * 86400000).toISOString(),
+    raw_response: { simulated: true, outcome: 'pending' },
+  });
+  await a.from('subscriptions').update({ status: 'pending_payment' })
+    .eq('id', session.subscription_id);
+  await logEvent(a, {
+    company_id: session.company_id, subscription_id: session.subscription_id,
+    event_type: 'payment_pending', new_status: 'pending_payment',
+    description: 'Pagamento simulado pendente',
+  });
+}
+
+async function rejectPayment(a: SupabaseClient, session: SessionRow) {
+  await a.from('subscription_payments').insert({
+    company_id: session.company_id, subscription_id: session.subscription_id,
+    checkout_session_id: session.id, provider: 'simulated',
+    amount: session.amount, status: 'failed',
+    raw_response: { simulated: true, outcome: 'reject' },
+  });
+  await a.from('checkout_sessions').update({ status: 'failed' }).eq('id', session.id);
+  await a.from('subscriptions').update({ status: 'failed' })
+    .eq('id', session.subscription_id);
+  await logEvent(a, {
+    company_id: session.company_id, subscription_id: session.subscription_id,
+    event_type: 'payment_rejected', new_status: 'failed',
+    description: 'Pagamento simulado recusado',
+  });
+}
+
+async function handleSimulatePayment(a: SupabaseClient, actorId: string | null, p: Record<string, unknown>) {
+  const simEnabled = (Deno.env.get('PAYMENT_SIMULATION_ENABLED') ?? 'true').toLowerCase() === 'true';
+  if (!simEnabled) return json({ error: 'Simulação de pagamento desabilitada.' }, 403);
+
+  const { session_id, outcome } = p as { session_id?: string; outcome?: string };
+  if (!session_id || !['approve', 'pending', 'reject'].includes(outcome ?? '')) {
+    return json({ error: 'Parâmetros inválidos.' }, 400);
+  }
+  const { data: session } = await a.from('checkout_sessions').select('*').eq('id', session_id).maybeSingle();
+  if (!session) return json({ error: 'Sessão não encontrada.' }, 404);
+  if (session.status !== 'pending') return json({ error: 'Sessão não está pendente.' }, 409);
+
+  const cycle: Cycle = session.billing_cycle === 'annual' ? 'annual' : 'monthly';
+  if (outcome === 'approve') await approvePayment(a, session, cycle);
+  else if (outcome === 'pending') await pendPayment(a, session);
+  else await rejectPayment(a, session);
+
+  await audit(a, actorId, 'simulate_payment', {
+    company_id: session.company_id, entity_type: 'checkout_session',
+    entity_id: session.id, outcome,
+  });
+  return json({ ok: true });
+}
+
+// ---------------- change_plan helpers ----------------
+
+type PlanLimits = { max_users: number | null; max_tables: number | null; max_open_tabs: number | null };
+
+async function checkPlanLimits(a: SupabaseClient, company_id: string, plan: PlanLimits): Promise<string[]> {
+  const [{ count: uCnt }, { count: tCnt }, { count: oCnt }] = await Promise.all([
+    a.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', company_id),
+    a.from('tables').select('id', { count: 'exact', head: true }).eq('company_id', company_id),
+    a.from('customer_tabs').select('id', { count: 'exact', head: true })
+      .eq('company_id', company_id).eq('status', 'aberta'),
+  ]);
+  const exceed: string[] = [];
+  if (plan.max_users != null && (uCnt ?? 0) > plan.max_users)
+    exceed.push(`usuários (${uCnt}/${plan.max_users})`);
+  if (plan.max_tables != null && (tCnt ?? 0) > plan.max_tables)
+    exceed.push(`mesas (${tCnt}/${plan.max_tables})`);
+  if (plan.max_open_tabs != null && (oCnt ?? 0) > plan.max_open_tabs)
+    exceed.push(`comandas abertas (${oCnt}/${plan.max_open_tabs})`);
+  return exceed;
+}
+
+async function handleChangePlan(a: SupabaseClient, actorId: string | null, p: Record<string, unknown>) {
+  const guard = await requireCompanyAdmin(a, actorId);
+  if (guard instanceof Response) return guard;
+  const { new_plan_id } = p;
+  if (!new_plan_id) return json({ error: 'new_plan_id obrigatório' }, 400);
+
+  const { data: sub } = await a.from('subscriptions')
+    .select('*').eq('company_id', guard.company_id)
+    .in('status', ['trialing', 'active', 'past_due', 'pending_payment'])
+    .order('created_at', { ascending: false }).maybeSingle();
+  if (!sub) return json({ error: 'Assinatura ativa não encontrada.' }, 404);
+
+  const { data: newPlan } = await a.from('plans')
+    .select('id, name, monthly_price, annual_price, max_users, max_tables, max_open_tabs, status')
+    .eq('id', new_plan_id).maybeSingle();
+  if (!newPlan || newPlan.status !== 'ativo') return json({ error: 'Plano inválido.' }, 400);
+
+  const exceed = await checkPlanLimits(a, guard.company_id, newPlan);
+  if (exceed.length) return json({ error: `Uso atual excede o novo plano: ${exceed.join(', ')}.` }, 400);
+
+  const cycle: Cycle = sub.billing_cycle === 'annual' ? 'annual' : 'monthly';
+  const amount = cycle === 'annual' ? Number(newPlan.annual_price) : Number(newPlan.monthly_price);
+  const oldPlanId = sub.plan_id;
+
+  await a.from('subscriptions').update({ plan_id: newPlan.id, amount }).eq('id', sub.id);
+  await a.from('subscription_payments').insert({
+    company_id: guard.company_id, subscription_id: sub.id,
+    provider: 'simulated', amount, status: 'paid',
+    payment_method: 'simulated_change_plan', paid_at: new Date().toISOString(),
+    raw_response: { simulated: true, change_plan: true },
+  });
+  await logEvent(a, {
+    company_id: guard.company_id, subscription_id: sub.id,
+    event_type: 'plan_changed', description: `Plano alterado para ${newPlan.name}`,
+    old_plan_id: oldPlanId, new_plan_id: newPlan.id,
+    created_by_user_id: actorId,
+  });
+  await audit(a, actorId, 'change_plan', {
+    company_id: guard.company_id, entity_type: 'subscription', entity_id: sub.id,
+    old_plan_id: oldPlanId, new_plan_id: newPlan.id, actor_role: 'admin',
+  });
+  return json({ ok: true });
+}
+
+async function handleCancelSubscription(a: SupabaseClient, actorId: string | null, p: Record<string, unknown>) {
+  const guard = await requireCompanyAdmin(a, actorId);
+  if (guard instanceof Response) return guard;
+  const { reason, cancel_at_period_end = true } = p as { reason?: string; cancel_at_period_end?: boolean };
+
+  const { data: sub } = await a.from('subscriptions').select('*')
+    .eq('company_id', guard.company_id)
+    .in('status', ['trialing', 'active', 'past_due', 'pending_payment'])
+    .order('created_at', { ascending: false }).maybeSingle();
+  if (!sub) return json({ error: 'Assinatura não encontrada.' }, 404);
+
+  if (cancel_at_period_end) {
+    await a.from('subscriptions').update({
+      cancel_at_period_end: true, cancellation_reason: reason ?? null,
+    }).eq('id', sub.id);
+    await logEvent(a, {
+      company_id: guard.company_id, subscription_id: sub.id,
+      event_type: 'cancel_scheduled', description: reason ?? null,
+      created_by_user_id: actorId,
+    });
+  } else {
+    await a.from('subscriptions').update({
+      status: 'canceled', canceled_at: new Date().toISOString(),
+      cancellation_reason: reason ?? null, cancel_at_period_end: false,
+    }).eq('id', sub.id);
+    await a.from('companies').update({ status: 'cancelada' }).eq('id', guard.company_id);
+    await logEvent(a, {
+      company_id: guard.company_id, subscription_id: sub.id,
+      event_type: 'subscription_canceled', new_status: 'canceled',
+      description: reason ?? null, created_by_user_id: actorId,
+    });
+  }
+  await audit(a, actorId, 'cancel_subscription', {
+    company_id: guard.company_id, entity_type: 'subscription', entity_id: sub.id,
+    reason, cancel_at_period_end, actor_role: 'admin',
+  });
+  return json({ ok: true });
+}
+
+async function handleReactivateSubscription(a: SupabaseClient, actorId: string | null) {
+  const guard = await requireCompanyAdmin(a, actorId);
+  if (guard instanceof Response) return guard;
+
+  const { data: sub } = await a.from('subscriptions').select('*')
+    .eq('company_id', guard.company_id)
+    .order('created_at', { ascending: false }).maybeSingle();
+  if (!sub) return json({ error: 'Assinatura não encontrada.' }, 404);
+
+  await a.from('subscriptions').update({
+    cancel_at_period_end: false, canceled_at: null,
+    status: sub.status === 'canceled' ? 'active' : sub.status,
+  }).eq('id', sub.id);
+  await a.from('companies').update({ status: 'ativo' }).eq('id', guard.company_id);
+  await logEvent(a, {
+    company_id: guard.company_id, subscription_id: sub.id,
+    event_type: 'subscription_reactivated', new_status: 'active',
+    created_by_user_id: actorId,
+  });
+  await audit(a, actorId, 'reactivate_subscription', {
+    company_id: guard.company_id, entity_type: 'subscription', entity_id: sub.id, actor_role: 'admin',
+  });
+  return json({ ok: true });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -85,329 +409,16 @@ Deno.serve(async (req) => {
     if (!action || typeof action !== 'string') return json({ error: 'Missing action' }, 400);
     const a = admin();
     const actorId = await getUser(req.headers.get('Authorization'));
+    const p = (payload ?? {}) as Record<string, unknown>;
 
     switch (action) {
-      // ---------------- PUBLIC: create company + admin + checkout session
-      case 'signup_and_checkout': {
-        const {
-          plan_slug, billing_cycle = 'monthly',
-          company_name, trade_name, document, responsible_name, responsible_phone,
-          city, state, admin_email, admin_password,
-        } = payload ?? {};
-        if (!plan_slug || !company_name || !responsible_name || !admin_email || !admin_password) {
-          return json({ error: 'Campos obrigatórios ausentes.' }, 400);
-        }
-        if (String(admin_password).length < 6) {
-          return json({ error: 'A senha deve ter pelo menos 6 caracteres.' }, 400);
-        }
-
-        const { data: plan } = await a.from('plans')
-          .select('id, name, slug, monthly_price, annual_price, trial_days, status, show_on_landing_page')
-          .eq('slug', plan_slug).maybeSingle();
-        if (!plan || plan.status !== 'ativo' || !plan.show_on_landing_page) {
-          return json({ error: 'Plano não disponível para contratação.' }, 400);
-        }
-
-        const cycle = (billing_cycle === 'annual' ? 'annual' : 'monthly') as Cycle;
-        const amount = cycle === 'annual' ? Number(plan.annual_price) : Number(plan.monthly_price);
-
-        // company
-        const { data: company, error: cErr } = await a.from('companies').insert({
-          name: company_name, trade_name, document,
-          responsible_name, responsible_email: admin_email, responsible_phone,
-          city, state, status: 'trial',
-        }).select().single();
-        if (cErr) return json({ error: cErr.message }, 400);
-
-        await a.from('settings').insert({ company_id: company.id });
-
-        // create auth user
-        const { data: created, error: uErr } = await a.auth.admin.createUser({
-          email: admin_email, password: admin_password, email_confirm: true,
-          user_metadata: { name: responsible_name },
-        });
-        if (uErr || !created.user) {
-          await a.from('companies').delete().eq('id', company.id);
-          return json({ error: uErr?.message ?? 'Falha ao criar usuário (e-mail já em uso?).' }, 400);
-        }
-        await a.from('profiles').insert({
-          id: created.user.id, company_id: company.id,
-          name: responsible_name, email: admin_email, status: 'ativo',
-        });
-        await a.from('user_roles').insert({ user_id: created.user.id, role: 'admin' });
-
-        // subscription trialing
-        const trialEnd = new Date(Date.now() + (plan.trial_days ?? 7) * 86400000);
-        const { data: sub, error: sErr } = await a.from('subscriptions').insert({
-          company_id: company.id, plan_id: plan.id,
-          status: 'trialing', billing_cycle: cycle, amount,
-          trial_starts_at: new Date().toISOString(),
-          trial_ends_at: trialEnd.toISOString(),
-          current_period_start: new Date().toISOString(),
-          current_period_end: trialEnd.toISOString(),
-          payment_provider: 'simulated',
-        }).select().single();
-        if (sErr) return json({ error: sErr.message }, 400);
-
-        // checkout session
-        const { data: session, error: chErr } = await a.from('checkout_sessions').insert({
-          company_id: company.id, plan_id: plan.id, subscription_id: sub.id,
-          provider: 'simulated', status: 'pending',
-          billing_cycle: cycle, amount,
-          expires_at: new Date(Date.now() + 86400000).toISOString(),
-        }).select().single();
-        if (chErr) return json({ error: chErr.message }, 400);
-
-        await logEvent(a, {
-          company_id: company.id, subscription_id: sub.id,
-          event_type: 'subscription_created', description: `Assinatura criada (${plan.name})`,
-          new_status: 'trialing', new_plan_id: plan.id, created_by_user_id: created.user.id,
-        });
-        await audit(a, created.user.id, 'signup_and_checkout', {
-          company_id: company.id, entity_type: 'subscription', entity_id: sub.id, plan_slug, cycle,
-        });
-
-        return json({
-          checkout_session_id: session.id,
-          company_id: company.id,
-          user_id: created.user.id,
-        });
-      }
-
-      // ---------------- PUBLIC: read checkout session (no sensitive fields)
-      case 'get_session': {
-        const { session_id } = payload ?? {};
-        if (!session_id) return json({ error: 'session_id obrigatório' }, 400);
-        const { data, error } = await a.from('checkout_sessions')
-          .select('id, status, billing_cycle, amount, plan_id, company_id, subscription_id, plans(name, slug), companies(name)')
-          .eq('id', session_id).maybeSingle();
-        if (error || !data) return json({ error: 'Sessão não encontrada.' }, 404);
-        return json({ session: data });
-      }
-
-      // ---------------- simulate payment outcome (gated by env flag)
-      case 'simulate_payment': {
-        const simEnabled = (Deno.env.get('PAYMENT_SIMULATION_ENABLED') ?? 'true').toLowerCase() === 'true';
-        if (!simEnabled) {
-          return json({ error: 'Simulação de pagamento desabilitada.' }, 403);
-        }
-        const { session_id, outcome } = payload ?? {};
-        if (!session_id || !['approve', 'pending', 'reject'].includes(outcome)) {
-          return json({ error: 'Parâmetros inválidos.' }, 400);
-        }
-        const { data: session } = await a.from('checkout_sessions')
-          .select('*').eq('id', session_id).maybeSingle();
-        if (!session) return json({ error: 'Sessão não encontrada.' }, 404);
-        // Only allow simulating a session that is still pending — prevents toggling existing paid subs.
-        if (session.status !== 'pending') {
-          return json({ error: 'Sessão não está pendente.' }, 409);
-        }
-
-        const cycle = (session.billing_cycle === 'annual' ? 'annual' : 'monthly') as Cycle;
-
-        if (outcome === 'approve') {
-          const periodStart = new Date();
-          const periodEndDate = periodEnd(cycle, periodStart);
-          await a.from('subscription_payments').insert({
-            company_id: session.company_id, subscription_id: session.subscription_id,
-            checkout_session_id: session.id, provider: 'simulated',
-            amount: session.amount, status: 'paid', payment_method: 'simulated_card',
-            paid_at: new Date().toISOString(),
-            raw_response: { simulated: true, outcome },
-          });
-          await a.from('checkout_sessions').update({ status: 'paid' }).eq('id', session.id);
-          await a.from('subscriptions').update({
-            status: 'active', billing_cycle: cycle,
-            current_period_start: periodStart.toISOString(),
-            current_period_end: periodEndDate.toISOString(),
-            next_billing_date: periodEndDate.toISOString(),
-            cancel_at_period_end: false, suspended_at: null, canceled_at: null,
-          }).eq('id', session.subscription_id);
-          await a.from('companies').update({ status: 'ativo' }).eq('id', session.company_id);
-          await logEvent(a, {
-            company_id: session.company_id, subscription_id: session.subscription_id,
-            event_type: 'payment_approved', new_status: 'active',
-            description: 'Pagamento simulado aprovado',
-          });
-        } else if (outcome === 'pending') {
-          await a.from('subscription_payments').insert({
-            company_id: session.company_id, subscription_id: session.subscription_id,
-            checkout_session_id: session.id, provider: 'simulated',
-            amount: session.amount, status: 'pending',
-            due_date: new Date(Date.now() + 3 * 86400000).toISOString(),
-            raw_response: { simulated: true, outcome },
-          });
-          await a.from('subscriptions').update({ status: 'pending_payment' })
-            .eq('id', session.subscription_id);
-          await logEvent(a, {
-            company_id: session.company_id, subscription_id: session.subscription_id,
-            event_type: 'payment_pending', new_status: 'pending_payment',
-            description: 'Pagamento simulado pendente',
-          });
-        } else {
-          await a.from('subscription_payments').insert({
-            company_id: session.company_id, subscription_id: session.subscription_id,
-            checkout_session_id: session.id, provider: 'simulated',
-            amount: session.amount, status: 'failed',
-            raw_response: { simulated: true, outcome },
-          });
-          await a.from('checkout_sessions').update({ status: 'failed' }).eq('id', session.id);
-          await a.from('subscriptions').update({ status: 'failed' })
-            .eq('id', session.subscription_id);
-          await logEvent(a, {
-            company_id: session.company_id, subscription_id: session.subscription_id,
-            event_type: 'payment_rejected', new_status: 'failed',
-            description: 'Pagamento simulado recusado',
-          });
-        }
-        await audit(a, actorId, 'simulate_payment', {
-          company_id: session.company_id, entity_type: 'checkout_session',
-          entity_id: session.id, outcome,
-        });
-        return json({ ok: true });
-      }
-
-      // ---------------- AUTH: company admin changes plan (simulated)
-      case 'change_plan': {
-        if (!actorId) return json({ error: 'Unauthorized' }, 401);
-        const { new_plan_id } = payload ?? {};
-        if (!new_plan_id) return json({ error: 'new_plan_id obrigatório' }, 400);
-
-        const { data: prof } = await a.from('profiles').select('company_id').eq('id', actorId).maybeSingle();
-        if (!prof?.company_id) return json({ error: 'Sem empresa.' }, 403);
-        const { data: isAdmin } = await a.rpc('has_role', { _user_id: actorId, _role: 'admin' });
-        if (!isAdmin) return json({ error: 'Apenas admin pode alterar plano.' }, 403);
-
-        const { data: sub } = await a.from('subscriptions')
-          .select('*').eq('company_id', prof.company_id)
-          .in('status', ['trialing', 'active', 'past_due', 'pending_payment'])
-          .order('created_at', { ascending: false }).maybeSingle();
-        if (!sub) return json({ error: 'Assinatura ativa não encontrada.' }, 404);
-
-        const { data: newPlan } = await a.from('plans')
-          .select('id, name, monthly_price, annual_price, max_users, max_tables, max_open_tabs, status')
-          .eq('id', new_plan_id).maybeSingle();
-        if (!newPlan || newPlan.status !== 'ativo') return json({ error: 'Plano inválido.' }, 400);
-
-        // Limit check
-        const [{ count: uCnt }, { count: tCnt }, { count: oCnt }] = await Promise.all([
-          a.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', prof.company_id),
-          a.from('tables').select('id', { count: 'exact', head: true }).eq('company_id', prof.company_id),
-          a.from('customer_tabs').select('id', { count: 'exact', head: true })
-            .eq('company_id', prof.company_id).eq('status', 'aberta'),
-        ]);
-        const exceed: string[] = [];
-        if (newPlan.max_users != null && (uCnt ?? 0) > newPlan.max_users)
-          exceed.push(`usuários (${uCnt}/${newPlan.max_users})`);
-        if (newPlan.max_tables != null && (tCnt ?? 0) > newPlan.max_tables)
-          exceed.push(`mesas (${tCnt}/${newPlan.max_tables})`);
-        if (newPlan.max_open_tabs != null && (oCnt ?? 0) > newPlan.max_open_tabs)
-          exceed.push(`comandas abertas (${oCnt}/${newPlan.max_open_tabs})`);
-        if (exceed.length) {
-          return json({ error: `Uso atual excede o novo plano: ${exceed.join(', ')}.` }, 400);
-        }
-
-        const cycle = (sub.billing_cycle === 'annual' ? 'annual' : 'monthly') as Cycle;
-        const amount = cycle === 'annual' ? Number(newPlan.annual_price) : Number(newPlan.monthly_price);
-        const oldPlanId = sub.plan_id;
-
-        await a.from('subscriptions').update({
-          plan_id: newPlan.id, amount,
-        }).eq('id', sub.id);
-
-        await a.from('subscription_payments').insert({
-          company_id: prof.company_id, subscription_id: sub.id,
-          provider: 'simulated', amount, status: 'paid',
-          payment_method: 'simulated_change_plan', paid_at: new Date().toISOString(),
-          raw_response: { simulated: true, change_plan: true },
-        });
-
-        await logEvent(a, {
-          company_id: prof.company_id, subscription_id: sub.id,
-          event_type: 'plan_changed', description: `Plano alterado para ${newPlan.name}`,
-          old_plan_id: oldPlanId, new_plan_id: newPlan.id,
-          created_by_user_id: actorId,
-        });
-        await audit(a, actorId, 'change_plan', {
-          company_id: prof.company_id, entity_type: 'subscription', entity_id: sub.id,
-          old_plan_id: oldPlanId, new_plan_id: newPlan.id, actor_role: 'admin',
-        });
-        return json({ ok: true });
-      }
-
-      // ---------------- AUTH: cancel subscription
-      case 'cancel_subscription': {
-        if (!actorId) return json({ error: 'Unauthorized' }, 401);
-        const { reason, cancel_at_period_end = true } = payload ?? {};
-        const { data: prof } = await a.from('profiles').select('company_id').eq('id', actorId).maybeSingle();
-        if (!prof?.company_id) return json({ error: 'Sem empresa.' }, 403);
-        const { data: isAdmin } = await a.rpc('has_role', { _user_id: actorId, _role: 'admin' });
-        if (!isAdmin) return json({ error: 'Apenas admin pode cancelar.' }, 403);
-
-        const { data: sub } = await a.from('subscriptions').select('*')
-          .eq('company_id', prof.company_id)
-          .in('status', ['trialing', 'active', 'past_due', 'pending_payment'])
-          .order('created_at', { ascending: false }).maybeSingle();
-        if (!sub) return json({ error: 'Assinatura não encontrada.' }, 404);
-
-        if (cancel_at_period_end) {
-          await a.from('subscriptions').update({
-            cancel_at_period_end: true,
-            cancellation_reason: reason ?? null,
-          }).eq('id', sub.id);
-          await logEvent(a, {
-            company_id: prof.company_id, subscription_id: sub.id,
-            event_type: 'cancel_scheduled', description: reason ?? null,
-            created_by_user_id: actorId,
-          });
-        } else {
-          await a.from('subscriptions').update({
-            status: 'canceled', canceled_at: new Date().toISOString(),
-            cancellation_reason: reason ?? null, cancel_at_period_end: false,
-          }).eq('id', sub.id);
-          await a.from('companies').update({ status: 'cancelada' }).eq('id', prof.company_id);
-          await logEvent(a, {
-            company_id: prof.company_id, subscription_id: sub.id,
-            event_type: 'subscription_canceled', new_status: 'canceled',
-            description: reason ?? null, created_by_user_id: actorId,
-          });
-        }
-        await audit(a, actorId, 'cancel_subscription', {
-          company_id: prof.company_id, entity_type: 'subscription', entity_id: sub.id,
-          reason, cancel_at_period_end, actor_role: 'admin',
-        });
-        return json({ ok: true });
-      }
-
-      // ---------------- AUTH: reactivate subscription (clears cancel_at_period_end)
-      case 'reactivate_subscription': {
-        if (!actorId) return json({ error: 'Unauthorized' }, 401);
-        const { data: prof } = await a.from('profiles').select('company_id').eq('id', actorId).maybeSingle();
-        if (!prof?.company_id) return json({ error: 'Sem empresa.' }, 403);
-        const { data: isAdmin } = await a.rpc('has_role', { _user_id: actorId, _role: 'admin' });
-        if (!isAdmin) return json({ error: 'Apenas admin pode reativar.' }, 403);
-        const { data: sub } = await a.from('subscriptions').select('*')
-          .eq('company_id', prof.company_id)
-          .order('created_at', { ascending: false }).maybeSingle();
-        if (!sub) return json({ error: 'Assinatura não encontrada.' }, 404);
-        await a.from('subscriptions').update({
-          cancel_at_period_end: false, canceled_at: null,
-          status: sub.status === 'canceled' ? 'active' : sub.status,
-        }).eq('id', sub.id);
-        await a.from('companies').update({ status: 'ativo' }).eq('id', prof.company_id);
-        await logEvent(a, {
-          company_id: prof.company_id, subscription_id: sub.id,
-          event_type: 'subscription_reactivated', new_status: 'active',
-          created_by_user_id: actorId,
-        });
-        await audit(a, actorId, 'reactivate_subscription', {
-          company_id: prof.company_id, entity_type: 'subscription', entity_id: sub.id, actor_role: 'admin',
-        });
-        return json({ ok: true });
-      }
-
-      default:
-        return json({ error: `Ação desconhecida: ${action}` }, 400);
+      case 'signup_and_checkout': return await handleSignupAndCheckout(a, p);
+      case 'get_session': return await handleGetSession(a, p);
+      case 'simulate_payment': return await handleSimulatePayment(a, actorId, p);
+      case 'change_plan': return await handleChangePlan(a, actorId, p);
+      case 'cancel_subscription': return await handleCancelSubscription(a, actorId, p);
+      case 'reactivate_subscription': return await handleReactivateSubscription(a, actorId);
+      default: return json({ error: `Ação desconhecida: ${action}` }, 400);
     }
   } catch (e) {
     console.error('billing error', e);
