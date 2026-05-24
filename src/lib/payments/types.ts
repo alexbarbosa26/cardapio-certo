@@ -15,7 +15,7 @@ export interface CheckoutSession {
   company_id: string;
   subscription_id: string;
   plans?: { name: string; slug: string } | null;
-  companies?: { name: string; responsible_email: string | null } | null;
+  companies?: { name: string } | null;
 }
 
 export interface SignupAndCheckoutInput {
