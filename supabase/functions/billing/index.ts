@@ -21,6 +21,42 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Map known Postgres / Supabase error codes to safe, generic user-facing messages.
+// Raw DB errors (which can leak schema details) are logged server-side only.
+function safeDbError(err: unknown, fallback = 'Não foi possível concluir a operação.'): string {
+  const e = err as { code?: string; message?: string } | null;
+  console.error('billing db error', e);
+  const code = e?.code;
+  if (code === '23505') return 'Registro já existe.';
+  if (code === '23503') return 'Referência inválida.';
+  if (code === '23502') return 'Campo obrigatório ausente.';
+  if (code === '23514') return 'Valor inválido.';
+  if (code === '22P02') return 'Formato inválido.';
+  return fallback;
+}
+
+// Best-effort in-memory IP rate limit for public signup. Distributed protection
+// would require Redis/Upstash; this still blocks naive scripted abuse per instance.
+const SIGNUP_WINDOW_MS = 60_000;
+const SIGNUP_MAX_PER_WINDOW = 5;
+const signupHits = new Map<string, number[]>();
+function rateLimitSignup(ip: string): boolean {
+  const now = Date.now();
+  const arr = (signupHits.get(ip) ?? []).filter((t) => now - t < SIGNUP_WINDOW_MS);
+  if (arr.length >= SIGNUP_MAX_PER_WINDOW) {
+    signupHits.set(ip, arr);
+    return false;
+  }
+  arr.push(now);
+  signupHits.set(ip, arr);
+  return true;
+}
+function clientIp(req: Request): string {
+  const xf = req.headers.get('x-forwarded-for');
+  if (xf) return xf.split(',')[0].trim();
+  return req.headers.get('cf-connecting-ip') ?? 'unknown';
+}
+
 type Cycle = 'monthly' | 'annual';
 
 function admin() {
