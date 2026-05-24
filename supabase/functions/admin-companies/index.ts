@@ -67,7 +67,7 @@ async function handleCreateCompany(admin: SupabaseClient, userId: string, p: Rec
     city, state, logo_url, primary_color, secondary_color, accent_color,
     status: 'ativo',
   }).select().single();
-  if (cErr) return json({ error: cErr.message }, 400);
+  if (cErr) return json({ error: safeDbError(cErr, "Falha ao criar empresa.") }, 400);
 
   await admin.from('settings').insert({ company_id: company.id });
 
@@ -92,7 +92,7 @@ async function handleCreateCompany(admin: SupabaseClient, userId: string, p: Rec
   });
   if (uErr || !created.user) {
     await admin.from('companies').delete().eq('id', company.id);
-    return json({ error: uErr?.message ?? 'Falha ao criar admin' }, 400);
+    return json({ error: (console.error("admin-companies createUser", uErr), "Falha ao criar admin (e-mail já em uso?).") }, 400);
   }
 
   await admin.from('profiles').insert({
@@ -132,7 +132,7 @@ async function handleUpdateCompany(admin: SupabaseClient, userId: string, p: Rec
   const { data: before } = await admin.from('companies').select('*').eq('id', company_id).maybeSingle();
   if (Object.keys(update).length) {
     const { error } = await admin.from('companies').update(update).eq('id', company_id);
-    if (error) return json({ error: error.message }, 400);
+    if (error) return json({ error: safeDbError(error) }, 400);
   }
   if (settingsPatch && typeof settingsPatch === 'object') {
     await upsertSettings(admin, String(company_id), pick(settingsPatch as Record<string, unknown>, SETTINGS_FIELDS));
@@ -170,7 +170,7 @@ async function handleSetSubscription(admin: SupabaseClient, userId: string, p: R
 
   if (existing) {
     const { error } = await admin.from('subscriptions').update(buildSubUpdate(p)).eq('id', existing.id);
-    if (error) return json({ error: error.message }, 400);
+    if (error) return json({ error: safeDbError(error) }, 400);
   } else {
     if (!plan_id) return json({ error: 'plan_id obrigatório para criar assinatura' }, 400);
     const { error } = await admin.from('subscriptions').insert({
@@ -181,7 +181,7 @@ async function handleSetSubscription(admin: SupabaseClient, userId: string, p: R
       current_period_end: current_period_end ?? new Date(Date.now()+30*24*3600*1000).toISOString(),
       trial_ends_at,
     });
-    if (error) return json({ error: error.message }, 400);
+    if (error) return json({ error: safeDbError(error) }, 400);
   }
   await audit(admin, userId, 'set_subscription', { company_id, entity_type: 'subscription', plan_id, status });
   return json({ ok: true });
@@ -223,7 +223,7 @@ async function handlePromoteSuperAdmin(admin: SupabaseClient, userId: string, p:
     const { data: created, error } = await admin.auth.admin.createUser({
       email, password, email_confirm: true, user_metadata: { name },
     });
-    if (error || !created.user) return json({ error: error?.message ?? 'falha' }, 400);
+    if (error || !created.user) return json({ error: (console.error("admin-companies auth error", error), "Falha ao processar usuário.") }, 400);
     userIdNew = created.user.id;
   }
   await admin.from('profiles').upsert({
@@ -271,6 +271,6 @@ Deno.serve(async (req) => {
     return await handler(auth.admin, auth.userId, payload ?? {});
   } catch (e) {
     console.error('admin-companies error', e);
-    return json({ error: (e as Error).message }, 500);
+    return json({ error: "Erro interno. Tente novamente em instantes." }, 500);
   }
 });
