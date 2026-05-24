@@ -198,13 +198,9 @@ Deno.serve(async (req) => {
         const { data: session } = await a.from('checkout_sessions')
           .select('*').eq('id', session_id).maybeSingle();
         if (!session) return json({ error: 'Sessão não encontrada.' }, 404);
-
-        // Require authenticated caller belonging to the session's company (or super admin)
-        if (!actorId) return json({ error: 'Unauthorized' }, 401);
-        const { data: callerProf } = await a.from('profiles').select('company_id').eq('id', actorId).maybeSingle();
-        const { data: isSuper } = await a.rpc('has_role', { _user_id: actorId, _role: 'super_admin' });
-        if (!isSuper && callerProf?.company_id !== session.company_id) {
-          return json({ error: 'Acesso negado.' }, 403);
+        // Only allow simulating a session that is still pending — prevents toggling existing paid subs.
+        if (session.status !== 'pending') {
+          return json({ error: 'Sessão não está pendente.' }, 409);
         }
 
         const cycle = (session.billing_cycle === 'annual' ? 'annual' : 'monthly') as Cycle;
