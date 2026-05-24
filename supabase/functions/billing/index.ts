@@ -174,12 +174,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      // ---------------- PUBLIC: read checkout session
+      // ---------------- PUBLIC: read checkout session (no sensitive fields)
       case 'get_session': {
         const { session_id } = payload ?? {};
         if (!session_id) return json({ error: 'session_id obrigatório' }, 400);
         const { data, error } = await a.from('checkout_sessions')
-          .select('id, status, billing_cycle, amount, plan_id, company_id, subscription_id, plans(name, slug), companies(name, responsible_email)')
+          .select('id, status, billing_cycle, amount, plan_id, company_id, subscription_id, plans(name, slug), companies(name)')
           .eq('id', session_id).maybeSingle();
         if (error || !data) return json({ error: 'Sessão não encontrada.' }, 404);
         return json({ session: data });
