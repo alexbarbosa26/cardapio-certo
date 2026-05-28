@@ -188,9 +188,9 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-hidden grid md:grid-cols-[1fr_320px]">
+        <div className="flex-1 overflow-hidden grid grid-rows-2 md:grid-rows-none md:grid-cols-[1fr_320px]">
           {/* Cardápio */}
-          <div className="overflow-y-auto p-6 border-r border-border">
+          <div className="min-h-0 overflow-y-auto p-6 border-r border-border">
             <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
               <CatChip active={activeCat === 'all'} onClick={() => setActiveCat('all')}>Todos</CatChip>
               {categories.map((c) => (
@@ -212,7 +212,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
           </div>
 
           {/* Lista do pedido */}
-          <div className="flex flex-col bg-secondary/40 max-md:border-t max-md:border-border">
+          <div className="flex flex-col min-h-0 bg-secondary/40 max-md:border-t max-md:border-border">
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {items.length === 0 && (
                 <div className="text-center text-xs text-muted-foreground py-12">Nenhum item ainda.</div>
