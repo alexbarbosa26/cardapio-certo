@@ -212,7 +212,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
           </div>
 
           {/* Lista do pedido */}
-          <div className="flex flex-col bg-secondary/40 max-md:border-t max-md:border-border">
+          <div className="flex flex-col min-h-0 bg-secondary/40 max-md:border-t max-md:border-border">
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {items.length === 0 && (
                 <div className="text-center text-xs text-muted-foreground py-12">Nenhum item ainda.</div>
