@@ -45,6 +45,7 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<TabItem[]>([]);
   const [activeCat, setActiveCat] = useState<string>('all');
+  const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<Product | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [editName, setEditName] = useState(false);
