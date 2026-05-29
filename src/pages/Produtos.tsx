@@ -84,6 +84,28 @@ function ProdutosPage() {
         </Button>
       </header>
 
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar produto..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+        <select
+          value={activeCat}
+          onChange={(e) => setActiveCat(e.target.value)}
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+        >
+          <option value="all">Todas as categorias</option>
+          {cats.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="text-xs uppercase tracking-wider text-muted-foreground bg-secondary/40">
@@ -97,7 +119,7 @@ function ProdutosPage() {
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => {
+            {filtered.map((p) => {
               const cat = cats.find((c) => c.id === p.category_id);
               return (
                 <tr key={p.id} className="border-t border-border hover:bg-secondary/30">
