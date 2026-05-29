@@ -21,6 +21,17 @@ function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
+  const [search, setSearch] = useState('');
+  const [activeCat, setActiveCat] = useState<string>('all');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      if (activeCat !== 'all' && p.category_id !== activeCat) return false;
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [products, search, activeCat]);
 
   const load = async () => {
     if (!profile) return;
