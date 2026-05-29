@@ -45,7 +45,6 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<TabItem[]>([]);
   const [activeCat, setActiveCat] = useState<string>('all');
-  const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<Product | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [editName, setEditName] = useState(false);
@@ -92,14 +91,7 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
     // eslint-disable-next-line
   }, [open, tabId, profile?.company_id]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return products.filter((p) => {
-      if (activeCat !== 'all' && p.category_id !== activeCat) return false;
-      if (q && !p.name.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [products, activeCat, search]);
+  const filtered = useMemo(() => activeCat === 'all' ? products : products.filter((p) => p.category_id === activeCat), [products, activeCat]);
 
   const removeItem = async (id: string) => {
     await supabase.from('tab_items').delete().eq('id', id);
