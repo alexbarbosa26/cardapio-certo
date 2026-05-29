@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtBRL } from '@/lib/format';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Edit2 } from 'lucide-react';
+import { Plus, Edit2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 interface Product { id: string; name: string; price: number; status: string; sends_to_kitchen: boolean; category_id: string | null; is_weighted: boolean; price_per_kg: number; }
 interface Category { id: string; name: string; }
@@ -21,6 +21,17 @@ function ProdutosPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [editing, setEditing] = useState<Partial<Product> | null>(null);
+  const [search, setSearch] = useState('');
+  const [activeCat, setActiveCat] = useState<string>('all');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      if (activeCat !== 'all' && p.category_id !== activeCat) return false;
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [products, search, activeCat]);
 
   const load = async () => {
     if (!profile) return;
@@ -73,6 +84,28 @@ function ProdutosPage() {
         </Button>
       </header>
 
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar produto..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+        <select
+          value={activeCat}
+          onChange={(e) => setActiveCat(e.target.value)}
+          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+        >
+          <option value="all">Todas as categorias</option>
+          {cats.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="text-xs uppercase tracking-wider text-muted-foreground bg-secondary/40">
@@ -86,7 +119,7 @@ function ProdutosPage() {
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => {
+            {filtered.map((p) => {
               const cat = cats.find((c) => c.id === p.category_id);
               return (
                 <tr key={p.id} className="border-t border-border hover:bg-secondary/30">
