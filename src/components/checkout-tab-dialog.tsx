@@ -104,9 +104,12 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
   }, [withFee, feePct, discount]);
 
   if (!tab) return null;
-  const total = tab.total;
+  // Recalcula localmente para que troco/pendente reajam imediatamente
+  // a mudanças de taxa/desconto, sem esperar o roundtrip do banco.
+  const localServiceFee = withFee ? +(tab.subtotal * (feePct || 0) / 100).toFixed(2) : 0;
+  const total = +(tab.subtotal + localServiceFee - (discount || 0)).toFixed(2);
   const paid = tab.paid_amount;
-  const pending = Math.max(0, total - paid);
+  const pending = Math.max(0, +(total - paid).toFixed(2));
   const quitada = pending <= 0.005 && total > 0;
 
   const jaFinalizada = tab.status === 'paga';
