@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Printer, Plus, Trash2, Scale, Pencil, Receipt } from 'lucide-react';
+import { Printer, Plus, Trash2, Scale, Pencil, Receipt, Search } from 'lucide-react';
 import { fmtBRL } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { toast } from 'sonner';
@@ -45,6 +45,7 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<TabItem[]>([]);
   const [activeCat, setActiveCat] = useState<string>('all');
+  const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<Product | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [editName, setEditName] = useState(false);
@@ -91,7 +92,14 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
     // eslint-disable-next-line
   }, [open, tabId, profile?.company_id]);
 
-  const filtered = useMemo(() => activeCat === 'all' ? products : products.filter((p) => p.category_id === activeCat), [products, activeCat]);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      if (activeCat !== 'all' && p.category_id !== activeCat) return false;
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [products, activeCat, search]);
 
   const removeItem = async (id: string) => {
     await supabase.from('tab_items').delete().eq('id', id);
@@ -148,6 +156,15 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
               </TabsList>
 
               <TabsContent value="fixo" className="m-0 mt-3">
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar produto"
+                    className="pl-8 h-9"
+                  />
+                </div>
                 <div className="flex gap-2 overflow-x-auto pb-2 mb-3">
                   <Chip active={activeCat === 'all'} onClick={() => setActiveCat('all')}>Todos</Chip>
                   {categories.map((c) => (
@@ -155,6 +172,11 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
+                  {filtered.filter((p) => !p.is_weighted).length === 0 && (
+                    <div className="col-span-2 rounded-md border border-dashed p-4 text-xs text-muted-foreground text-center">
+                      Nenhum produto encontrado.
+                    </div>
+                  )}
                   {filtered.filter((p) => !p.is_weighted).map((p) => (
                     <button key={p.id} disabled={!canEdit}
                       onClick={() => setAdding(p)}
