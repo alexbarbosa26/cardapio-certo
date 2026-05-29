@@ -75,6 +75,7 @@ function CaixaPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_registers' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_movements' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tab_payments' }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [profile?.company_id]);
