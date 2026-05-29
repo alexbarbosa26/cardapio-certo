@@ -156,6 +156,15 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
               </TabsList>
 
               <TabsContent value="fixo" className="m-0 mt-3">
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Buscar produto"
+                    className="pl-8 h-9"
+                  />
+                </div>
                 <div className="flex gap-2 overflow-x-auto pb-2 mb-3">
                   <Chip active={activeCat === 'all'} onClick={() => setActiveCat('all')}>Todos</Chip>
                   {categories.map((c) => (
@@ -163,6 +172,11 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
+                  {filtered.filter((p) => !p.is_weighted).length === 0 && (
+                    <div className="col-span-2 rounded-md border border-dashed p-4 text-xs text-muted-foreground text-center">
+                      Nenhum produto encontrado.
+                    </div>
+                  )}
                   {filtered.filter((p) => !p.is_weighted).map((p) => (
                     <button key={p.id} disabled={!canEdit}
                       onClick={() => setAdding(p)}
