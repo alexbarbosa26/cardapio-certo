@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Printer, Plus, Trash2, Scale, Pencil, Receipt } from 'lucide-react';
+import { Printer, Plus, Trash2, Scale, Pencil, Receipt, Search } from 'lucide-react';
 import { fmtBRL } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { toast } from 'sonner';
