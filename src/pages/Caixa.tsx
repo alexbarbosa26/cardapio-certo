@@ -42,11 +42,21 @@ function CaixaPage() {
       .order('opened_at', { ascending: false }).limit(1).maybeSingle();
     setOpen(reg as any);
     if (reg) {
-      const { data: pays } = await supabase.from('payments').select('*')
-        .eq('company_id', profile.company_id).gte('created_at', reg.opened_at).order('created_at', { ascending: false });
-      setPayments((pays ?? []).map((p: any) => ({ ...p, amount: Number(p.amount) })));
-      const { data: mvs } = await supabase.from('cash_movements').select('*')
-        .eq('register_id', reg.id).order('created_at', { ascending: false });
+      const [{ data: pays }, { data: tabPays }, { data: mvs }] = await Promise.all([
+        supabase.from('payments').select('*')
+          .eq('company_id', profile.company_id).eq('status', 'ativo')
+          .gte('created_at', reg.opened_at).order('created_at', { ascending: false }),
+        supabase.from('tab_payments').select('*')
+          .eq('register_id', reg.id).eq('status', 'ativo')
+          .order('created_at', { ascending: false }),
+        supabase.from('cash_movements').select('*')
+          .eq('register_id', reg.id).order('created_at', { ascending: false }),
+      ]);
+      const merged = [
+        ...(pays ?? []).map((p: any) => ({ id: p.id, method: p.method, amount: Number(p.amount), created_at: p.created_at, order_id: p.order_id })),
+        ...(tabPays ?? []).map((p: any) => ({ id: p.id, method: p.method, amount: Number(p.amount), created_at: p.created_at, order_id: p.tab_id })),
+      ].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      setPayments(merged);
       setMovements((mvs ?? []).map((m: any) => ({ ...m, amount: Number(m.amount) })));
     } else {
       setPayments([]); setMovements([]);
