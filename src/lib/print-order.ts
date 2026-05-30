@@ -56,18 +56,18 @@ export function buildThermalHtml(opts: PrintOptions): string {
     .sub { text-align:center; font-size: 12px; margin-bottom: 2px; font-weight: 600; }
     .meta { text-align:center; font-size: 12px; margin: 2px 0; font-weight: 500; }
     hr { border: 0; border-top: 1.5px dashed #000; margin: 6px 0; }
-    .info { font-size: 15px; margin: 3px 0; display:flex; gap: 8px; }
+    .info { font-size: 17px; margin: 3px 0; display:flex; gap: 8px; }
     .info .lbl { font-weight: 800; min-width: 70px; }
-    .cols { display:flex; justify-content:space-between; font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+    .cols { display:flex; justify-content:space-between; font-size: 17px; font-weight: 800; margin-bottom: 4px; }
     .item { margin: 6px 0; page-break-inside: avoid; }
     .row { display:flex; justify-content:space-between; gap:8px; align-items: flex-start; }
-    .name { flex:1; font-size: 15px; font-weight: 600; word-wrap: break-word; overflow-wrap: break-word; }
+    .name { flex:1; font-size: 17px; font-weight: 600; word-wrap: break-word; overflow-wrap: break-word; }
     .qty { font-weight: 800; margin-right: 4px; }
-    .price { white-space: nowrap; font-weight: 700; font-size: 15px; }
-    .opt { padding-left: 16px; font-size: 13px; font-weight: 500; margin-top: 2px; word-wrap: break-word; }
-    .unit { padding-left: 16px; font-size: 13px; font-weight: 500; margin-top: 2px; color: #222; }
-    .trow { display:flex; justify-content:space-between; gap: 8px; margin-top: 3px; font-size: 15px; font-weight: 600; }
-    .trow.bold { font-weight: 900; font-size: 18px; border-top: 1.5px dashed #000; padding-top: 6px; margin-top: 8px; text-transform: uppercase; }
+    .price { white-space: nowrap; font-weight: 700; font-size: 17px; }
+    .opt { padding-left: 16px; font-size: 15px; font-weight: 500; margin-top: 2px; word-wrap: break-word; }
+    .unit { padding-left: 16px; font-size: 15px; font-weight: 500; margin-top: 2px; color: #222; }
+    .trow { display:flex; justify-content:space-between; gap: 8px; margin-top: 3px; font-size: 17px; font-weight: 600; }
+    .trow.bold { font-weight: 900; font-size: 20px; border-top: 1.5px dashed #000; padding-top: 6px; margin-top: 8px; text-transform: uppercase; }
     .footer { text-align:center; font-size: 12px; margin-top: 10px; font-weight: 600; font-style: italic; }
   </style></head><body>
     ${brand ? `${brand.logoUrl ? `<img class="brand-logo" src="${esc(brand.logoUrl)}" alt=""/>` : ''}${brand.name ? `<div class="brand-name">${esc(brand.name)}</div>` : ''}${brand.tradeName ? `<div class="brand-trade">${esc(brand.tradeName)}</div>` : ''}` : ''}
