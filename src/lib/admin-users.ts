@@ -40,7 +40,9 @@ async function invoke<T = unknown>(action: string, payload: Record<string, unkno
 
     // edge function returns { error } on 4xx — surface that message when available
     const msg =
-      (data && typeof data === "object" && "error" in (data as Record<string, unknown>) &&
+      (data &&
+        typeof data === "object" &&
+        "error" in (data as Record<string, unknown>) &&
         String((data as Record<string, unknown>).error)) ||
       responseError ||
       error.message ||
