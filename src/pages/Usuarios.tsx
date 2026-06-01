@@ -18,6 +18,19 @@ function UsuariosPage() {
 
   const [users, setUsers] = useState<UserRow[]>([]);
   const [editing, setEditing] = useState<Partial<UserRow> & { password?: string } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const translatePasswordError = (msg: string): string | null => {
+    const m = msg.toLowerCase();
+    if (/weak|known|easy to guess|pwned|compromised/.test(m))
+      return "Senha recusada: é muito fraca ou consta em vazamentos públicos. Use no mínimo 8 caracteres misturando letras maiúsculas e minúsculas, números e símbolos (ex.: !@#$). Evite sequências (123456), palavras óbvias (senha, admin) e dados pessoais.";
+    if (/should be at least|at least \d+ characters|password.*short/.test(m))
+      return "Senha muito curta. Use pelo menos 6 caracteres — recomendamos 8 ou mais combinando letras, números e símbolos.";
+    if (/password.*required|missing password/.test(m))
+      return "Informe uma senha para continuar.";
+    return null;
+  };
 
   const load = async () => {
     if (!profile) return;
@@ -45,6 +58,8 @@ function UsuariosPage() {
 
   const save = async () => {
     if (!editing) return;
+    setFormError(null);
+    setSaving(true);
     try {
       if (editing.id) {
         await adminUpdateUser({
@@ -62,9 +77,14 @@ function UsuariosPage() {
           role: (editing.role as 'admin' | 'staff') ?? 'staff',
         });
       }
-      toast.success('Salvo'); setEditing(null); load();
+      toast.success('Salvo'); setEditing(null); setFormError(null); load();
     } catch (e: any) {
-      toast.error(e?.message ?? 'Erro ao salvar');
+      const raw = e?.message ?? 'Erro ao salvar';
+      const friendly = translatePasswordError(raw);
+      setFormError(friendly ?? raw);
+      toast.error(friendly ?? raw);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -110,7 +130,7 @@ function UsuariosPage() {
       </div>
 
       {editing && (
-        <Dialog open onOpenChange={(o) => !o && setEditing(null)}>
+        <Dialog open onOpenChange={(o) => { if (!o) { setEditing(null); setFormError(null); } }}>
           <DialogContent>
             <DialogHeader><DialogTitle>{editing.id ? 'Editar usuário' : 'Novo usuário'}</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -120,7 +140,10 @@ function UsuariosPage() {
               )}
               <div>
                 <Label>{editing.id ? 'Nova senha (deixe vazio para manter)' : 'Senha'}</Label>
-                <Input type="password" value={editing.password ?? ''} onChange={(e) => setEditing({ ...editing, password: e.target.value })}/>
+                <Input type="password" value={editing.password ?? ''} onChange={(e) => { setEditing({ ...editing, password: e.target.value }); if (formError) setFormError(null); }}/>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Mínimo 8 caracteres com letras maiúsculas, minúsculas, números e símbolos. Não é permitida senha que conste em vazamentos públicos.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -142,10 +165,15 @@ function UsuariosPage() {
                   </div>
                 )}
               </div>
+              {formError && (
+                <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {formError}
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setEditing(null)}>Cancelar</Button>
-              <Button onClick={save}>Salvar</Button>
+              <Button variant="ghost" onClick={() => { setEditing(null); setFormError(null); }} disabled={saving}>Cancelar</Button>
+              <Button onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
