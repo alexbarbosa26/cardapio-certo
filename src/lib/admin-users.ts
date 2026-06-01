@@ -20,10 +20,29 @@ async function invoke<T = unknown>(action: string, payload: Record<string, unkno
     body: { action, payload },
   });
   if (error) {
+    let responseError: string | undefined;
+    const context = (error as { context?: unknown }).context;
+
+    if (context instanceof Response) {
+      try {
+        const body = await context.clone().json();
+        if (body && typeof body === "object" && "error" in body) {
+          responseError = String((body as Record<string, unknown>).error);
+        }
+      } catch {
+        try {
+          responseError = await context.clone().text();
+        } catch {
+          responseError = undefined;
+        }
+      }
+    }
+
     // edge function returns { error } on 4xx — surface that message when available
     const msg =
       (data && typeof data === "object" && "error" in (data as Record<string, unknown>) &&
         String((data as Record<string, unknown>).error)) ||
+      responseError ||
       error.message ||
       "Erro ao chamar admin-users.";
     throw new Error(msg);

@@ -23,7 +23,7 @@ function UsuariosPage() {
 
   const translatePasswordError = (msg: string): string | null => {
     const m = msg.toLowerCase();
-    if (/weak|known|easy to guess|pwned|compromised/.test(m))
+    if (/weak|known|easy to guess|pwned|compromised|fraca|comum|vazamento|vazamentos/.test(m))
       return "Senha recusada: é muito fraca ou consta em vazamentos públicos. Use no mínimo 8 caracteres misturando letras maiúsculas e minúsculas, números e símbolos (ex.: !@#$). Evite sequências (123456), palavras óbvias (senha, admin) e dados pessoais.";
     if (/should be at least|at least \d+ characters|password.*short/.test(m))
       return "Senha muito curta. Use pelo menos 6 caracteres — recomendamos 8 ou mais combinando letras, números e símbolos.";
