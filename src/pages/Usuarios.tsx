@@ -58,6 +58,8 @@ function UsuariosPage() {
 
   const save = async () => {
     if (!editing) return;
+    setFormError(null);
+    setSaving(true);
     try {
       if (editing.id) {
         await adminUpdateUser({
@@ -75,9 +77,14 @@ function UsuariosPage() {
           role: (editing.role as 'admin' | 'staff') ?? 'staff',
         });
       }
-      toast.success('Salvo'); setEditing(null); load();
+      toast.success('Salvo'); setEditing(null); setFormError(null); load();
     } catch (e: any) {
-      toast.error(e?.message ?? 'Erro ao salvar');
+      const raw = e?.message ?? 'Erro ao salvar';
+      const friendly = translatePasswordError(raw);
+      setFormError(friendly ?? raw);
+      toast.error(friendly ?? raw);
+    } finally {
+      setSaving(false);
     }
   };
 
