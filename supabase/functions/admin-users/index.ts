@@ -121,7 +121,12 @@ Deno.serve(async (req) => {
 
       if (password && password.length >= 6) {
         const { error: pErr } = await admin.auth.admin.updateUserById(user_id, { password });
-        if (pErr) return json({ error: pErr.message }, 400);
+        if (pErr) {
+          const msg = /weak|known/i.test(pErr.message)
+            ? "Senha muito fraca ou comum. Escolha uma senha mais forte (use letras, números e símbolos)."
+            : pErr.message;
+          return json({ error: msg }, 400);
+        }
       }
       return json({ ok: true });
     }
