@@ -130,7 +130,7 @@ function UsuariosPage() {
       </div>
 
       {editing && (
-        <Dialog open onOpenChange={(o) => !o && setEditing(null)}>
+        <Dialog open onOpenChange={(o) => { if (!o) { setEditing(null); setFormError(null); } }}>
           <DialogContent>
             <DialogHeader><DialogTitle>{editing.id ? 'Editar usuário' : 'Novo usuário'}</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -140,7 +140,10 @@ function UsuariosPage() {
               )}
               <div>
                 <Label>{editing.id ? 'Nova senha (deixe vazio para manter)' : 'Senha'}</Label>
-                <Input type="password" value={editing.password ?? ''} onChange={(e) => setEditing({ ...editing, password: e.target.value })}/>
+                <Input type="password" value={editing.password ?? ''} onChange={(e) => { setEditing({ ...editing, password: e.target.value }); if (formError) setFormError(null); }}/>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Mínimo 8 caracteres com letras maiúsculas, minúsculas, números e símbolos. Não é permitida senha que conste em vazamentos públicos.
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -162,10 +165,15 @@ function UsuariosPage() {
                   </div>
                 )}
               </div>
+              {formError && (
+                <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {formError}
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="ghost" onClick={() => setEditing(null)}>Cancelar</Button>
-              <Button onClick={save}>Salvar</Button>
+              <Button variant="ghost" onClick={() => { setEditing(null); setFormError(null); }} disabled={saving}>Cancelar</Button>
+              <Button onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar'}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
