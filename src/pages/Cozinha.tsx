@@ -1,11 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtTime, minutesSince } from '@/lib/format';
 import { Button } from '@/components/ui/button';
-import { Clock, Play, CheckCircle2, Truck } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Clock, Play, CheckCircle2, Truck, Bell, BellOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+
+const SOUND_PREF_KEY = 'kds:sound-enabled';
+
+/** Synthesize a soft bell "ding" via Web Audio so we don't need any asset. */
+function playBell(ctx: AudioContext) {
+  const now = ctx.currentTime;
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0.0001, now);
+  master.gain.exponentialRampToValueAtTime(0.35, now + 0.01);
+  master.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+  master.connect(ctx.destination);
+
+  // Two partials = bell-ish timbre, gentle (not piercing).
+  [880, 1320].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.value = i === 0 ? 1 : 0.45;
+    osc.connect(g).connect(master);
+    osc.start(now);
+    osc.stop(now + 1.6);
+  });
+}
 
 interface KitchenItem {
   id: string;
@@ -26,6 +52,32 @@ function CozinhaPage() {
   const [items, setItems] = useState<KitchenItem[]>([]);
   const [settings, setSettings] = useState<Settings>({ kitchen_warning_minutes: 10, kitchen_danger_minutes: 20 });
   const [, force] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(SOUND_PREF_KEY) === '1';
+  });
+  const knownIdsRef = useRef<Set<string> | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
+
+  const ensureAudio = () => {
+    if (!audioCtxRef.current) {
+      const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+      if (Ctor) audioCtxRef.current = new Ctor();
+    }
+    if (audioCtxRef.current?.state === 'suspended') void audioCtxRef.current.resume();
+    return audioCtxRef.current;
+  };
+
+  const toggleSound = (on: boolean) => {
+    setSoundEnabled(on);
+    window.localStorage.setItem(SOUND_PREF_KEY, on ? '1' : '0');
+    if (on) {
+      const ctx = ensureAudio();
+      if (ctx) playBell(ctx); // test chime + unlocks audio on user gesture
+    }
+  };
 
   const load = async () => {
     if (!profile) return;
@@ -40,13 +92,29 @@ function CozinhaPage() {
       .eq('orders.company_id', profile.company_id)
       .order('sent_to_kitchen_at', { ascending: true });
 
-    setItems((data ?? []).map((r: any) => ({
+    const mapped = (data ?? []).map((r: any) => ({
       id: r.id, product_name: r.product_name, quantity: r.quantity, notes: r.notes,
       kitchen_status: r.kitchen_status, sent_to_kitchen_at: r.sent_to_kitchen_at,
       options: r.order_item_options ?? [],
       table_name: r.orders?.tables?.name ?? '—',
       order_number: r.orders?.order_number ?? 0,
-    })));
+    }));
+
+    // Detect newly-arrived items (status "aguardando") to ring the bell.
+    const nextIds = new Set(mapped.map((m) => m.id));
+    if (knownIdsRef.current === null) {
+      knownIdsRef.current = nextIds;
+    } else {
+      const prev = knownIdsRef.current;
+      const hasNew = mapped.some((m) => m.kitchen_status === 'aguardando' && !prev.has(m.id));
+      knownIdsRef.current = nextIds;
+      if (hasNew && soundEnabledRef.current) {
+        const ctx = ensureAudio();
+        if (ctx) playBell(ctx);
+      }
+    }
+
+    setItems(mapped);
   };
 
   useEffect(() => { load(); }, [profile?.company_id]);
@@ -81,8 +149,15 @@ function CozinhaPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Painel da cozinha</p>
           <h1 className="font-display text-3xl sm:text-4xl mt-1">KDS</h1>
         </div>
-        <div className="text-xs text-muted-foreground">
-          Alerta amarelo a partir de <b>{settings.kitchen_warning_minutes} min</b>, vermelho a partir de <b>{settings.kitchen_danger_minutes} min</b>
+        <div className="flex items-center gap-4 flex-wrap">
+          <label className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 cursor-pointer select-none">
+            {soundEnabled ? <Bell className="h-4 w-4 text-primary" /> : <BellOff className="h-4 w-4 text-muted-foreground" />}
+            <Label htmlFor="kds-sound" className="text-xs cursor-pointer">Alerta sonoro</Label>
+            <Switch id="kds-sound" checked={soundEnabled} onCheckedChange={toggleSound} />
+          </label>
+          <div className="text-xs text-muted-foreground">
+            Alerta amarelo a partir de <b>{settings.kitchen_warning_minutes} min</b>, vermelho a partir de <b>{settings.kitchen_danger_minutes} min</b>
+          </div>
         </div>
       </header>
 
