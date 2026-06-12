@@ -149,8 +149,15 @@ function CozinhaPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Painel da cozinha</p>
           <h1 className="font-display text-3xl sm:text-4xl mt-1">KDS</h1>
         </div>
-        <div className="text-xs text-muted-foreground">
-          Alerta amarelo a partir de <b>{settings.kitchen_warning_minutes} min</b>, vermelho a partir de <b>{settings.kitchen_danger_minutes} min</b>
+        <div className="flex items-center gap-4 flex-wrap">
+          <label className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 cursor-pointer select-none">
+            {soundEnabled ? <Bell className="h-4 w-4 text-primary" /> : <BellOff className="h-4 w-4 text-muted-foreground" />}
+            <Label htmlFor="kds-sound" className="text-xs cursor-pointer">Alerta sonoro</Label>
+            <Switch id="kds-sound" checked={soundEnabled} onCheckedChange={toggleSound} />
+          </label>
+          <div className="text-xs text-muted-foreground">
+            Alerta amarelo a partir de <b>{settings.kitchen_warning_minutes} min</b>, vermelho a partir de <b>{settings.kitchen_danger_minutes} min</b>
+          </div>
         </div>
       </header>
 
