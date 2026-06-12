@@ -92,13 +92,29 @@ function CozinhaPage() {
       .eq('orders.company_id', profile.company_id)
       .order('sent_to_kitchen_at', { ascending: true });
 
-    setItems((data ?? []).map((r: any) => ({
+    const mapped = (data ?? []).map((r: any) => ({
       id: r.id, product_name: r.product_name, quantity: r.quantity, notes: r.notes,
       kitchen_status: r.kitchen_status, sent_to_kitchen_at: r.sent_to_kitchen_at,
       options: r.order_item_options ?? [],
       table_name: r.orders?.tables?.name ?? '—',
       order_number: r.orders?.order_number ?? 0,
-    })));
+    }));
+
+    // Detect newly-arrived items (status "aguardando") to ring the bell.
+    const nextIds = new Set(mapped.map((m) => m.id));
+    if (knownIdsRef.current === null) {
+      knownIdsRef.current = nextIds;
+    } else {
+      const prev = knownIdsRef.current;
+      const hasNew = mapped.some((m) => m.kitchen_status === 'aguardando' && !prev.has(m.id));
+      knownIdsRef.current = nextIds;
+      if (hasNew && soundEnabledRef.current) {
+        const ctx = ensureAudio();
+        if (ctx) playBell(ctx);
+      }
+    }
+
+    setItems(mapped);
   };
 
   useEffect(() => { load(); }, [profile?.company_id]);
