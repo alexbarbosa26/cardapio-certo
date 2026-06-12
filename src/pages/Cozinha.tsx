@@ -1,11 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtTime, minutesSince } from '@/lib/format';
 import { Button } from '@/components/ui/button';
-import { Clock, Play, CheckCircle2, Truck } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Clock, Play, CheckCircle2, Truck, Bell, BellOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+
+const SOUND_PREF_KEY = 'kds:sound-enabled';
+
+/** Synthesize a soft bell "ding" via Web Audio so we don't need any asset. */
+function playBell(ctx: AudioContext) {
+  const now = ctx.currentTime;
+  const master = ctx.createGain();
+  master.gain.setValueAtTime(0.0001, now);
+  master.gain.exponentialRampToValueAtTime(0.35, now + 0.01);
+  master.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+  master.connect(ctx.destination);
+
+  // Two partials = bell-ish timbre, gentle (not piercing).
+  [880, 1320].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.value = i === 0 ? 1 : 0.45;
+    osc.connect(g).connect(master);
+    osc.start(now);
+    osc.stop(now + 1.6);
+  });
+}
 
 interface KitchenItem {
   id: string;
