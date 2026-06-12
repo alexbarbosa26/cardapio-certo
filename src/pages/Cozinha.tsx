@@ -52,6 +52,32 @@ function CozinhaPage() {
   const [items, setItems] = useState<KitchenItem[]>([]);
   const [settings, setSettings] = useState<Settings>({ kitchen_warning_minutes: 10, kitchen_danger_minutes: 20 });
   const [, force] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem(SOUND_PREF_KEY) === '1';
+  });
+  const knownIdsRef = useRef<Set<string> | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const soundEnabledRef = useRef(soundEnabled);
+  useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
+
+  const ensureAudio = () => {
+    if (!audioCtxRef.current) {
+      const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+      if (Ctor) audioCtxRef.current = new Ctor();
+    }
+    if (audioCtxRef.current?.state === 'suspended') void audioCtxRef.current.resume();
+    return audioCtxRef.current;
+  };
+
+  const toggleSound = (on: boolean) => {
+    setSoundEnabled(on);
+    window.localStorage.setItem(SOUND_PREF_KEY, on ? '1' : '0');
+    if (on) {
+      const ctx = ensureAudio();
+      if (ctx) playBell(ctx); // test chime + unlocks audio on user gesture
+    }
+  };
 
   const load = async () => {
     if (!profile) return;
