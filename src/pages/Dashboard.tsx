@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtBRL } from '@/lib/format';
 import {
-  TrendingUp, ShoppingBag, UtensilsCrossed, Receipt, ClipboardList, CreditCard,
+  TrendingUp, UtensilsCrossed, Receipt, ClipboardList, CreditCard,
   Wallet, Target, Clock, Banknote, ChefHat, Package, AlertTriangle, Pencil,
 } from 'lucide-react';
 import {
