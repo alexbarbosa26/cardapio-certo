@@ -785,4 +785,3 @@ function QuickLink({ to, icon: Icon, title, desc }: { to: string; icon: any; tit
 
 // Mantém o nome de export para compatibilidade com src/App.tsx
 export default DashboardPage;
-export { DashboardPage as Dashboard, ShoppingBag };
