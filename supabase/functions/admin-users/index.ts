@@ -51,6 +51,11 @@ Deno.serve(async (req) => {
   const { action, payload } = body;
   if (!action || !payload) return json({ error: "action/payload obrigatórios" }, 400);
 
+  const ALLOWED_ROLES = ["admin", "staff"] as const;
+  type AllowedRole = typeof ALLOWED_ROLES[number];
+  const isAllowedRole = (r: unknown): r is AllowedRole =>
+    typeof r === "string" && (ALLOWED_ROLES as readonly string[]).includes(r);
+
   try {
     if (action === "create") {
       const { name, email, password, role: newRole } = payload as {
