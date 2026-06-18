@@ -49,6 +49,7 @@ export default function App() {
               <Route path="/" element={<Index />} />
               <Route path="/contratar/:planSlug" element={<Contratar />} />
               <Route path="/checkout/:sessionId" element={<Checkout />} />
+              <Route path="/confianca" element={<Confianca />} />
               <Route path="/login" element={<Login />} />
 
               {/* Tela informativa de bloqueio – exige login mas não exige assinatura ativa */}
