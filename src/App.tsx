@@ -26,6 +26,7 @@ import AssinaturaSuspensa from '@/pages/AssinaturaSuspensa';
 import Landing from '@/pages/Landing';
 import Contratar from '@/pages/Contratar';
 import Checkout from '@/pages/Checkout';
+import Confianca from '@/pages/Confianca';
 import GlobalAdminLayout from '@/pages/global/GlobalAdminLayout';
 import GlobalDashboard from '@/pages/global/GlobalDashboard';
 import GlobalEmpresas from '@/pages/global/GlobalEmpresas';
@@ -48,6 +49,7 @@ export default function App() {
               <Route path="/" element={<Index />} />
               <Route path="/contratar/:planSlug" element={<Contratar />} />
               <Route path="/checkout/:sessionId" element={<Checkout />} />
+              <Route path="/confianca" element={<Confianca />} />
               <Route path="/login" element={<Login />} />
 
               {/* Tela informativa de bloqueio – exige login mas não exige assinatura ativa */}

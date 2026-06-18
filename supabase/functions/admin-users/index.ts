@@ -51,12 +51,18 @@ Deno.serve(async (req) => {
   const { action, payload } = body;
   if (!action || !payload) return json({ error: "action/payload obrigatórios" }, 400);
 
+  const ALLOWED_ROLES = ["admin", "staff"] as const;
+  type AllowedRole = typeof ALLOWED_ROLES[number];
+  const isAllowedRole = (r: unknown): r is AllowedRole =>
+    typeof r === "string" && (ALLOWED_ROLES as readonly string[]).includes(r);
+
   try {
     if (action === "create") {
       const { name, email, password, role: newRole } = payload as {
         name: string; email: string; password: string; role: "admin" | "staff";
       };
       if (!name || !email || !password || !newRole) return json({ error: "Campos obrigatórios" }, 400);
+      if (!isAllowedRole(newRole)) return json({ error: "Perfil inválido. Use 'admin' ou 'staff'." }, 400);
       if (password.length < 6) return json({ error: "Senha mínima 6 caracteres" }, 400);
 
       // Pre-check plan limit for a friendlier error before creating the auth user
@@ -102,6 +108,7 @@ Deno.serve(async (req) => {
         status: "ativo" | "inativo"; password?: string;
       };
       if (!user_id || !name || !newRole || !status) return json({ error: "Campos obrigatórios" }, 400);
+      if (!isAllowedRole(newRole)) return json({ error: "Perfil inválido. Use 'admin' ou 'staff'." }, 400);
 
       const { data: target } = await admin
         .from("profiles").select("id, company_id").eq("id", user_id).maybeSingle();
