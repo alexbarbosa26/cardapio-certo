@@ -108,6 +108,7 @@ Deno.serve(async (req) => {
         status: "ativo" | "inativo"; password?: string;
       };
       if (!user_id || !name || !newRole || !status) return json({ error: "Campos obrigatórios" }, 400);
+      if (!isAllowedRole(newRole)) return json({ error: "Perfil inválido. Use 'admin' ou 'staff'." }, 400);
 
       const { data: target } = await admin
         .from("profiles").select("id, company_id").eq("id", user_id).maybeSingle();
