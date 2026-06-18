@@ -26,6 +26,7 @@ import AssinaturaSuspensa from '@/pages/AssinaturaSuspensa';
 import Landing from '@/pages/Landing';
 import Contratar from '@/pages/Contratar';
 import Checkout from '@/pages/Checkout';
+import Confianca from '@/pages/Confianca';
 import GlobalAdminLayout from '@/pages/global/GlobalAdminLayout';
 import GlobalDashboard from '@/pages/global/GlobalDashboard';
 import GlobalEmpresas from '@/pages/global/GlobalEmpresas';
