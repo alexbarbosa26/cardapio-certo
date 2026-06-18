@@ -986,6 +986,47 @@ export type Database = {
           },
         ]
       }
+      sales_goals: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          month: number
+          target_amount: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month: number
+          target_amount: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          month?: number
+          target_amount?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_goals_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       settings: {
         Row: {
           accent_color: string | null
