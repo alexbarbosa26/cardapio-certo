@@ -6,17 +6,34 @@ import { fmtBRL } from '@/lib/format';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 const COLORS = ['var(--accent)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-2)'];
 
 type Origin = 'todas' | 'mesa' | 'comanda';
+type RangePreset = '7' | '30' | '90' | 'custom';
+
+const toLocalKey = (d: Date) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
+const daysAgo = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
 
 function RelatoriosPage() {
   const { profile } = useAuth();
   const redirectNonAdmin = !!profile && profile.role !== 'admin';
 
-
-  const [range, setRange] = useState<'7' | '30' | '90'>('7');
+  const [preset, setPreset] = useState<RangePreset>('7');
+  const [startDate, setStartDate] = useState<string>(toLocalKey(daysAgo(6)));
+  const [endDate, setEndDate] = useState<string>(toLocalKey(new Date()));
   const [origin, setOrigin] = useState<Origin>('todas');
   const [methodFilter, setMethodFilter] = useState<string>('todos');
   const [categoryFilter, setCategoryFilter] = useState<string>('todas');
@@ -26,18 +43,47 @@ function RelatoriosPage() {
   const [items, setItems] = useState<{ name: string; category: string; quantity: number; total: number; origin: 'mesa' | 'comanda' }[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
+  const applyPreset = (p: RangePreset) => {
+    setPreset(p);
+    if (p === 'custom') return;
+    const days = Number(p);
+    setStartDate(toLocalKey(daysAgo(days - 1)));
+    setEndDate(toLocalKey(new Date()));
+  };
+
+  const onStartChange = (v: string) => {
+    setStartDate(v);
+    setPreset('custom');
+  };
+  const onEndChange = (v: string) => {
+    setEndDate(v);
+    setPreset('custom');
+  };
+
+  const { sinceISO, untilISO, dayList } = useMemo(() => {
+    const [sy, sm, sd] = startDate.split('-').map(Number);
+    const [ey, em, ed] = endDate.split('-').map(Number);
+    const start = new Date(sy, sm - 1, sd); start.setHours(0, 0, 0, 0);
+    const end = new Date(ey, em - 1, ed); end.setHours(23, 59, 59, 999);
+    const days: string[] = [];
+    const cur = new Date(start);
+    while (cur <= end && days.length < 400) {
+      days.push(toLocalKey(cur));
+      cur.setDate(cur.getDate() + 1);
+    }
+    return { sinceISO: start.toISOString(), untilISO: end.toISOString(), dayList: days };
+  }, [startDate, endDate]);
+
   useEffect(() => {
     if (!profile) return;
     (async () => {
-      const since = new Date(); since.setDate(since.getDate() - Number(range)); since.setHours(0, 0, 0, 0);
-      const sinceISO = since.toISOString();
       const cid = profile.company_id;
 
       const [paysRes, tabPaysRes, ordersRes, tabItemsRes, prodRes, catRes] = await Promise.all([
-        supabase.from('payments').select('amount, method, created_at').eq('company_id', cid).eq('status', 'ativo').gte('created_at', sinceISO),
-        supabase.from('tab_payments').select('amount, method, created_at').eq('company_id', cid).eq('status', 'ativo').gte('created_at', sinceISO),
-        supabase.from('orders').select('id, closed_at').eq('company_id', cid).eq('status', 'fechado').gte('closed_at', sinceISO),
-        supabase.from('tab_items').select('product_name, category_name, quantity, total_price, created_at').eq('company_id', cid).is('canceled_at', null).gte('created_at', sinceISO),
+        supabase.from('payments').select('amount, method, created_at').eq('company_id', cid).eq('status', 'ativo').gte('created_at', sinceISO).lte('created_at', untilISO),
+        supabase.from('tab_payments').select('amount, method, created_at').eq('company_id', cid).eq('status', 'ativo').gte('created_at', sinceISO).lte('created_at', untilISO),
+        supabase.from('orders').select('id, closed_at').eq('company_id', cid).eq('status', 'fechado').gte('closed_at', sinceISO).lte('closed_at', untilISO),
+        supabase.from('tab_items').select('product_name, category_name, quantity, total_price, created_at').eq('company_id', cid).is('canceled_at', null).gte('created_at', sinceISO).lte('created_at', untilISO),
         supabase.from('products').select('id, name, category_id').eq('company_id', cid),
         supabase.from('categories').select('id, name').eq('company_id', cid),
       ]);
@@ -77,7 +123,7 @@ function RelatoriosPage() {
       allItems.forEach((i) => cats.add(i.category));
       setCategories(Array.from(cats).sort());
     })();
-  }, [profile?.company_id, range]);
+  }, [profile?.company_id, sinceISO, untilISO]);
 
   const payments = useMemo(() => {
     const fromOrders = orderPays.map((p) => ({ ...p, origin: 'mesa' as const }));
@@ -102,20 +148,10 @@ function RelatoriosPage() {
   }, [orderPays, tabPays]);
 
   const daily = useMemo(() => {
-    const localKey = (d: Date) => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    };
     const map = new Map<string, number>();
-    const days = Number(range);
-    for (let i = days - 1; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
-      map.set(localKey(d), 0);
-    }
+    for (const k of dayList) map.set(k, 0);
     for (const p of payments) {
-      const k = localKey(new Date(p.created_at));
+      const k = toLocalKey(new Date(p.created_at));
       if (map.has(k)) map.set(k, (map.get(k) ?? 0) + p.amount);
     }
     return Array.from(map.entries()).map(([d, v]) => {
@@ -125,7 +161,7 @@ function RelatoriosPage() {
         total: v,
       };
     });
-  }, [payments, range]);
+  }, [payments, dayList]);
 
   const byMethod = useMemo(() => {
     const map = new Map<string, number>();
@@ -175,16 +211,38 @@ function RelatoriosPage() {
             {' · '}Comandas: <span className="font-semibold text-foreground">{fmtBRL(totalComanda)}</span>
           </p>
         </div>
-        <Tabs value={range} onValueChange={(v) => setRange(v as any)}>
+        <Tabs value={preset} onValueChange={(v) => applyPreset(v as RangePreset)}>
           <TabsList>
             <TabsTrigger value="7">7 dias</TabsTrigger>
             <TabsTrigger value="30">30 dias</TabsTrigger>
             <TabsTrigger value="90">90 dias</TabsTrigger>
+            <TabsTrigger value="custom">Personalizado</TabsTrigger>
           </TabsList>
         </Tabs>
       </header>
 
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div className="mb-6 flex flex-wrap gap-3 items-end">
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Data início</span>
+          <Input
+            type="date"
+            value={startDate}
+            max={endDate}
+            onChange={(e) => onStartChange(e.target.value)}
+            className="w-44"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <span className="text-xs text-muted-foreground">Data fim</span>
+          <Input
+            type="date"
+            value={endDate}
+            min={startDate}
+            max={toLocalKey(new Date())}
+            onChange={(e) => onEndChange(e.target.value)}
+            className="w-44"
+          />
+        </div>
         <div className="flex flex-col gap-1">
           <span className="text-xs text-muted-foreground">Origem</span>
           <Select value={origin} onValueChange={(v) => setOrigin(v as Origin)}>
