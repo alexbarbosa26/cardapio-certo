@@ -14,6 +14,7 @@ export interface TenantBranding {
   enableKitchen: boolean;
   enablePrinting: boolean;
   enableServiceFee: boolean;
+  enableCreditAccounts: boolean;
   tabNumberingMode: 'manual' | 'auto';
   receiptMessage: string | null;
   establishmentData: Record<string, unknown>;
