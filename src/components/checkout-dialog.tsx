@@ -12,9 +12,11 @@ import { fmtBRL, fmtDateTime } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { toast } from 'sonner';
 import {
-  Banknote, CreditCard, QrCode, Printer, Plus, Minus, Trash2, CheckCircle2,
+  Banknote, CreditCard, QrCode, Printer, Plus, Minus, Trash2, CheckCircle2, BookmarkPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTenantBranding } from '@/hooks/use-tenant-branding';
+import { PendurarContaDialog } from '@/components/pendurar-conta-dialog';
 
 type Method = 'dinheiro' | 'pix' | 'debito' | 'credito';
 
