@@ -49,6 +49,7 @@ interface PaymentRow {
 
 export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange }: Props) {
   const { profile } = useAuth();
+  const branding = useTenantBranding();
   const isAdmin = profile?.role === 'admin';
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [items, setItems] = useState<ItemRow[]>([]);
@@ -58,6 +59,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
   const [discount, setDiscount] = useState(0);
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
   const [tab, setTab] = useState<'total' | 'dividir' | 'itens' | 'parcial'>('total');
+  const [pendurarOpen, setPendurarOpen] = useState(false);
 
   const load = async () => {
     const { data: o } = await supabase.from('orders').select('*').eq('id', orderId).single();
