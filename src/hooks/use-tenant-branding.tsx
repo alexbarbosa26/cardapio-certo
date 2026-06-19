@@ -40,6 +40,7 @@ const DEFAULTS: Omit<TenantBranding, 'refresh'> = {
   enableKitchen: true,
   enablePrinting: true,
   enableServiceFee: true,
+  enableCreditAccounts: false,
   tabNumberingMode: 'manual',
   receiptMessage: null,
   establishmentData: {},
