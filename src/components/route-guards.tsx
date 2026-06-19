@@ -3,14 +3,15 @@ import { useAuth } from '@/hooks/use-auth';
 
 export function RequireAuth() {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  // Only block on the initial auth check; background revalidations keep UI mounted.
+  if (loading && !user) return null;
   if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
 
 export function RequireSuperAdmin() {
   const { loading, user, isSuperAdmin } = useAuth();
-  if (loading) return null;
+  if (loading && !user) return null;
   if (!user) return <Navigate to="/login" replace />;
   if (!isSuperAdmin) return <Navigate to="/" replace />;
   return <Outlet />;
@@ -19,17 +20,21 @@ export function RequireSuperAdmin() {
 /** Bloqueia rotas operacionais da empresa se assinatura não permite acesso. */
 export function RequireCompanyAccess() {
   const { loading, user, profile, isSuperAdmin, isCompanyAccessAllowed } = useAuth();
-  if (loading) return null;
+  if (loading && !user) return null;
   if (!user) return <Navigate to="/login" replace />;
   if (isSuperAdmin) return <Navigate to="/global/dashboard" replace />;
-  if (!profile) return null;
+  // Wait for profile only on first load; once we have it, keep rendering through revalidations.
+  if (!profile) {
+    if (loading) return null;
+    return null;
+  }
   if (!isCompanyAccessAllowed) return <Navigate to="/assinatura-suspensa" replace />;
   return <Outlet />;
 }
 
 export function RequireAdmin() {
   const { loading, profile } = useAuth();
-  if (loading) return null;
+  if (loading && !profile) return null;
   if (profile?.role !== 'admin') return <Navigate to="/mesas" replace />;
   return <Outlet />;
 }
