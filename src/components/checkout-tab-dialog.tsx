@@ -214,12 +214,24 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
             ],
             footer: quitada ? 'Conta quitada · Obrigado!' : 'Obrigado pela preferência!',
           })}><Printer className="h-4 w-4 mr-1" />Imprimir</Button>
+          {branding.enableCreditAccounts && !jaFinalizada && !cancelada && pending > 0 && (
+            <Button variant="outline" onClick={() => setPendurarOpen(true)}>
+              <BookmarkPlus className="h-4 w-4 mr-1" />Pendurar
+            </Button>
+          )}
           <Button onClick={finalize} disabled={!quitada || jaFinalizada || cancelada}>
             <CheckCircle2 className="h-4 w-4 mr-1" />
             {jaFinalizada ? 'Já finalizada' : 'Finalizar comanda'}
           </Button>
         </DialogFooter>
       </DialogContent>
+      <PendurarContaDialog
+        open={pendurarOpen}
+        onOpenChange={setPendurarOpen}
+        source={{ kind: 'tab', tabId: tab.id }}
+        amount={pending}
+        onSuccess={() => { onOpenChange(false); onFinalized?.(); }}
+      />
     </Dialog>
   );
 }
