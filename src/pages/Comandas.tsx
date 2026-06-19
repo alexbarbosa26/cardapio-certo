@@ -184,7 +184,10 @@ function ComandasPage() {
               <button onClick={() => setOpenTabId(t.id)} className="text-left w-full">
                 <div className="flex items-baseline justify-between">
                   <span className="font-display text-2xl">#{t.tab_number}</span>
-                  <StatusBadge status={t.status} />
+                  <div className="flex items-center gap-1">
+                    {t.is_credit && <Badge className="bg-warning/20 text-warning text-[10px]">Fiado</Badge>}
+                    <StatusBadge status={t.status} />
+                  </div>
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground truncate">
                   {t.customer_name || 'Sem cliente'}
