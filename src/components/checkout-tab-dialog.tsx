@@ -43,6 +43,7 @@ interface PaymentRow {
 
 export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Props) {
   const { profile } = useAuth();
+  const branding = useTenantBranding();
   const isAdmin = profile?.role === 'admin';
   const [tab, setTab] = useState<TabRow | null>(null);
   const [items, setItems] = useState<ItemRow[]>([]);
@@ -52,6 +53,7 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
   const [discount, setDiscount] = useState(0);
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
   const [tabKey, setTabKey] = useState<'total' | 'dividir' | 'parcial'>('total');
+  const [pendurarOpen, setPendurarOpen] = useState(false);
 
   const load = async () => {
     const { data: t } = await supabase.from('customer_tabs').select('*').eq('id', tabId).single();
