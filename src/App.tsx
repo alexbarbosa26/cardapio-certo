@@ -74,6 +74,7 @@ export default function App() {
                 <Route element={<AppLayout />}>
                   <Route path="/mesas" element={<Mesas />} />
                   <Route path="/comandas" element={<Comandas />} />
+                  <Route path="/fiado" element={<Fiado />} />
                   <Route path="/cozinha" element={<Cozinha />} />
                   <Route path="/caixa" element={<Caixa />} />
                   <Route path="/dashboard" element={<Dashboard />} />
