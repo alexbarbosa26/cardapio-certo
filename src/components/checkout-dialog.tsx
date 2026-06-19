@@ -230,11 +230,23 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             ],
             footer: quitada ? 'Conta quitada · Obrigado!' : 'Obrigado pela preferência!',
           })}><Printer className="h-4 w-4 mr-1" /> Imprimir</Button>
+          {branding.enableCreditAccounts && pending > 0 && !quitada && (
+            <Button variant="outline" onClick={() => setPendurarOpen(true)}>
+              <BookmarkPlus className="h-4 w-4 mr-1" />Pendurar
+            </Button>
+          )}
           <Button onClick={finalize} disabled={!quitada} className="bg-primary">
             <CheckCircle2 className="h-4 w-4 mr-1" />Finalizar mesa
           </Button>
         </DialogFooter>
       </DialogContent>
+      <PendurarContaDialog
+        open={pendurarOpen}
+        onOpenChange={setPendurarOpen}
+        source={{ kind: 'order', orderId: order.id, tableId }}
+        amount={pending}
+        onSuccess={() => onOpenChange(false)}
+      />
     </Dialog>
   );
 }
