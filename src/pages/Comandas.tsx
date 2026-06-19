@@ -23,6 +23,7 @@ interface TabRow {
   subtotal: number; total: number; paid_amount: number;
   opened_at: string; closed_at: string | null;
   items_count: number;
+  is_credit: boolean;
 }
 
 function ComandasPage() {
@@ -43,14 +44,14 @@ function ComandasPage() {
     if (!profile) return;
     const { data } = await supabase
       .from('customer_tabs')
-      .select('id, tab_number, customer_name, status, subtotal, total, paid_amount, opened_at, closed_at, tab_items(id)')
+      .select('id, tab_number, customer_name, status, subtotal, total, paid_amount, opened_at, closed_at, is_credit, tab_items(id)')
       .eq('company_id', profile.company_id)
       .order('opened_at', { ascending: false })
       .limit(200);
     setTabs((data ?? []).map((t: any) => ({
       id: t.id, tab_number: t.tab_number, customer_name: t.customer_name, status: t.status,
       subtotal: Number(t.subtotal), total: Number(t.total), paid_amount: Number(t.paid_amount),
-      opened_at: t.opened_at, closed_at: t.closed_at,
+      opened_at: t.opened_at, closed_at: t.closed_at, is_credit: !!t.is_credit,
       items_count: (t.tab_items ?? []).length,
     })));
     setLoading(false);
@@ -183,7 +184,10 @@ function ComandasPage() {
               <button onClick={() => setOpenTabId(t.id)} className="text-left w-full">
                 <div className="flex items-baseline justify-between">
                   <span className="font-display text-2xl">#{t.tab_number}</span>
-                  <StatusBadge status={t.status} />
+                  <div className="flex items-center gap-1">
+                    {t.is_credit && <Badge className="bg-warning/20 text-warning text-[10px]">Fiado</Badge>}
+                    <StatusBadge status={t.status} />
+                  </div>
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground truncate">
                   {t.customer_name || 'Sem cliente'}

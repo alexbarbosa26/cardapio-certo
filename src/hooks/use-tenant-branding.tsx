@@ -14,6 +14,7 @@ export interface TenantBranding {
   enableKitchen: boolean;
   enablePrinting: boolean;
   enableServiceFee: boolean;
+  enableCreditAccounts: boolean;
   tabNumberingMode: 'manual' | 'auto';
   receiptMessage: string | null;
   establishmentData: Record<string, unknown>;
@@ -39,6 +40,7 @@ const DEFAULTS: Omit<TenantBranding, 'refresh'> = {
   enableKitchen: true,
   enablePrinting: true,
   enableServiceFee: true,
+  enableCreditAccounts: false,
   tabNumberingMode: 'manual',
   receiptMessage: null,
   establishmentData: {},
@@ -113,6 +115,7 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
       enableKitchen: settings?.enable_kitchen_module ?? true,
       enablePrinting: settings?.enable_printing ?? true,
       enableServiceFee: settings?.enable_service_fee ?? true,
+      enableCreditAccounts: (settings as any)?.enable_credit_accounts ?? false,
       tabNumberingMode: (settings?.tab_numbering_mode as 'manual' | 'auto') ?? 'manual',
       receiptMessage: settings?.receipt_message ?? null,
       establishmentData: (settings?.establishment_data as Record<string, unknown>) ?? {},

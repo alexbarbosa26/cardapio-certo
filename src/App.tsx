@@ -27,6 +27,7 @@ import Landing from '@/pages/Landing';
 import Contratar from '@/pages/Contratar';
 import Checkout from '@/pages/Checkout';
 import Confianca from '@/pages/Confianca';
+import Fiado from '@/pages/Fiado';
 import GlobalAdminLayout from '@/pages/global/GlobalAdminLayout';
 import GlobalDashboard from '@/pages/global/GlobalDashboard';
 import GlobalEmpresas from '@/pages/global/GlobalEmpresas';
@@ -73,6 +74,7 @@ export default function App() {
                 <Route element={<AppLayout />}>
                   <Route path="/mesas" element={<Mesas />} />
                   <Route path="/comandas" element={<Comandas />} />
+                  <Route path="/fiado" element={<Fiado />} />
                   <Route path="/cozinha" element={<Cozinha />} />
                   <Route path="/caixa" element={<Caixa />} />
                   <Route path="/dashboard" element={<Dashboard />} />

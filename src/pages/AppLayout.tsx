@@ -5,14 +5,14 @@ import { useTenantBranding } from '@/hooks/use-tenant-branding';
 import {
   LayoutDashboard, UtensilsCrossed, ChefHat, Package, Users, Wallet,
   BarChart3, Settings as SettingsIcon, MessageSquare, Receipt, LogOut, Menu, ChefHat as Logo, ListPlus,
-  ClipboardList, CreditCard,
+  ClipboardList, CreditCard, BookmarkPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf';
+type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'fiado' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf';
 interface NavItem { key: NavKey; to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
 
 const NAV: NavItem[] = [
@@ -24,6 +24,7 @@ const NAV: NavItem[] = [
   { key: 'grupos', to: '/grupos-opcoes', label: 'Grupos de opções', icon: ListPlus, admin: true },
   { key: 'usuarios', to: '/usuarios', label: 'Usuários', icon: Users, admin: true },
   { key: 'caixa', to: '/caixa', label: 'Caixa', icon: Wallet, admin: true },
+  { key: 'fiado', to: '/fiado', label: 'Fiado', icon: BookmarkPlus },
   { key: 'relatorios', to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
   { key: 'config', to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
   { key: 'assinatura', to: '/assinatura', label: 'Minha assinatura', icon: CreditCard, admin: true },
@@ -51,6 +52,7 @@ function AppLayout() {
     if (k === 'comandas') return branding.plan.allowTabs && branding.enableTabs;
     if (k === 'cozinha') return branding.plan.allowKitchen && branding.enableKitchen;
     if (k === 'dashboard') return branding.plan.allowAdvancedDashboard;
+    if (k === 'fiado') return branding.enableCreditAccounts;
     return true;
   };
   const items = NAV.filter((i) => (!i.admin || profile.role === 'admin') && isAllowed(i.key));

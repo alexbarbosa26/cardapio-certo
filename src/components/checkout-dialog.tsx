@@ -12,9 +12,11 @@ import { fmtBRL, fmtDateTime } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { toast } from 'sonner';
 import {
-  Banknote, CreditCard, QrCode, Printer, Plus, Minus, Trash2, CheckCircle2,
+  Banknote, CreditCard, QrCode, Printer, Plus, Minus, Trash2, CheckCircle2, BookmarkPlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTenantBranding } from '@/hooks/use-tenant-branding';
+import { PendurarContaDialog } from '@/components/pendurar-conta-dialog';
 
 type Method = 'dinheiro' | 'pix' | 'debito' | 'credito';
 
@@ -47,6 +49,7 @@ interface PaymentRow {
 
 export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange }: Props) {
   const { profile } = useAuth();
+  const branding = useTenantBranding();
   const isAdmin = profile?.role === 'admin';
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [items, setItems] = useState<ItemRow[]>([]);
@@ -56,6 +59,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
   const [discount, setDiscount] = useState(0);
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
   const [tab, setTab] = useState<'total' | 'dividir' | 'itens' | 'parcial'>('total');
+  const [pendurarOpen, setPendurarOpen] = useState(false);
 
   const load = async () => {
     const { data: o } = await supabase.from('orders').select('*').eq('id', orderId).single();
@@ -226,11 +230,23 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             ],
             footer: quitada ? 'Conta quitada · Obrigado!' : 'Obrigado pela preferência!',
           })}><Printer className="h-4 w-4 mr-1" /> Imprimir</Button>
+          {branding.enableCreditAccounts && pending > 0 && !quitada && (
+            <Button variant="outline" onClick={() => setPendurarOpen(true)}>
+              <BookmarkPlus className="h-4 w-4 mr-1" />Pendurar
+            </Button>
+          )}
           <Button onClick={finalize} disabled={!quitada} className="bg-primary">
             <CheckCircle2 className="h-4 w-4 mr-1" />Finalizar mesa
           </Button>
         </DialogFooter>
       </DialogContent>
+      <PendurarContaDialog
+        open={pendurarOpen}
+        onOpenChange={setPendurarOpen}
+        source={{ kind: 'order', orderId: order.id, tableId }}
+        amount={pending}
+        onSuccess={() => onOpenChange(false)}
+      />
     </Dialog>
   );
 }

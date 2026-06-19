@@ -11,8 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { fmtBRL, fmtDateTime } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { toast } from 'sonner';
-import { Banknote, CreditCard, QrCode, Printer, Plus, Minus, Trash2, CheckCircle2 } from 'lucide-react';
+import { Banknote, CreditCard, QrCode, Printer, Plus, Minus, Trash2, CheckCircle2, BookmarkPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTenantBranding } from '@/hooks/use-tenant-branding';
+import { PendurarContaDialog } from '@/components/pendurar-conta-dialog';
 
 type Method = 'dinheiro' | 'pix' | 'debito' | 'credito';
 const FEES: Record<Method, number> = { dinheiro: 0, pix: 0, debito: 1.37, credito: 3.17 };
@@ -41,6 +43,7 @@ interface PaymentRow {
 
 export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Props) {
   const { profile } = useAuth();
+  const branding = useTenantBranding();
   const isAdmin = profile?.role === 'admin';
   const [tab, setTab] = useState<TabRow | null>(null);
   const [items, setItems] = useState<ItemRow[]>([]);
@@ -50,6 +53,7 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
   const [discount, setDiscount] = useState(0);
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
   const [tabKey, setTabKey] = useState<'total' | 'dividir' | 'parcial'>('total');
+  const [pendurarOpen, setPendurarOpen] = useState(false);
 
   const load = async () => {
     const { data: t } = await supabase.from('customer_tabs').select('*').eq('id', tabId).single();
@@ -210,12 +214,24 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
             ],
             footer: quitada ? 'Conta quitada · Obrigado!' : 'Obrigado pela preferência!',
           })}><Printer className="h-4 w-4 mr-1" />Imprimir</Button>
+          {branding.enableCreditAccounts && !jaFinalizada && !cancelada && pending > 0 && (
+            <Button variant="outline" onClick={() => setPendurarOpen(true)}>
+              <BookmarkPlus className="h-4 w-4 mr-1" />Pendurar
+            </Button>
+          )}
           <Button onClick={finalize} disabled={!quitada || jaFinalizada || cancelada}>
             <CheckCircle2 className="h-4 w-4 mr-1" />
             {jaFinalizada ? 'Já finalizada' : 'Finalizar comanda'}
           </Button>
         </DialogFooter>
       </DialogContent>
+      <PendurarContaDialog
+        open={pendurarOpen}
+        onOpenChange={setPendurarOpen}
+        source={{ kind: 'tab', tabId: tab.id }}
+        amount={pending}
+        onSuccess={() => { onOpenChange(false); onFinalized?.(); }}
+      />
     </Dialog>
   );
 }
