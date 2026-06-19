@@ -44,14 +44,14 @@ function ComandasPage() {
     if (!profile) return;
     const { data } = await supabase
       .from('customer_tabs')
-      .select('id, tab_number, customer_name, status, subtotal, total, paid_amount, opened_at, closed_at, tab_items(id)')
+      .select('id, tab_number, customer_name, status, subtotal, total, paid_amount, opened_at, closed_at, is_credit, tab_items(id)')
       .eq('company_id', profile.company_id)
       .order('opened_at', { ascending: false })
       .limit(200);
     setTabs((data ?? []).map((t: any) => ({
       id: t.id, tab_number: t.tab_number, customer_name: t.customer_name, status: t.status,
       subtotal: Number(t.subtotal), total: Number(t.total), paid_amount: Number(t.paid_amount),
-      opened_at: t.opened_at, closed_at: t.closed_at,
+      opened_at: t.opened_at, closed_at: t.closed_at, is_credit: !!t.is_credit,
       items_count: (t.tab_items ?? []).length,
     })));
     setLoading(false);
