@@ -1,4 +1,4 @@
-import { useEffect, useState, createContext, useContext, type ReactNode } from 'react';
+import { useEffect, useRef, useState, createContext, useContext, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Session, User } from '@supabase/supabase-js';
 
@@ -32,7 +32,10 @@ interface AuthCtx {
   subscription: ActiveSubscription | null;
   isSuperAdmin: boolean;
   isCompanyAccessAllowed: boolean;
+  /** True only during the very first auth check, before we know if a session exists. */
   loading: boolean;
+  /** True during background revalidations; UI should NOT unmount on this. */
+  refreshingAuth: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -87,20 +90,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [subscription, setSubscription] = useState<ActiveSubscription | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hydrating, setHydrating] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshingAuth, setRefreshingAuth] = useState(false);
 
-  const hydrate = async (sess: Session | null) => {
-    if (!sess?.user) {
+  // Track the user id we last hydrated for, so we can skip redundant fetches
+  // on TOKEN_REFRESHED / repeated SIGNED_IN events.
+  const hydratedForUserId = useRef<string | null>(null);
+  const hydratingRef = useRef(false);
+
+  const hydrate = async (sess: Session | null, opts: { force?: boolean; background?: boolean } = {}) => {
+    const uid = sess?.user?.id ?? null;
+    if (!uid) {
+      hydratedForUserId.current = null;
       setProfile(null);
       setSubscription(null);
       return;
     }
-    setHydrating(true);
+    // Skip if already hydrated for this user and not forced.
+    if (!opts.force && hydratedForUserId.current === uid) return;
+    if (hydratingRef.current) return;
+    hydratingRef.current = true;
+    if (opts.background) setRefreshingAuth(true);
     try {
-      const p = await loadProfile(sess.user.id);
+      const p = await loadProfile(uid);
       if (p && p.status === 'inativo') {
         await supabase.auth.signOut();
+        hydratedForUserId.current = null;
         setProfile(null);
         setSubscription(null);
         return;
@@ -109,11 +124,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (p?.company_id) {
         sub = await loadSubscription(p.company_id);
       }
-      // Set both atomically so guards never see profile without subscription.
       setProfile(p);
       setSubscription(sub);
+      hydratedForUserId.current = uid;
     } finally {
-      setHydrating(false);
+      hydratingRef.current = false;
+      if (opts.background) setRefreshingAuth(false);
     }
   };
 
@@ -121,18 +137,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase.auth.getSession();
     setSession(data.session);
     setUser(data.session?.user ?? null);
-    await hydrate(data.session);
-    setLoading(false);
+    await hydrate(data.session, { force: true });
   };
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, sess) => {
+    let mounted = true;
+
+    const { data: sub } = supabase.auth.onAuthStateChange((evt, sess) => {
+      if (!mounted) return;
+      // Always keep session/user in sync — these are cheap and don't unmount UI.
       setSession(sess);
       setUser(sess?.user ?? null);
-      setTimeout(() => { void hydrate(sess); }, 0);
+
+      switch (evt) {
+        case 'SIGNED_OUT': {
+          hydratedForUserId.current = null;
+          setProfile(null);
+          setSubscription(null);
+          return;
+        }
+        case 'TOKEN_REFRESHED': {
+          // Just refresh tokens; do NOT touch profile/subscription or trigger loading.
+          return;
+        }
+        case 'USER_UPDATED': {
+          // Re-hydrate in background, keep current UI mounted.
+          if (sess?.user) {
+            setTimeout(() => { void hydrate(sess, { force: true, background: true }); }, 0);
+          }
+          return;
+        }
+        case 'SIGNED_IN':
+        case 'INITIAL_SESSION':
+        default: {
+          if (sess?.user && hydratedForUserId.current !== sess.user.id) {
+            // First-time hydration for this user — no background flag so initial flow completes.
+            setTimeout(() => { void hydrate(sess); }, 0);
+          }
+          return;
+        }
+      }
     });
-    refresh();
-    return () => sub.subscription.unsubscribe();
+
+    // Initial session check.
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!mounted) return;
+        setSession(data.session);
+        setUser(data.session?.user ?? null);
+        await hydrate(data.session);
+      } finally {
+        if (mounted) setInitialLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
   }, []);
 
   const signIn: AuthCtx['signIn'] = async (email, password) => {
@@ -152,6 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    hydratedForUserId.current = null;
     setProfile(null);
     setSubscription(null);
   };
@@ -169,7 +233,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{
       user, session, profile, subscription,
       isSuperAdmin, isCompanyAccessAllowed,
-      loading: loading || hydrating, signIn, signOut, refresh,
+      loading: initialLoading,
+      refreshingAuth,
+      signIn, signOut, refresh,
     }}>
       {children}
     </Ctx.Provider>
