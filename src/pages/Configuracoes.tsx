@@ -535,6 +535,7 @@ function OperationTab() {
         {Toggle('enable_kitchen_module', 'Módulo Cozinha (KDS)', 'Painel da cozinha em tempo real.')}
         {Toggle('enable_printing', 'Impressão de comandas', 'Habilita botões de imprimir comanda/conta.')}
         {Toggle('enable_service_fee', 'Cobrar taxa de serviço', 'Quando desligado, taxa não é adicionada ao total.')}
+        {Toggle('enable_credit_accounts', 'Contas penduradas (fiado)', 'Permite fechar comandas como fiado, vinculadas a um cliente, e dar baixa depois.')}
       </div>
       <div className="space-y-2">
         <Label>Numeração de comandas</Label>
