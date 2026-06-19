@@ -291,6 +291,234 @@ export type Database = {
         }
         Relationships: []
       }
+      credit_customers: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_payment_allocations: {
+        Row: {
+          amount_applied: number
+          company_id: string
+          created_at: string
+          id: string
+          payment_id: string
+          receivable_id: string
+        }
+        Insert: {
+          amount_applied: number
+          company_id: string
+          created_at?: string
+          id?: string
+          payment_id: string
+          receivable_id: string
+        }
+        Update: {
+          amount_applied?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          payment_id?: string
+          receivable_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_payment_allocations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_payment_allocations_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "credit_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_payment_allocations_receivable_id_fkey"
+            columns: ["receivable_id"]
+            isOneToOne: false
+            referencedRelation: "credit_receivables"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_payments: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          received_by: string | null
+          register_id: string | null
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          received_by?: string | null
+          register_id?: string | null
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          received_by?: string | null
+          register_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_payments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_payments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "credit_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_payments_register_id_fkey"
+            columns: ["register_id"]
+            isOneToOne: false
+            referencedRelation: "cash_registers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_receivables: {
+        Row: {
+          closed_at: string | null
+          company_id: string
+          created_at: string
+          created_by: string | null
+          customer_id: string
+          id: string
+          notes: string | null
+          opened_at: string
+          order_id: string | null
+          original_amount: number
+          paid_amount: number
+          remaining_amount: number
+          status: string
+          tab_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          customer_id: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          order_id?: string | null
+          original_amount: number
+          paid_amount?: number
+          remaining_amount: number
+          status?: string
+          tab_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          order_id?: string | null
+          original_amount?: number
+          paid_amount?: number
+          remaining_amount?: number
+          status?: string
+          tab_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_receivables_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_receivables_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "credit_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_receivables_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_receivables_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_tabs: {
         Row: {
           closed_at: string | null
@@ -300,6 +528,7 @@ export type Database = {
           customer_name: string | null
           discount: number
           id: string
+          is_credit: boolean
           notes: string | null
           opened_at: string
           opened_by: string | null
@@ -320,6 +549,7 @@ export type Database = {
           customer_name?: string | null
           discount?: number
           id?: string
+          is_credit?: boolean
           notes?: string | null
           opened_at?: string
           opened_by?: string | null
@@ -340,6 +570,7 @@ export type Database = {
           customer_name?: string | null
           discount?: number
           id?: string
+          is_credit?: boolean
           notes?: string | null
           opened_at?: string
           opened_by?: string | null
@@ -592,6 +823,7 @@ export type Database = {
           company_id: string
           discount: number
           id: string
+          is_credit: boolean
           opened_at: string
           order_number: number
           paid_amount: number
@@ -608,6 +840,7 @@ export type Database = {
           company_id: string
           discount?: number
           id?: string
+          is_credit?: boolean
           opened_at?: string
           order_number?: number
           paid_amount?: number
@@ -624,6 +857,7 @@ export type Database = {
           company_id?: string
           discount?: number
           id?: string
+          is_credit?: boolean
           opened_at?: string
           order_number?: number
           paid_amount?: number
@@ -1035,6 +1269,7 @@ export type Database = {
           credit_fee_percentage: number
           debit_fee_percentage: number
           display_name: string | null
+          enable_credit_accounts: boolean
           enable_kitchen_module: boolean
           enable_printing: boolean
           enable_service_fee: boolean
@@ -1061,6 +1296,7 @@ export type Database = {
           credit_fee_percentage?: number
           debit_fee_percentage?: number
           display_name?: string | null
+          enable_credit_accounts?: boolean
           enable_kitchen_module?: boolean
           enable_printing?: boolean
           enable_service_fee?: boolean
@@ -1087,6 +1323,7 @@ export type Database = {
           credit_fee_percentage?: number
           debit_fee_percentage?: number
           display_name?: string | null
+          enable_credit_accounts?: boolean
           enable_kitchen_module?: boolean
           enable_printing?: boolean
           enable_service_fee?: boolean
@@ -1554,6 +1791,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      recalc_credit_receivable: { Args: { _rec: string }; Returns: undefined }
       recalc_customer_tab: { Args: { _tab_id: string }; Returns: undefined }
       recalc_order_payments: { Args: { _order_id: string }; Returns: undefined }
     }
