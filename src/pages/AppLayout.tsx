@@ -5,14 +5,14 @@ import { useTenantBranding } from '@/hooks/use-tenant-branding';
 import {
   LayoutDashboard, UtensilsCrossed, ChefHat, Package, Users, Wallet,
   BarChart3, Settings as SettingsIcon, MessageSquare, Receipt, LogOut, Menu, ChefHat as Logo, ListPlus,
-  ClipboardList, CreditCard,
+  ClipboardList, CreditCard, BookmarkPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf';
+type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'fiado' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf';
 interface NavItem { key: NavKey; to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
 
 const NAV: NavItem[] = [
