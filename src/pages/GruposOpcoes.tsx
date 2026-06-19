@@ -143,9 +143,14 @@ function GruposOpcoesPage() {
                       <Input type="number" min={0} value={g.max_options ?? ''} className="h-9"
                         onChange={(e) => updateGroup(g.id, { max_options: e.target.value ? Number(e.target.value) : null })} />
                     </div>
-                    <div className="flex items-end justify-between rounded-md border border-border px-3 h-9">
-                      <span className="text-[10px] uppercase text-muted-foreground">Obrigatório</span>
-                      <Switch checked={g.required} onCheckedChange={(v) => updateGroup(g.id, { required: v })} />
+                    <div>
+                      <Label className="text-[10px] uppercase">Obrigatório</Label>
+                      <div className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3">
+                        <span className="text-sm text-muted-foreground">
+                          {g.required ? 'Sim' : 'Não'}
+                        </span>
+                        <Switch checked={g.required} onCheckedChange={(v) => updateGroup(g.id, { required: v })} />
+                      </div>
                     </div>
                   </div>
                   <div className="space-y-1.5">
