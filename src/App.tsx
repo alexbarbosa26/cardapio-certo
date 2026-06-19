@@ -35,7 +35,15 @@ import GlobalPlanos from '@/pages/global/GlobalPlanos';
 import GlobalAssinaturas from '@/pages/global/GlobalAssinaturas';
 import GlobalAuditoria from '@/pages/global/GlobalAuditoria';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 30 * 1000,
+    },
+  },
+});
 
 export default function App() {
   return (
