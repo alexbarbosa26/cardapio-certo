@@ -23,6 +23,7 @@ interface TabRow {
   subtotal: number; total: number; paid_amount: number;
   opened_at: string; closed_at: string | null;
   items_count: number;
+  is_credit: boolean;
 }
 
 function ComandasPage() {
