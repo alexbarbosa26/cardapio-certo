@@ -88,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [subscription, setSubscription] = useState<ActiveSubscription | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [hydrating, setHydrating] = useState(false);
 
   const hydrate = async (sess: Session | null) => {
     if (!sess?.user) {
@@ -95,19 +96,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSubscription(null);
       return;
     }
-    const p = await loadProfile(sess.user.id);
-    if (p && p.status === 'inativo') {
-      await supabase.auth.signOut();
-      setProfile(null);
-      setSubscription(null);
-      return;
+    setHydrating(true);
+    try {
+      const p = await loadProfile(sess.user.id);
+      if (p && p.status === 'inativo') {
+        await supabase.auth.signOut();
+        setProfile(null);
+        setSubscription(null);
+        return;
+      }
+      let sub: ActiveSubscription | null = null;
+      if (p?.company_id) {
+        sub = await loadSubscription(p.company_id);
+      }
+      setProfile(p);
+      setSubscription(sub);
+    } finally {
+      setHydrating(false);
     }
-    let sub: ActiveSubscription | null = null;
-    if (p?.company_id) {
-      sub = await loadSubscription(p.company_id);
-    }
-    setProfile(p);
-    setSubscription(sub);
   };
 
   const refresh = async () => {
@@ -124,15 +130,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(sess);
       setUser(sess?.user ?? null);
 
-      // Only re-hydrate profile/subscription on meaningful identity changes.
-      // TOKEN_REFRESHED and INITIAL_SESSION must NOT trigger UI-blocking work,
-      // otherwise tab focus revalidations cause the whole app to unmount.
       if (evt === 'SIGNED_OUT') {
         setProfile(null);
         setSubscription(null);
+        setHydrating(false);
         return;
       }
       if (evt === 'SIGNED_IN' || evt === 'USER_UPDATED') {
+        // Set hydrating synchronously so route guards wait for profile/subscription
+        // to load instead of flashing /assinatura-suspensa with a stale empty profile.
+        if (sess?.user) setHydrating(true);
         setTimeout(() => { void hydrate(sess); }, 0);
       }
       // TOKEN_REFRESHED / INITIAL_SESSION: ignore — handled by refresh() on mount.
@@ -175,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{
       user, session, profile, subscription,
       isSuperAdmin, isCompanyAccessAllowed,
-      loading: initialLoading, signIn, signOut, refresh,
+      loading: initialLoading || (!!user && hydrating && !profile), signIn, signOut, refresh,
     }}>
       {children}
     </Ctx.Provider>
