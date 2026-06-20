@@ -39,8 +39,7 @@ function AppLayout() {
   useTenantTypography();
   const branding = useTenantBranding();
 
-  // Only show full-screen loader on first load when we don't yet have user/profile.
-  if (loading && (!user || !profile)) {
+  if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
     </div>;
