@@ -87,8 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<AuthProfile | null>(null);
   const [subscription, setSubscription] = useState<ActiveSubscription | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [hydrating, setHydrating] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const hydrate = async (sess: Session | null) => {
     if (!sess?.user) {
@@ -96,25 +95,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSubscription(null);
       return;
     }
-    setHydrating(true);
-    try {
-      const p = await loadProfile(sess.user.id);
-      if (p && p.status === 'inativo') {
-        await supabase.auth.signOut();
-        setProfile(null);
-        setSubscription(null);
-        return;
-      }
-      let sub: ActiveSubscription | null = null;
-      if (p?.company_id) {
-        sub = await loadSubscription(p.company_id);
-      }
-      // Set both atomically so guards never see profile without subscription.
-      setProfile(p);
-      setSubscription(sub);
-    } finally {
-      setHydrating(false);
+    const p = await loadProfile(sess.user.id);
+    if (p && p.status === 'inativo') {
+      await supabase.auth.signOut();
+      setProfile(null);
+      setSubscription(null);
+      return;
     }
+    let sub: ActiveSubscription | null = null;
+    if (p?.company_id) {
+      sub = await loadSubscription(p.company_id);
+    }
+    setProfile(p);
+    setSubscription(sub);
   };
 
   const refresh = async () => {
@@ -122,14 +115,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(data.session);
     setUser(data.session?.user ?? null);
     await hydrate(data.session);
-    setLoading(false);
+    setInitialLoading(false);
   };
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, sess) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((evt, sess) => {
+      // Keep session/user fresh — synchronous, never blocks UI.
       setSession(sess);
       setUser(sess?.user ?? null);
-      setTimeout(() => { void hydrate(sess); }, 0);
+
+      // Only re-hydrate profile/subscription on meaningful identity changes.
+      // TOKEN_REFRESHED and INITIAL_SESSION must NOT trigger UI-blocking work,
+      // otherwise tab focus revalidations cause the whole app to unmount.
+      if (evt === 'SIGNED_OUT') {
+        setProfile(null);
+        setSubscription(null);
+        return;
+      }
+      if (evt === 'SIGNED_IN' || evt === 'USER_UPDATED') {
+        setTimeout(() => { void hydrate(sess); }, 0);
+      }
+      // TOKEN_REFRESHED / INITIAL_SESSION: ignore — handled by refresh() on mount.
     });
     refresh();
     return () => sub.subscription.unsubscribe();
@@ -169,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={{
       user, session, profile, subscription,
       isSuperAdmin, isCompanyAccessAllowed,
-      loading: loading || hydrating, signIn, signOut, refresh,
+      loading: initialLoading, signIn, signOut, refresh,
     }}>
       {children}
     </Ctx.Provider>
