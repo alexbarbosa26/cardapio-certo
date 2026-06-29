@@ -365,13 +365,13 @@ function PaySplitTab({ pending, tabId, companyId, onPaid }: { pending: number; t
                 <MethodPicker method={methods[i] ?? 'dinheiro'} onChange={(m) => {
                   const next = [...methods]; next[i] = m; setMethods(next);
                 }} />
-                <Button size="sm" className="w-full" onClick={async () => {
+                <BusyButton size="sm" className="w-full" busyText="Registrando…" onClick={async () => {
                   const ok = await registerTabPayment({
                     tabId, companyId, method: methods[i] ?? 'dinheiro',
                     amount: amt, personLabel: `Pessoa ${i + 1}`,
                   });
                   if (ok) { setPaidIdx(new Set([...paidIdx, i])); onPaid(); }
-                }}>Registrar</Button>
+                }}>Registrar</BusyButton>
               </>)}
               {done && <Badge className="bg-success text-success-foreground">Pago</Badge>}
             </div>
