@@ -9,8 +9,11 @@ import { Button } from '@/components/ui/button';
 import { BusyButton } from '@/components/busy-button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 import { fmtBRL, fmtDateTime } from '@/lib/format';
 import { toast } from 'sonner';
 
@@ -21,7 +24,11 @@ interface OrderRow {
   order_number: number;
   status: OrderStatus;
   total: number;
+  subtotal: number;
+  service_fee_amount: number;
+  discount: number;
   paid_amount: number;
+  is_credit: boolean | null;
   customer_name: string | null;
   opened_at: string;
   closed_at: string | null;
@@ -33,6 +40,30 @@ interface OrderRow {
   opened_by_name?: string;
 }
 
+interface ItemRow {
+  id: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  notes: string | null;
+  canceled_at: string | null;
+  item_type: string | null;
+  weight_grams: number | null;
+  options?: { option_group_name: string; option_item_name: string; additional_price: number }[];
+}
+
+interface PaymentRow {
+  id: string;
+  method: string;
+  amount: number;
+  status: string;
+  created_at: string;
+  person_label: string | null;
+  received_amount: number | null;
+  change_amount: number | null;
+}
+
 const STATUS_LABEL: Record<OrderStatus, string> = {
   aberto: 'Aberto', fechado: 'Fechado', cancelado: 'Cancelado',
 };
@@ -40,6 +71,11 @@ const STATUS_TONE: Record<OrderStatus, string> = {
   aberto: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
   fechado: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30',
   cancelado: 'bg-rose-500/10 text-rose-600 border-rose-500/30',
+};
+
+const METHOD_LABEL: Record<string, string> = {
+  dinheiro: 'Dinheiro', pix: 'PIX', credito: 'Cartão crédito', debito: 'Cartão débito',
+  voucher: 'Voucher', outros: 'Outros', fiado: 'Fiado',
 };
 
 export default function PedidosHistorico() {
@@ -54,15 +90,21 @@ export default function PedidosHistorico() {
   const [status, setStatus] = useState<'todos' | OrderStatus>('todos');
   const [search, setSearch] = useState('');
 
+  const [detail, setDetail] = useState<OrderRow | null>(null);
+  const [items, setItems] = useState<ItemRow[]>([]);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
   const [cancelOrder, setCancelOrder] = useState<OrderRow | null>(null);
   const [cancelReason, setCancelReason] = useState('');
+  const [reopenOrder, setReopenOrder] = useState<OrderRow | null>(null);
 
   const load = async () => {
     if (!profile?.company_id) return;
     setBusy(true);
     let q = supabase
       .from('orders')
-      .select('id, order_number, status, total, paid_amount, customer_name, opened_at, closed_at, canceled_at, cancellation_reason, table_id, user_id, tables(name)')
+      .select('id, order_number, status, total, subtotal, service_fee_amount, discount, paid_amount, is_credit, customer_name, opened_at, closed_at, canceled_at, cancellation_reason, table_id, user_id, tables(name)')
       .eq('company_id', profile.company_id)
       .gte('opened_at', `${from}T00:00:00`)
       .lte('opened_at', `${to}T23:59:59`)
@@ -102,6 +144,25 @@ export default function PedidosHistorico() {
     );
   }, [rows, search]);
 
+  const openDetail = async (r: OrderRow) => {
+    setDetail(r);
+    setItems([]); setPayments([]);
+    setLoadingDetail(true);
+    const [{ data: it }, { data: pays }] = await Promise.all([
+      supabase.from('order_items')
+        .select('id, product_name, quantity, unit_price, total_price, notes, canceled_at, item_type, weight_grams, order_item_options(option_group_name, option_item_name, additional_price)')
+        .eq('order_id', r.id)
+        .order('created_at', { ascending: true }),
+      supabase.from('payments')
+        .select('id, method, amount, status, created_at, person_label, received_amount, change_amount')
+        .eq('order_id', r.id)
+        .order('created_at', { ascending: true }),
+    ]);
+    setItems(((it ?? []) as any[]).map((x) => ({ ...x, options: x.order_item_options ?? [] })));
+    setPayments((pays ?? []) as any[]);
+    setLoadingDetail(false);
+  };
+
   const cancelAdmin = async () => {
     if (!cancelOrder) return;
     const reason = cancelReason.trim();
@@ -113,15 +174,36 @@ export default function PedidosHistorico() {
       cancellation_reason: reason,
     }).eq('id', cancelOrder.id);
     if (error) { toast.error(error.message); return; }
-    // Libera mesa se ainda estiver ocupada por este pedido
     await supabase.from('tables').update({ status: 'livre' }).eq('id', cancelOrder.table_id);
     toast.success('Pedido cancelado (auditado).');
     setCancelOrder(null); setCancelReason('');
     load();
+    if (detail?.id === cancelOrder.id) setDetail(null);
+  };
+
+  const reopenAdmin = async () => {
+    if (!reopenOrder) return;
+    const { error } = await supabase.from('orders').update({
+      status: 'aberto',
+      closed_at: null,
+      canceled_at: null,
+      canceled_by: null,
+      cancellation_reason: null,
+      is_credit: false,
+    }).eq('id', reopenOrder.id);
+    if (error) { toast.error(error.message); return; }
+    await supabase.from('tables').update({ status: 'ocupada' }).eq('id', reopenOrder.table_id);
+    toast.success('Pedido reaberto. O atendente já pode corrigir.');
+    setReopenOrder(null);
+    load();
+    if (detail?.id === reopenOrder.id) setDetail(null);
   };
 
   if (loading) return null;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
+
+  const itemsTotal = items.reduce((s, i) => s + (i.canceled_at ? 0 : Number(i.total_price || 0)), 0);
+  const paymentsActiveTotal = payments.filter((p) => p.status === 'ativo').reduce((s, p) => s + Number(p.amount || 0), 0);
 
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
@@ -176,7 +258,7 @@ export default function PedidosHistorico() {
             </thead>
             <tbody>
               {filtered.map((r) => (
-                <tr key={r.id} className="border-b last:border-0">
+                <tr key={r.id} className="border-b last:border-0 hover:bg-muted/40 cursor-pointer" onClick={() => openDetail(r)}>
                   <td className="py-2 pr-2 whitespace-nowrap">{fmtDateTime(r.opened_at)}</td>
                   <td className="py-2 pr-2">{r.table_name}</td>
                   <td className="py-2 pr-2">{r.customer_name ?? '—'}</td>
@@ -190,12 +272,10 @@ export default function PedidosHistorico() {
                   </td>
                   <td className="py-2 pr-2 text-right tabular-nums">{fmtBRL(r.total)}</td>
                   <td className="py-2 pr-2 text-right tabular-nums">{fmtBRL(r.paid_amount)}</td>
-                  <td className="py-2 text-right">
-                    {r.status !== 'cancelado' && (
-                      <Button size="sm" variant="outline" onClick={() => { setCancelOrder(r); setCancelReason(''); }}>
-                        Cancelar
-                      </Button>
-                    )}
+                  <td className="py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex gap-1 justify-end">
+                      <Button size="sm" variant="outline" onClick={() => openDetail(r)}>Detalhes</Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -207,6 +287,113 @@ export default function PedidosHistorico() {
         </CardContent>
       </Card>
 
+      {/* Detalhes */}
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Pedido #{detail?.order_number}
+              {detail && <Badge variant="outline" className={STATUS_TONE[detail.status]}>{STATUS_LABEL[detail.status]}</Badge>}
+              {detail?.is_credit && <Badge variant="outline">Fiado</Badge>}
+            </DialogTitle>
+            <DialogDescription>
+              Mesa <b>{detail?.table_name}</b> · Cliente <b>{detail?.customer_name ?? '—'}</b> · Atendente <b>{detail?.opened_by_name}</b>
+            </DialogDescription>
+          </DialogHeader>
+
+          {detail && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <div><div className="text-muted-foreground">Aberto</div><div>{fmtDateTime(detail.opened_at)}</div></div>
+                <div><div className="text-muted-foreground">Fechado</div><div>{detail.closed_at ? fmtDateTime(detail.closed_at) : '—'}</div></div>
+                <div><div className="text-muted-foreground">Cancelado</div><div>{detail.canceled_at ? fmtDateTime(detail.canceled_at) : '—'}</div></div>
+                <div><div className="text-muted-foreground">Subtotal</div><div className="tabular-nums">{fmtBRL(detail.subtotal)}</div></div>
+                <div><div className="text-muted-foreground">Serviço</div><div className="tabular-nums">{fmtBRL(detail.service_fee_amount)}</div></div>
+                <div><div className="text-muted-foreground">Desconto</div><div className="tabular-nums">-{fmtBRL(detail.discount)}</div></div>
+                <div><div className="text-muted-foreground">Total</div><div className="tabular-nums font-semibold">{fmtBRL(detail.total)}</div></div>
+                <div><div className="text-muted-foreground">Pago</div><div className="tabular-nums">{fmtBRL(detail.paid_amount)}</div></div>
+              </div>
+              {detail.cancellation_reason && (
+                <div className="rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2 text-rose-700 text-xs">
+                  Motivo do cancelamento: {detail.cancellation_reason}
+                </div>
+              )}
+
+              <Separator />
+              <div>
+                <h3 className="font-semibold mb-2">Itens ({items.length})</h3>
+                {loadingDetail ? <div className="text-muted-foreground">Carregando…</div> : (
+                  <div className="space-y-2">
+                    {items.map((it) => (
+                      <div key={it.id} className={`rounded-md border p-2 ${it.canceled_at ? 'opacity-60 line-through' : ''}`}>
+                        <div className="flex justify-between gap-2">
+                          <div>
+                            <div className="font-medium">
+                              {it.item_type === 'weighted' && it.weight_grams
+                                ? `${(it.weight_grams / 1000).toFixed(3)} kg × `
+                                : `${it.quantity}× `}
+                              {it.product_name}
+                            </div>
+                            {it.options && it.options.length > 0 && (
+                              <ul className="text-xs text-muted-foreground ml-3 list-disc">
+                                {it.options.map((o, i) => (
+                                  <li key={i}>{o.option_group_name}: {o.option_item_name}{o.additional_price ? ` (+${fmtBRL(o.additional_price)})` : ''}</li>
+                                ))}
+                              </ul>
+                            )}
+                            {it.notes && <div className="text-xs text-muted-foreground italic">Obs: {it.notes}</div>}
+                          </div>
+                          <div className="text-right tabular-nums">
+                            <div className="text-xs text-muted-foreground">{fmtBRL(it.unit_price)}</div>
+                            <div className="font-semibold">{fmtBRL(it.total_price)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {items.length === 0 && <div className="text-muted-foreground">Sem itens.</div>}
+                    <div className="text-right text-xs text-muted-foreground">Soma dos itens ativos: <span className="tabular-nums">{fmtBRL(itemsTotal)}</span></div>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+              <div>
+                <h3 className="font-semibold mb-2">Pagamentos ({payments.length})</h3>
+                {loadingDetail ? <div className="text-muted-foreground">Carregando…</div> : (
+                  <div className="space-y-1">
+                    {payments.map((p) => (
+                      <div key={p.id} className={`flex justify-between text-xs border rounded-md px-2 py-1 ${p.status !== 'ativo' ? 'opacity-60 line-through' : ''}`}>
+                        <div>
+                          <span className="font-medium">{METHOD_LABEL[p.method] ?? p.method}</span>
+                          {p.person_label && <span className="text-muted-foreground"> · {p.person_label}</span>}
+                          <span className="text-muted-foreground"> · {fmtDateTime(p.created_at)}</span>
+                        </div>
+                        <div className="tabular-nums">{fmtBRL(p.amount)}</div>
+                      </div>
+                    ))}
+                    {payments.length === 0 && <div className="text-muted-foreground">Sem pagamentos registrados.</div>}
+                    <div className="text-right text-xs text-muted-foreground">Total ativo: <span className="tabular-nums">{fmtBRL(paymentsActiveTotal)}</span></div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex-wrap gap-2">
+            {detail && detail.status !== 'aberto' && (
+              <Button variant="outline" onClick={() => setReopenOrder(detail)}>Reabrir para correção</Button>
+            )}
+            {detail && detail.status !== 'cancelado' && (
+              <Button variant="destructive" onClick={() => { setCancelOrder(detail); setCancelReason(''); }}>
+                Cancelar pedido
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setDetail(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancelar */}
       <Dialog open={!!cancelOrder} onOpenChange={(o) => !o && setCancelOrder(null)}>
         <DialogContent>
           <DialogHeader>
@@ -224,6 +411,25 @@ export default function PedidosHistorico() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setCancelOrder(null)}>Voltar</Button>
             <BusyButton onClick={cancelAdmin} busyText="Cancelando…">Confirmar cancelamento</BusyButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reabrir */}
+      <Dialog open={!!reopenOrder} onOpenChange={(o) => !o && setReopenOrder(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reabrir pedido</DialogTitle>
+            <DialogDescription>
+              Pedido #{reopenOrder?.order_number} · Mesa {reopenOrder?.table_name}.
+              O pedido voltará ao status <b>aberto</b> e a mesa será marcada como <b>ocupada</b>,
+              permitindo que o atendente faça correções (itens, observações, descontos).
+              Pagamentos já registrados serão mantidos — revise-os no caixa se necessário.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReopenOrder(null)}>Voltar</Button>
+            <BusyButton onClick={reopenAdmin} busyText="Reabrindo…">Confirmar reabertura</BusyButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
