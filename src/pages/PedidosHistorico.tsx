@@ -62,7 +62,7 @@ export default function PedidosHistorico() {
     setBusy(true);
     let q = supabase
       .from('orders')
-      .select('id, order_number, status, total, paid_amount, customer_name, opened_at, closed_at, canceled_at, cancellation_reason, table_id, opened_by, tables(name)')
+      .select('id, order_number, status, total, paid_amount, customer_name, opened_at, closed_at, canceled_at, cancellation_reason, table_id, user_id, tables(name)')
       .eq('company_id', profile.company_id)
       .gte('opened_at', `${from}T00:00:00`)
       .lte('opened_at', `${to}T23:59:59`)
@@ -73,16 +73,16 @@ export default function PedidosHistorico() {
     setBusy(false);
     if (error) { toast.error(error.message); return; }
     const list = (data ?? []) as any[];
-    const ids = Array.from(new Set(list.map((r) => r.opened_by).filter(Boolean)));
+    const ids = Array.from(new Set(list.map((r) => r.user_id).filter(Boolean)));
     let names: Record<string, string> = {};
     if (ids.length) {
-      const { data: profs } = await supabase.from('profiles').select('id, full_name').in('id', ids);
-      names = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.full_name]));
+      const { data: profs } = await supabase.from('profiles').select('id, name').in('id', ids);
+      names = Object.fromEntries((profs ?? []).map((p: any) => [p.id, p.name]));
     }
     setRows(list.map((r: any) => ({
       ...r,
       table_name: r.tables?.name ?? '—',
-      opened_by_name: r.opened_by ? (names[r.opened_by] ?? '—') : '—',
+      opened_by_name: r.user_id ? (names[r.user_id] ?? '—') : '—',
     })));
   };
 
