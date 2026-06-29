@@ -90,6 +90,7 @@ export default function App() {
                   <Route path="/grupos-opcoes" element={<GruposOpcoes />} />
                   <Route path="/configuracoes" element={<Configuracoes />} />
                   <Route path="/relatorios" element={<Relatorios />} />
+                  <Route path="/historico-pedidos" element={<PedidosHistorico />} />
                   <Route path="/usuarios" element={<Usuarios />} />
                   <Route path="/assinatura" element={<MinhaAssinatura />} />
                 </Route>
