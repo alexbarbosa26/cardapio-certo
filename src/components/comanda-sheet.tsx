@@ -452,7 +452,7 @@ function ManualItemDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save}>Adicionar</Button>
+          <BusyButton onClick={save} busyText="Adicionando…">Adicionar</BusyButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
