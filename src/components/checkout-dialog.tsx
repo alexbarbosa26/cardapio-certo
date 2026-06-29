@@ -498,7 +498,7 @@ function PayItemsTab({ items, orderId, companyId, onPaid }: { items: ItemRow[]; 
             <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
         </div>
       )}
-      <Button className="w-full" disabled={selectedTotal <= 0}
+      <BusyButton className="w-full" disabled={selectedTotal <= 0} busyText="Registrando…"
         onClick={async () => {
           const allocs = items
             .filter(it => (qty[it.id] ?? 0) > 0)
@@ -515,7 +515,7 @@ function PayItemsTab({ items, orderId, companyId, onPaid }: { items: ItemRow[]; 
           if (ok) { setQty({}); setReceived(''); onPaid(); }
         }}>
         Pagar itens · {fmtBRL(selectedTotal)}
-      </Button>
+      </BusyButton>
     </div>
   );
 }
