@@ -28,6 +28,7 @@ interface OrderRow {
   canceled_at: string | null;
   cancellation_reason: string | null;
   table_id: string;
+  opened_by: string | null;
   table_name?: string;
   opened_by_name?: string;
 }
