@@ -405,14 +405,14 @@ function PayPartialTab({ pending, tabId, companyId, onPaid }: { pending: number;
             <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
         </div>
       )}
-      <Button className="w-full" disabled={amt <= 0 || amt > pending + 0.005}
+      <BusyButton className="w-full" disabled={amt <= 0 || amt > pending + 0.005} busyText="Registrando…"
         onClick={async () => {
           const ok = await registerTabPayment({
             tabId, companyId, method, amount: amt,
             received: method === 'dinheiro' ? rec || amt : undefined,
           });
           if (ok) { setAmount(''); setReceived(''); onPaid(); }
-        }}>Registrar {fmtBRL(amt)}</Button>
+        }}>Registrar {fmtBRL(amt)}</BusyButton>
     </div>
   );
 }
