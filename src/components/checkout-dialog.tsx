@@ -177,11 +177,12 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-5 w-full">
             <TabsTrigger value="total">Total</TabsTrigger>
             <TabsTrigger value="dividir">Dividir</TabsTrigger>
             <TabsTrigger value="itens">Por itens</TabsTrigger>
             <TabsTrigger value="parcial">Parcial</TabsTrigger>
+            <TabsTrigger value="conjunto">+ Comandas</TabsTrigger>
           </TabsList>
 
           <div className="mt-3">
@@ -196,6 +197,13 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             </TabsContent>
             <TabsContent value="parcial" className="m-0">
               <PayPartialTab pending={pending} orderId={orderId} companyId={order.company_id} onPaid={load} />
+            </TabsContent>
+            <TabsContent value="conjunto" className="m-0">
+              <PayWithTabsTab
+                orderPending={pending} orderId={orderId} tableId={tableId} tableName={tableName}
+                companyId={order.company_id}
+                onDone={() => { onOpenChange(false); }}
+              />
             </TabsContent>
           </div>
         </Tabs>
