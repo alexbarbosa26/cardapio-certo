@@ -315,14 +315,14 @@ function PayTotalTab({ pending, tabId, companyId, onPaid }: { pending: number; t
             <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
         </div>
       )}
-      <Button className="w-full" disabled={pending <= 0}
+      <BusyButton className="w-full" disabled={pending <= 0} busyText="Registrando…"
         onClick={async () => {
           const ok = await registerTabPayment({
             tabId, companyId, method, amount: pending,
             received: method === 'dinheiro' ? rec || pending : undefined,
           });
           if (ok) { setReceived(''); onPaid(); }
-        }}>Pagar {fmtBRL(pending)}</Button>
+        }}>Pagar {fmtBRL(pending)}</BusyButton>
     </div>
   );
 }
