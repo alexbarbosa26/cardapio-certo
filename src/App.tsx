@@ -21,6 +21,7 @@ import Produtos from '@/pages/Produtos';
 import GruposOpcoes from '@/pages/GruposOpcoes';
 import Configuracoes from '@/pages/Configuracoes';
 import Relatorios from '@/pages/Relatorios';
+import PedidosHistorico from '@/pages/PedidosHistorico';
 import Usuarios from '@/pages/Usuarios';
 import AssinaturaSuspensa from '@/pages/AssinaturaSuspensa';
 import Landing from '@/pages/Landing';
