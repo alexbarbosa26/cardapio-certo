@@ -544,7 +544,7 @@ function PayPartialTab({ pending, orderId, companyId, onPaid }: { pending: numbe
             <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
         </div>
       )}
-      <Button className="w-full" disabled={amt <= 0 || amt > pending + 0.005}
+      <BusyButton className="w-full" disabled={amt <= 0 || amt > pending + 0.005} busyText="Registrando…"
         onClick={async () => {
           const ok = await registerPayment({
             orderId, companyId, method, amount: amt,
@@ -553,7 +553,7 @@ function PayPartialTab({ pending, orderId, companyId, onPaid }: { pending: numbe
           if (ok) { setAmount(''); setReceived(''); onPaid(); }
         }}>
         Registrar {fmtBRL(amt)}
-      </Button>
+      </BusyButton>
     </div>
   );
 }
