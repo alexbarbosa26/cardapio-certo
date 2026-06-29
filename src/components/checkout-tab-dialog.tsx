@@ -220,10 +220,10 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
               <BookmarkPlus className="h-4 w-4 mr-1" />Pendurar
             </Button>
           )}
-          <Button onClick={finalize} disabled={!quitada || jaFinalizada || cancelada}>
+          <BusyButton onClick={finalize} disabled={!quitada || jaFinalizada || cancelada} busyText="Finalizando…">
             <CheckCircle2 className="h-4 w-4 mr-1" />
             {jaFinalizada ? 'Já finalizada' : 'Finalizar comanda'}
-          </Button>
+          </BusyButton>
         </DialogFooter>
       </DialogContent>
       <PendurarContaDialog
