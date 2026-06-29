@@ -59,7 +59,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
   const [feePct, setFeePct] = useState(10);
   const [discount, setDiscount] = useState(0);
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
-  const [tab, setTab] = useState<'total' | 'dividir' | 'itens' | 'parcial'>('total');
+  const [tab, setTab] = useState<'total' | 'dividir' | 'itens' | 'parcial' | 'conjunto'>('total');
   const [pendurarOpen, setPendurarOpen] = useState(false);
 
   const load = async () => {
