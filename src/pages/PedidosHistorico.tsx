@@ -124,7 +124,7 @@ export default function PedidosHistorico() {
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6">
       <div>
         <h1 className="font-display text-3xl md:text-4xl">Histórico de pedidos</h1>
         <p className="text-sm text-muted-foreground">Auditoria completa dos pedidos das mesas. Acesso restrito a administradores.</p>
