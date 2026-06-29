@@ -596,3 +596,139 @@ function PaymentsHistory({ payments, isAdmin, onRefund }: { payments: PaymentRow
     </div>
   );
 }
+
+/* -------- Tab: pagamento conjunto com comandas em aberto -------- */
+function PayWithTabsTab({
+  orderPending, orderId, tableId, tableName, companyId, onDone,
+}: {
+  orderPending: number; orderId: string; tableId: string; tableName: string;
+  companyId: string; onDone: () => void;
+}) {
+  const { profile } = useAuth();
+  const [tabs, setTabs] = useState<Array<{ id: string; tab_number: number; customer_name: string | null; pending: number }>>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [method, setMethod] = useState<Method>('dinheiro');
+  const [received, setReceived] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('customer_tabs')
+        .select('id, tab_number, customer_name, total, paid_amount, status')
+        .eq('company_id', companyId)
+        .eq('status', 'aberta')
+        .order('tab_number');
+      setTabs((data ?? []).map((t: any) => ({
+        id: t.id, tab_number: t.tab_number, customer_name: t.customer_name,
+        pending: Math.max(0, Number(t.total) - Number(t.paid_amount)),
+      })).filter((t) => t.pending > 0));
+    })();
+  }, [companyId]);
+
+  const selectedTabs = tabs.filter((t) => selected.has(t.id));
+  const tabsTotal = selectedTabs.reduce((s, t) => s + t.pending, 0);
+  const grandTotal = orderPending + tabsTotal;
+  const rec = Number(received.replace(',', '.')) || 0;
+  const change = method === 'dinheiro' ? Math.max(0, rec - grandTotal) : 0;
+
+  const finalizeAll = async () => {
+    if (grandTotal <= 0) { toast.error('Nada a pagar.'); return; }
+    if (method === 'dinheiro' && rec > 0 && rec < grandTotal) {
+      toast.error('Valor recebido insuficiente.'); return;
+    }
+    // 1) pagamento da mesa (se houver pendente)
+    if (orderPending > 0) {
+      const ok = await registerPayment({
+        orderId, companyId, method, amount: orderPending,
+        received: method === 'dinheiro' ? (rec || grandTotal) : undefined,
+        personLabel: 'Mesa',
+      });
+      if (!ok) return;
+    }
+    // 2) pagamento de cada comanda
+    const { data: reg } = await supabase.from('cash_registers').select('id')
+      .eq('company_id', companyId).eq('status', 'aberto')
+      .order('opened_at', { ascending: false }).limit(1).maybeSingle();
+    for (const t of selectedTabs) {
+      const fee_percentage = FEES[method];
+      const fee_amount = +(t.pending * fee_percentage / 100).toFixed(2);
+      const { error } = await supabase.from('tab_payments').insert({
+        company_id: companyId, tab_id: t.id, register_id: reg?.id ?? null,
+        method, amount: t.pending,
+        fee_percentage, fee_amount, net_amount: +(t.pending - fee_amount).toFixed(2),
+        received_amount: method === 'dinheiro' ? t.pending : 0,
+        change_amount: 0,
+        person_label: `Mesa ${tableName}`,
+      });
+      if (error) { toast.error(error.message); return; }
+      await supabase.from('customer_tabs').update({
+        status: 'paga', closed_at: new Date().toISOString(), closed_by: profile?.id,
+      }).eq('id', t.id).neq('status', 'paga');
+    }
+    // 3) fechar a mesa
+    await supabase.from('orders').update({
+      status: 'fechado', closed_at: new Date().toISOString(),
+    }).eq('id', orderId);
+    await supabase.from('tables').update({ status: 'livre' }).eq('id', tableId);
+    toast.success(`Mesa + ${selectedTabs.length} comanda(s) finalizadas.`);
+    onDone();
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-border bg-card p-2.5">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+          Comandas em aberto da empresa
+        </div>
+        {tabs.length === 0 ? (
+          <div className="text-xs text-muted-foreground py-2">Nenhuma comanda em aberto.</div>
+        ) : (
+          <div className="max-h-40 overflow-y-auto divide-y">
+            {tabs.map((t) => {
+              const checked = selected.has(t.id);
+              return (
+                <label key={t.id} className="flex items-center gap-2 py-1.5 cursor-pointer">
+                  <input type="checkbox" checked={checked}
+                    onChange={() => {
+                      const ns = new Set(selected);
+                      if (checked) ns.delete(t.id); else ns.add(t.id);
+                      setSelected(ns);
+                    }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm">#{t.tab_number}{t.customer_name ? ` · ${t.customer_name}` : ''}</div>
+                  </div>
+                  <div className="text-sm font-semibold tabular-nums">{fmtBRL(t.pending)}</div>
+                </label>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 rounded-lg border border-border bg-secondary/40 p-3">
+        <Box label="Mesa" value={fmtBRL(orderPending)} />
+        <Box label="Comandas" value={fmtBRL(tabsTotal)} />
+        <Box label="Total geral" value={fmtBRL(grandTotal)} tone="warning" />
+      </div>
+
+      <MethodPicker method={method} onChange={setMethod} />
+      {method === 'dinheiro' && (
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Valor recebido</Label>
+            <Input value={received} onChange={(e) => setReceived(e.target.value)} placeholder={grandTotal.toFixed(2)} /></div>
+          <div><div className="text-[10px] uppercase text-muted-foreground">Troco</div>
+            <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
+        </div>
+      )}
+
+      <BusyButton className="w-full" busyText="Finalizando…"
+        disabled={grandTotal <= 0}
+        onClick={finalizeAll}>
+        <CheckCircle2 className="h-4 w-4 mr-1" /> Pagar e finalizar tudo · {fmtBRL(grandTotal)}
+      </BusyButton>
+      <p className="text-[11px] text-muted-foreground">
+        Registra pagamento da mesa e de cada comanda selecionada, fecha a mesa e marca as comandas como pagas.
+      </p>
+    </div>
+  );
+}
