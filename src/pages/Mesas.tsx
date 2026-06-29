@@ -144,6 +144,9 @@ function MesasPage() {
                   )} />
                 </div>
                 <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">{ocupada ? 'Ocupada' : 'Livre'}</div>
+                {ocupada && m.customer_name && (
+                  <div className="mt-1 text-xs text-foreground/80 truncate">{m.customer_name}</div>
+                )}
 
                 {ocupada ? (
                   <div className="mt-4 space-y-1.5">
