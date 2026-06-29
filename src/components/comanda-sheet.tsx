@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { BusyButton } from '@/components/busy-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -398,7 +399,7 @@ function AddProductDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save}>Adicionar</Button>
+          <BusyButton onClick={save} busyText="Adicionando…">Adicionar</BusyButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -451,7 +452,7 @@ function ManualItemDialog({
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button onClick={save}>Adicionar</Button>
+          <BusyButton onClick={save} busyText="Adicionando…">Adicionar</BusyButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

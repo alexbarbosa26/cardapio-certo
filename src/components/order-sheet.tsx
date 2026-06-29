@@ -11,11 +11,13 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { BusyButton } from '@/components/busy-button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { fmtBRL } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
-import { Plus, Minus, Send, X, Printer, MoreVertical, Pencil, Repeat, Ban, Trash2 } from 'lucide-react';
+import { Plus, Minus, Send, X, Printer, MoreVertical, Pencil, Repeat, Ban, Trash2, Scale, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -27,7 +29,7 @@ interface Props {
   onOpenChange: (o: boolean) => void;
 }
 
-interface Product { id: string; name: string; price: number; sends_to_kitchen: boolean; category_id: string | null; }
+interface Product { id: string; name: string; price: number; sends_to_kitchen: boolean; category_id: string | null; is_weighted: boolean; price_per_kg: number; }
 interface Category { id: string; name: string; }
 interface OptionItem { id: string; name: string; additional_price: number; }
 interface OptionGroup { id: string; name: string; required: boolean; selection_type: 'unica' | 'multipla'; max_options: number | null; items: OptionItem[]; }
@@ -50,28 +52,39 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   const [categories, setCategories] = useState<Category[]>([]);
   const [items, setItems] = useState<OrderItem[]>([]);
   const [activeCat, setActiveCat] = useState<string>('all');
+  const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<Product | null>(null);
   const [swapItemId, setSwapItemId] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<OrderItem | null>(null);
   const [confirmCancelOrder, setConfirmCancelOrder] = useState(false);
   const [confirmCancelItem, setConfirmCancelItem] = useState<OrderItem | null>(null);
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
+  const [customerName, setCustomerName] = useState('');
+  const [savedCustomerName, setSavedCustomerName] = useState('');
+  const [editingName, setEditingName] = useState(false);
 
   const load = async () => {
     if (!profile) return;
-    const [{ data: cats }, { data: prods }, { data: ois }] = await Promise.all([
+    const [{ data: cats }, { data: prods }, { data: ois }, { data: ord }] = await Promise.all([
       supabase.from('categories').select('id, name').eq('company_id', profile.company_id).eq('status', 'ativo').order('sort_order'),
-      supabase.from('products').select('id, name, price, sends_to_kitchen, category_id').eq('company_id', profile.company_id).eq('status', 'ativo').order('name'),
+      supabase.from('products').select('id, name, price, sends_to_kitchen, category_id, is_weighted, price_per_kg').eq('company_id', profile.company_id).eq('status', 'ativo').order('name'),
       supabase.from('order_items').select('id, product_name, quantity, unit_price, total_price, notes, kitchen_status, sends_to_kitchen, order_item_options(option_group_name, option_item_name)').eq('order_id', orderId).order('created_at'),
+      supabase.from('orders').select('customer_name').eq('id', orderId).maybeSingle(),
     ]);
     setCategories(cats ?? []);
-    setProducts((prods ?? []).map((p: any) => ({ ...p, price: Number(p.price) })));
+    setProducts((prods ?? []).map((p: any) => ({
+      ...p, price: Number(p.price), price_per_kg: Number(p.price_per_kg ?? 0),
+      is_weighted: !!p.is_weighted,
+    })));
     setItems((ois ?? []).map((o: any) => ({
       ...o,
       unit_price: Number(o.unit_price),
       total_price: Number(o.total_price),
       options: o.order_item_options ?? [],
     })));
+    const cn = (ord?.customer_name ?? '') as string;
+    setCustomerName(cn);
+    setSavedCustomerName(cn);
   };
 
   useEffect(() => { if (open) load(); }, [open, orderId]);
@@ -92,10 +105,22 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     return () => { supabase.removeChannel(ch); };
   }, [open, orderId, profile?.company_id]);
 
-  const filtered = useMemo(
-    () => activeCat === 'all' ? products : products.filter((p) => p.category_id === activeCat),
-    [products, activeCat]
-  );
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      if (activeCat !== 'all' && p.category_id !== activeCat) return false;
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [products, activeCat, search]);
+
+  const saveCustomerName = async () => {
+    const v = customerName.trim();
+    await supabase.from('orders').update({ customer_name: v || null }).eq('id', orderId);
+    setSavedCustomerName(v);
+    setEditingName(false);
+    toast.success('Cliente atualizado');
+  };
 
   const subtotal = items.reduce((s, i) => s + (i.kitchen_status === 'cancelado' ? 0 : i.total_price), 0);
 
@@ -180,9 +205,21 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
         <SheetHeader className="border-b border-border px-6 py-4 pr-14">
-          <SheetTitle className="flex items-baseline gap-3">
+          <SheetTitle className="flex items-baseline gap-3 flex-wrap">
             <span className="font-display text-2xl">{tableName}</span>
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">
+            {editingName ? (
+              <div className="flex items-center gap-1">
+                <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)}
+                  className="h-7 w-44" placeholder="Cliente" autoFocus
+                  onKeyDown={(e) => { if (e.key === 'Enter') saveCustomerName(); }} />
+                <Button size="sm" onClick={saveCustomerName}>OK</Button>
+              </div>
+            ) : (
+              <button onClick={() => setEditingName(true)} className="text-sm text-muted-foreground inline-flex items-center gap-1 hover:text-foreground">
+                {savedCustomerName || '+ adicionar cliente'} <Pencil className="h-3 w-3" />
+              </button>
+            )}
+            <span className="ml-auto text-xs uppercase tracking-wider text-muted-foreground">
               {swapItemId ? 'Trocando produto…' : 'Pedido aberto'}
             </span>
           </SheetTitle>
@@ -191,6 +228,11 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
         <div className="flex-1 overflow-hidden grid grid-rows-2 md:grid-rows-none md:grid-cols-[1fr_320px]">
           {/* Cardápio */}
           <div className="min-h-0 overflow-y-auto p-6 border-r border-border">
+            <div className="relative mb-3">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar produto" className="pl-8 h-9" />
+            </div>
             <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
               <CatChip active={activeCat === 'all'} onClick={() => setActiveCat('all')}>Todos</CatChip>
               {categories.map((c) => (
@@ -204,8 +246,13 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                   onClick={() => setAdding(p)}
                   className="text-left rounded-xl border border-border bg-card p-3 hover:border-accent transition"
                 >
-                  <div className="text-sm font-medium leading-tight">{p.name}</div>
-                  <div className="mt-1 text-xs text-muted-foreground">{fmtBRL(p.price)}</div>
+                  <div className="text-sm font-medium leading-tight flex items-center gap-1">
+                    {p.is_weighted && <Scale className="h-3 w-3 text-muted-foreground" />}
+                    {p.name}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {p.is_weighted ? `${fmtBRL(p.price_per_kg)}/kg` : fmtBRL(p.price)}
+                  </div>
                 </button>
               ))}
             </div>
@@ -276,9 +323,9 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                 <span className="font-semibold">{fmtBRL(subtotal)}</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <Button onClick={sendToKitchen} className="bg-primary hover:bg-primary/90">
+                <BusyButton onClick={sendToKitchen} busyText="Enviando…" className="bg-primary hover:bg-primary/90">
                   <Send className="h-4 w-4 mr-2" /> Cozinha
-                </Button>
+                </BusyButton>
                 <Button
                   variant="outline"
                   onClick={() => printThermal({
@@ -418,9 +465,11 @@ function EditNotesDialog({ initial, productName, onSave, onClose }: { initial: s
 function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { product: Product; orderId: string; isSwap: boolean; onDone: (newItemId: string | null) => void; onClose: () => void }) {
   const [groups, setGroups] = useState<OptionGroup[]>([]);
   const [qty, setQty] = useState(1);
+  const [grams, setGrams] = useState('');
   const [notes, setNotes] = useState('');
   const [picks, setPicks] = useState<Record<string, Set<string>>>({});
   const [loading, setLoading] = useState(true);
+  const weighted = product.is_weighted;
 
   useEffect(() => {
     (async () => {
@@ -444,10 +493,8 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
   const togglePick = (groupId: string, itemId: string, type: 'unica' | 'multipla', max: number | null) => {
     setPicks((prev) => {
       const cur = new Set(prev[groupId] ?? []);
-      if (type === 'unica') {
-        cur.clear();
-        cur.add(itemId);
-      } else {
+      if (type === 'unica') { cur.clear(); cur.add(itemId); }
+      else {
         if (cur.has(itemId)) cur.delete(itemId);
         else if (!max || cur.size < max) cur.add(itemId);
       }
@@ -460,28 +507,46 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
     if (!set) return s;
     return s + g.items.filter((i) => set.has(i.id)).reduce((a, i) => a + i.additional_price, 0);
   }, 0);
-  const total = (product.price + extra) * qty;
+  const g = Number(grams.replace(',', '.')) || 0;
+  const total = weighted
+    ? (g / 1000) * product.price_per_kg
+    : (product.price + extra) * qty;
 
   const submit = async () => {
-    for (const g of groups) {
-      if (g.required && !(picks[g.id]?.size)) { toast.error(`Selecione ${g.name}`); return; }
+    for (const grp of groups) {
+      if (grp.required && !(picks[grp.id]?.size)) { toast.error(`Selecione ${grp.name}`); return; }
     }
-    const unit = product.price + extra;
+    if (weighted && g <= 0) { toast.error('Informe o peso.'); return; }
     const now = new Date().toISOString();
-    const { data: oi, error } = await supabase.from('order_items').insert({
+    const payload: any = {
       order_id: orderId, product_id: product.id, product_name: product.name,
-      quantity: qty, unit_price: unit, total_price: unit * qty, notes: notes || null,
+      notes: notes || null,
       sends_to_kitchen: product.sends_to_kitchen,
       kitchen_status: product.sends_to_kitchen ? 'pendente' : 'entregue',
       delivered_at: product.sends_to_kitchen ? null : now,
-    }).select('id').single();
+    };
+    if (weighted) {
+      payload.item_type = 'peso';
+      payload.quantity = 1;
+      payload.unit_price = product.price_per_kg;
+      payload.price_per_kg = product.price_per_kg;
+      payload.weight_grams = g;
+      payload.total_price = +total.toFixed(2);
+    } else {
+      const unit = product.price + extra;
+      payload.item_type = 'fixo';
+      payload.quantity = qty;
+      payload.unit_price = unit;
+      payload.total_price = +(unit * qty).toFixed(2);
+    }
+    const { data: oi, error } = await supabase.from('order_items').insert(payload).select('id').single();
     if (error) { toast.error(error.message); return; }
     const opts: any[] = [];
-    for (const g of groups) {
-      const set = picks[g.id]; if (!set) continue;
-      for (const it of g.items) {
+    for (const grp of groups) {
+      const set = picks[grp.id]; if (!set) continue;
+      for (const it of grp.items) {
         if (set.has(it.id)) opts.push({
-          order_item_id: oi.id, option_group_name: g.name, option_item_name: it.name, additional_price: it.additional_price,
+          order_item_id: oi.id, option_group_name: grp.name, option_item_name: it.name, additional_price: it.additional_price,
         });
       }
     }
@@ -494,24 +559,27 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{isSwap ? `Trocar por: ${product.name}` : product.name}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {weighted && <Scale className="h-4 w-4 text-muted-foreground" />}
+            {isSwap ? `Trocar por: ${product.name}` : product.name}
+          </DialogTitle>
         </DialogHeader>
         {loading ? <div className="text-sm text-muted-foreground">Carregando…</div> : (
           <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-1">
-            {groups.map((g) => (
-              <div key={g.id}>
+            {!weighted && groups.map((grp) => (
+              <div key={grp.id}>
                 <div className="flex items-baseline justify-between">
-                  <h4 className="text-sm font-semibold">{g.name}</h4>
+                  <h4 className="text-sm font-semibold">{grp.name}</h4>
                   <span className="text-[10px] uppercase text-muted-foreground">
-                    {g.selection_type === 'unica' ? 'Escolha uma' : `Até ${g.max_options ?? g.items.length}`} {g.required && '· obrigatório'}
+                    {grp.selection_type === 'unica' ? 'Escolha uma' : `Até ${grp.max_options ?? grp.items.length}`} {grp.required && '· obrigatório'}
                   </span>
                 </div>
                 <div className="mt-2 space-y-1.5">
-                  {g.items.map((i) => {
-                    const checked = picks[g.id]?.has(i.id) ?? false;
+                  {grp.items.map((i) => {
+                    const checked = picks[grp.id]?.has(i.id) ?? false;
                     return (
                       <button key={i.id} type="button"
-                        onClick={() => togglePick(g.id, i.id, g.selection_type, g.max_options)}
+                        onClick={() => togglePick(grp.id, i.id, grp.selection_type, grp.max_options)}
                         className={cn(
                           'w-full flex items-center justify-between rounded-md border px-3 py-2 text-sm transition',
                           checked ? 'border-accent bg-accent/10' : 'border-border bg-card hover:border-foreground/30',
@@ -526,16 +594,26 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
                 </div>
               </div>
             ))}
+            {weighted && (
+              <div>
+                <Label htmlFor="grams">Peso (gramas)</Label>
+                <Input id="grams" type="number" inputMode="decimal" value={grams}
+                  onChange={(e) => setGrams(e.target.value)} placeholder="ex: 750" autoFocus />
+                <p className="text-xs text-muted-foreground mt-1">{fmtBRL(product.price_per_kg)}/kg</p>
+              </div>
+            )}
             <div>
               <Label htmlFor="notes">Observação</Label>
               <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex: bem passado, sem cebola…" rows={2} />
             </div>
             <div className="flex items-center justify-between">
-              <div className="inline-flex items-center gap-3 rounded-full border border-border bg-card px-2 py-1">
-                <button onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-7 w-7 place-items-center rounded-full hover:bg-muted"><Minus className="h-3.5 w-3.5" /></button>
-                <span className="w-6 text-center text-sm font-semibold">{qty}</span>
-                <button onClick={() => setQty(qty + 1)} className="grid h-7 w-7 place-items-center rounded-full hover:bg-muted"><Plus className="h-3.5 w-3.5" /></button>
-              </div>
+              {!weighted ? (
+                <div className="inline-flex items-center gap-3 rounded-full border border-border bg-card px-2 py-1">
+                  <button onClick={() => setQty(Math.max(1, qty - 1))} className="grid h-7 w-7 place-items-center rounded-full hover:bg-muted"><Minus className="h-3.5 w-3.5" /></button>
+                  <span className="w-6 text-center text-sm font-semibold">{qty}</span>
+                  <button onClick={() => setQty(qty + 1)} className="grid h-7 w-7 place-items-center rounded-full hover:bg-muted"><Plus className="h-3.5 w-3.5" /></button>
+                </div>
+              ) : <div />}
               <div className="text-right">
                 <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Total</div>
                 <div className="font-display text-2xl">{fmtBRL(total)}</div>
@@ -545,9 +623,9 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
         )}
         <DialogFooter className="gap-2">
           <Button variant="ghost" onClick={onClose}><X className="h-4 w-4 mr-1" /> Cancelar</Button>
-          <Button onClick={submit} className="bg-primary">
+          <BusyButton onClick={submit} busyText="Adicionando…" className="bg-primary">
             <Plus className="h-4 w-4 mr-1" /> {isSwap ? 'Substituir' : 'Adicionar'}
-          </Button>
+          </BusyButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

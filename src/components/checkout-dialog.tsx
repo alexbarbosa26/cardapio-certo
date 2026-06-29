@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { BusyButton } from '@/components/busy-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -58,7 +59,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
   const [feePct, setFeePct] = useState(10);
   const [discount, setDiscount] = useState(0);
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
-  const [tab, setTab] = useState<'total' | 'dividir' | 'itens' | 'parcial'>('total');
+  const [tab, setTab] = useState<'total' | 'dividir' | 'itens' | 'parcial' | 'conjunto'>('total');
   const [pendurarOpen, setPendurarOpen] = useState(false);
 
   const load = async () => {
@@ -176,11 +177,12 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-5 w-full">
             <TabsTrigger value="total">Total</TabsTrigger>
             <TabsTrigger value="dividir">Dividir</TabsTrigger>
             <TabsTrigger value="itens">Por itens</TabsTrigger>
             <TabsTrigger value="parcial">Parcial</TabsTrigger>
+            <TabsTrigger value="conjunto">+ Comandas</TabsTrigger>
           </TabsList>
 
           <div className="mt-3">
@@ -195,6 +197,13 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             </TabsContent>
             <TabsContent value="parcial" className="m-0">
               <PayPartialTab pending={pending} orderId={orderId} companyId={order.company_id} onPaid={load} />
+            </TabsContent>
+            <TabsContent value="conjunto" className="m-0">
+              <PayWithTabsTab
+                orderPending={pending} orderId={orderId} tableId={tableId} tableName={tableName}
+                companyId={order.company_id}
+                onDone={() => { onOpenChange(false); }}
+              />
             </TabsContent>
           </div>
         </Tabs>
@@ -235,9 +244,9 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
               <BookmarkPlus className="h-4 w-4 mr-1" />Pendurar
             </Button>
           )}
-          <Button onClick={finalize} disabled={!quitada} className="bg-primary">
+          <BusyButton onClick={finalize} disabled={!quitada} busyText="Finalizando…" className="bg-primary">
             <CheckCircle2 className="h-4 w-4 mr-1" />Finalizar mesa
-          </Button>
+          </BusyButton>
         </DialogFooter>
       </DialogContent>
       <PendurarContaDialog
@@ -363,7 +372,7 @@ function PayTotalTab({ pending, orderId, companyId, onPaid }: { pending: number;
           Taxa {FEES[method]}% = {fmtBRL(fee)} · líquido {fmtBRL(pending - fee)}
         </div>
       )}
-      <Button className="w-full" disabled={pending <= 0}
+      <BusyButton className="w-full" disabled={pending <= 0} busyText="Registrando…"
         onClick={async () => {
           const ok = await registerPayment({
             orderId, companyId, method, amount: pending,
@@ -372,7 +381,7 @@ function PayTotalTab({ pending, orderId, companyId, onPaid }: { pending: number;
           if (ok) { setReceived(''); onPaid(); }
         }}>
         Pagar {fmtBRL(pending)}
-      </Button>
+      </BusyButton>
     </div>
   );
 }
@@ -418,14 +427,14 @@ function PaySplitTab({ pending, orderId, companyId, onPaid }: { total: number; p
                   <MethodPicker method={methods[i] ?? 'dinheiro'} onChange={(m) => {
                     const next = [...methods]; next[i] = m; setMethods(next);
                   }} />
-                  <Button size="sm" className="w-full"
+                  <BusyButton size="sm" className="w-full" busyText="Registrando…"
                     onClick={async () => {
                       const ok = await registerPayment({
                         orderId, companyId, method: methods[i] ?? 'dinheiro',
                         amount: amt, personLabel: `Pessoa ${i + 1}`,
                       });
                       if (ok) { setPaidIdx(new Set([...paidIdx, i])); onPaid(); }
-                    }}>Registrar</Button>
+                    }}>Registrar</BusyButton>
                 </>
               )}
               {done && <Badge className="bg-success text-success-foreground">Pago</Badge>}
@@ -497,7 +506,7 @@ function PayItemsTab({ items, orderId, companyId, onPaid }: { items: ItemRow[]; 
             <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
         </div>
       )}
-      <Button className="w-full" disabled={selectedTotal <= 0}
+      <BusyButton className="w-full" disabled={selectedTotal <= 0} busyText="Registrando…"
         onClick={async () => {
           const allocs = items
             .filter(it => (qty[it.id] ?? 0) > 0)
@@ -514,7 +523,7 @@ function PayItemsTab({ items, orderId, companyId, onPaid }: { items: ItemRow[]; 
           if (ok) { setQty({}); setReceived(''); onPaid(); }
         }}>
         Pagar itens · {fmtBRL(selectedTotal)}
-      </Button>
+      </BusyButton>
     </div>
   );
 }
@@ -543,7 +552,7 @@ function PayPartialTab({ pending, orderId, companyId, onPaid }: { pending: numbe
             <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
         </div>
       )}
-      <Button className="w-full" disabled={amt <= 0 || amt > pending + 0.005}
+      <BusyButton className="w-full" disabled={amt <= 0 || amt > pending + 0.005} busyText="Registrando…"
         onClick={async () => {
           const ok = await registerPayment({
             orderId, companyId, method, amount: amt,
@@ -552,7 +561,7 @@ function PayPartialTab({ pending, orderId, companyId, onPaid }: { pending: numbe
           if (ok) { setAmount(''); setReceived(''); onPaid(); }
         }}>
         Registrar {fmtBRL(amt)}
-      </Button>
+      </BusyButton>
     </div>
   );
 }
@@ -584,6 +593,142 @@ function PaymentsHistory({ payments, isAdmin, onRefund }: { payments: PaymentRow
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+/* -------- Tab: pagamento conjunto com comandas em aberto -------- */
+function PayWithTabsTab({
+  orderPending, orderId, tableId, tableName, companyId, onDone,
+}: {
+  orderPending: number; orderId: string; tableId: string; tableName: string;
+  companyId: string; onDone: () => void;
+}) {
+  const { profile } = useAuth();
+  const [tabs, setTabs] = useState<Array<{ id: string; tab_number: number; customer_name: string | null; pending: number }>>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [method, setMethod] = useState<Method>('dinheiro');
+  const [received, setReceived] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('customer_tabs')
+        .select('id, tab_number, customer_name, total, paid_amount, status')
+        .eq('company_id', companyId)
+        .eq('status', 'aberta')
+        .order('tab_number');
+      setTabs((data ?? []).map((t: any) => ({
+        id: t.id, tab_number: t.tab_number, customer_name: t.customer_name,
+        pending: Math.max(0, Number(t.total) - Number(t.paid_amount)),
+      })).filter((t) => t.pending > 0));
+    })();
+  }, [companyId]);
+
+  const selectedTabs = tabs.filter((t) => selected.has(t.id));
+  const tabsTotal = selectedTabs.reduce((s, t) => s + t.pending, 0);
+  const grandTotal = orderPending + tabsTotal;
+  const rec = Number(received.replace(',', '.')) || 0;
+  const change = method === 'dinheiro' ? Math.max(0, rec - grandTotal) : 0;
+
+  const finalizeAll = async () => {
+    if (grandTotal <= 0) { toast.error('Nada a pagar.'); return; }
+    if (method === 'dinheiro' && rec > 0 && rec < grandTotal) {
+      toast.error('Valor recebido insuficiente.'); return;
+    }
+    // 1) pagamento da mesa (se houver pendente)
+    if (orderPending > 0) {
+      const ok = await registerPayment({
+        orderId, companyId, method, amount: orderPending,
+        received: method === 'dinheiro' ? (rec || grandTotal) : undefined,
+        personLabel: 'Mesa',
+      });
+      if (!ok) return;
+    }
+    // 2) pagamento de cada comanda
+    const { data: reg } = await supabase.from('cash_registers').select('id')
+      .eq('company_id', companyId).eq('status', 'aberto')
+      .order('opened_at', { ascending: false }).limit(1).maybeSingle();
+    for (const t of selectedTabs) {
+      const fee_percentage = FEES[method];
+      const fee_amount = +(t.pending * fee_percentage / 100).toFixed(2);
+      const { error } = await supabase.from('tab_payments').insert({
+        company_id: companyId, tab_id: t.id, register_id: reg?.id ?? null,
+        method, amount: t.pending,
+        fee_percentage, fee_amount, net_amount: +(t.pending - fee_amount).toFixed(2),
+        received_amount: method === 'dinheiro' ? t.pending : 0,
+        change_amount: 0,
+        person_label: `Mesa ${tableName}`,
+      });
+      if (error) { toast.error(error.message); return; }
+      await supabase.from('customer_tabs').update({
+        status: 'paga', closed_at: new Date().toISOString(), closed_by: profile?.id,
+      }).eq('id', t.id).neq('status', 'paga');
+    }
+    // 3) fechar a mesa
+    await supabase.from('orders').update({
+      status: 'fechado', closed_at: new Date().toISOString(),
+    }).eq('id', orderId);
+    await supabase.from('tables').update({ status: 'livre' }).eq('id', tableId);
+    toast.success(`Mesa + ${selectedTabs.length} comanda(s) finalizadas.`);
+    onDone();
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-border bg-card p-2.5">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+          Comandas em aberto da empresa
+        </div>
+        {tabs.length === 0 ? (
+          <div className="text-xs text-muted-foreground py-2">Nenhuma comanda em aberto.</div>
+        ) : (
+          <div className="max-h-40 overflow-y-auto divide-y">
+            {tabs.map((t) => {
+              const checked = selected.has(t.id);
+              return (
+                <label key={t.id} className="flex items-center gap-2 py-1.5 cursor-pointer">
+                  <input type="checkbox" checked={checked}
+                    onChange={() => {
+                      const ns = new Set(selected);
+                      if (checked) ns.delete(t.id); else ns.add(t.id);
+                      setSelected(ns);
+                    }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm">#{t.tab_number}{t.customer_name ? ` · ${t.customer_name}` : ''}</div>
+                  </div>
+                  <div className="text-sm font-semibold tabular-nums">{fmtBRL(t.pending)}</div>
+                </label>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 rounded-lg border border-border bg-secondary/40 p-3">
+        <Box label="Mesa" value={fmtBRL(orderPending)} />
+        <Box label="Comandas" value={fmtBRL(tabsTotal)} />
+        <Box label="Total geral" value={fmtBRL(grandTotal)} tone="warning" />
+      </div>
+
+      <MethodPicker method={method} onChange={setMethod} />
+      {method === 'dinheiro' && (
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>Valor recebido</Label>
+            <Input value={received} onChange={(e) => setReceived(e.target.value)} placeholder={grandTotal.toFixed(2)} /></div>
+          <div><div className="text-[10px] uppercase text-muted-foreground">Troco</div>
+            <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
+        </div>
+      )}
+
+      <BusyButton className="w-full" busyText="Finalizando…"
+        disabled={grandTotal <= 0}
+        onClick={finalizeAll}>
+        <CheckCircle2 className="h-4 w-4 mr-1" /> Pagar e finalizar tudo · {fmtBRL(grandTotal)}
+      </BusyButton>
+      <p className="text-[11px] text-muted-foreground">
+        Registra pagamento da mesa e de cada comanda selecionada, fecha a mesa e marca as comandas como pagas.
+      </p>
     </div>
   );
 }

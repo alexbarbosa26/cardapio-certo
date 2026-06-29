@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'fiado' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf';
+type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'fiado' | 'historico' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf';
 interface NavItem { key: NavKey; to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
 
 const NAV: NavItem[] = [
@@ -25,6 +25,7 @@ const NAV: NavItem[] = [
   { key: 'usuarios', to: '/usuarios', label: 'Usuários', icon: Users, admin: true },
   { key: 'caixa', to: '/caixa', label: 'Caixa', icon: Wallet, admin: true },
   { key: 'fiado', to: '/fiado', label: 'Fiado', icon: BookmarkPlus },
+  { key: 'historico', to: '/historico-pedidos', label: 'Histórico de pedidos', icon: ClipboardList, admin: true },
   { key: 'relatorios', to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
   { key: 'config', to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
   { key: 'assinatura', to: '/assinatura', label: 'Minha assinatura', icon: CreditCard, admin: true },

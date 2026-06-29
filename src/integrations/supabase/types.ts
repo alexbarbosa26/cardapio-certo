@@ -712,11 +712,13 @@ export type Database = {
           created_at: string
           delivered_at: string | null
           id: string
+          item_type: string
           kitchen_status: Database["public"]["Enums"]["kitchen_status"]
           notes: string | null
           order_id: string
           paid_quantity: number
           payment_status: Database["public"]["Enums"]["item_payment_status"]
+          price_per_kg: number | null
           product_id: string
           product_name: string
           quantity: number
@@ -726,17 +728,20 @@ export type Database = {
           started_preparation_at: string | null
           total_price: number
           unit_price: number
+          weight_grams: number | null
         }
         Insert: {
           canceled_at?: string | null
           created_at?: string
           delivered_at?: string | null
           id?: string
+          item_type?: string
           kitchen_status?: Database["public"]["Enums"]["kitchen_status"]
           notes?: string | null
           order_id: string
           paid_quantity?: number
           payment_status?: Database["public"]["Enums"]["item_payment_status"]
+          price_per_kg?: number | null
           product_id: string
           product_name: string
           quantity?: number
@@ -746,17 +751,20 @@ export type Database = {
           started_preparation_at?: string | null
           total_price?: number
           unit_price?: number
+          weight_grams?: number | null
         }
         Update: {
           canceled_at?: string | null
           created_at?: string
           delivered_at?: string | null
           id?: string
+          item_type?: string
           kitchen_status?: Database["public"]["Enums"]["kitchen_status"]
           notes?: string | null
           order_id?: string
           paid_quantity?: number
           payment_status?: Database["public"]["Enums"]["item_payment_status"]
+          price_per_kg?: number | null
           product_id?: string
           product_name?: string
           quantity?: number
@@ -766,6 +774,7 @@ export type Database = {
           started_preparation_at?: string | null
           total_price?: number
           unit_price?: number
+          weight_grams?: number | null
         }
         Relationships: [
           {
@@ -819,8 +828,12 @@ export type Database = {
       }
       orders: {
         Row: {
+          canceled_at: string | null
+          canceled_by: string | null
+          cancellation_reason: string | null
           closed_at: string | null
           company_id: string
+          customer_name: string | null
           discount: number
           id: string
           is_credit: boolean
@@ -836,8 +849,12 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          canceled_at?: string | null
+          canceled_by?: string | null
+          cancellation_reason?: string | null
           closed_at?: string | null
           company_id: string
+          customer_name?: string | null
           discount?: number
           id?: string
           is_credit?: boolean
@@ -853,8 +870,12 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          canceled_at?: string | null
+          canceled_by?: string | null
+          cancellation_reason?: string | null
           closed_at?: string | null
           company_id?: string
+          customer_name?: string | null
           discount?: number
           id?: string
           is_credit?: boolean

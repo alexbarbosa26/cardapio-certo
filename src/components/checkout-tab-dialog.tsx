@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { BusyButton } from '@/components/busy-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -219,10 +220,10 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
               <BookmarkPlus className="h-4 w-4 mr-1" />Pendurar
             </Button>
           )}
-          <Button onClick={finalize} disabled={!quitada || jaFinalizada || cancelada}>
+          <BusyButton onClick={finalize} disabled={!quitada || jaFinalizada || cancelada} busyText="Finalizando…">
             <CheckCircle2 className="h-4 w-4 mr-1" />
             {jaFinalizada ? 'Já finalizada' : 'Finalizar comanda'}
-          </Button>
+          </BusyButton>
         </DialogFooter>
       </DialogContent>
       <PendurarContaDialog
@@ -314,14 +315,14 @@ function PayTotalTab({ pending, tabId, companyId, onPaid }: { pending: number; t
             <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
         </div>
       )}
-      <Button className="w-full" disabled={pending <= 0}
+      <BusyButton className="w-full" disabled={pending <= 0} busyText="Registrando…"
         onClick={async () => {
           const ok = await registerTabPayment({
             tabId, companyId, method, amount: pending,
             received: method === 'dinheiro' ? rec || pending : undefined,
           });
           if (ok) { setReceived(''); onPaid(); }
-        }}>Pagar {fmtBRL(pending)}</Button>
+        }}>Pagar {fmtBRL(pending)}</BusyButton>
     </div>
   );
 }
@@ -364,13 +365,13 @@ function PaySplitTab({ pending, tabId, companyId, onPaid }: { pending: number; t
                 <MethodPicker method={methods[i] ?? 'dinheiro'} onChange={(m) => {
                   const next = [...methods]; next[i] = m; setMethods(next);
                 }} />
-                <Button size="sm" className="w-full" onClick={async () => {
+                <BusyButton size="sm" className="w-full" busyText="Registrando…" onClick={async () => {
                   const ok = await registerTabPayment({
                     tabId, companyId, method: methods[i] ?? 'dinheiro',
                     amount: amt, personLabel: `Pessoa ${i + 1}`,
                   });
                   if (ok) { setPaidIdx(new Set([...paidIdx, i])); onPaid(); }
-                }}>Registrar</Button>
+                }}>Registrar</BusyButton>
               </>)}
               {done && <Badge className="bg-success text-success-foreground">Pago</Badge>}
             </div>
@@ -404,14 +405,14 @@ function PayPartialTab({ pending, tabId, companyId, onPaid }: { pending: number;
             <div className="text-xl font-semibold">{fmtBRL(change)}</div></div>
         </div>
       )}
-      <Button className="w-full" disabled={amt <= 0 || amt > pending + 0.005}
+      <BusyButton className="w-full" disabled={amt <= 0 || amt > pending + 0.005} busyText="Registrando…"
         onClick={async () => {
           const ok = await registerTabPayment({
             tabId, companyId, method, amount: amt,
             received: method === 'dinheiro' ? rec || amt : undefined,
           });
           if (ok) { setAmount(''); setReceived(''); onPaid(); }
-        }}>Registrar {fmtBRL(amt)}</Button>
+        }}>Registrar {fmtBRL(amt)}</BusyButton>
     </div>
   );
 }

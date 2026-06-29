@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtBRL, minutesSince } from '@/lib/format';
@@ -18,6 +18,7 @@ interface MesaCard {
   open_total: number;
   opened_at: string | null;
   items_count: number;
+  customer_name: string | null;
 }
 
 function MesasPage() {
@@ -32,7 +33,7 @@ function MesasPage() {
     const { data: tables } = await supabase
       .from('tables').select('*').eq('company_id', profile.company_id).order('number');
     const { data: orders } = await supabase
-      .from('orders').select('id, table_id, total, opened_at, order_items(id)')
+      .from('orders').select('id, table_id, total, opened_at, customer_name, order_items(id)')
       .eq('company_id', profile.company_id).eq('status', 'aberto');
 
     const map: MesaCard[] = (tables ?? []).map((t: any) => {
@@ -43,6 +44,7 @@ function MesasPage() {
         open_total: Number(o?.total ?? 0),
         opened_at: o?.opened_at ?? null,
         items_count: o?.order_items?.length ?? 0,
+        customer_name: o?.customer_name ?? null,
       };
     });
     setMesas(map);
@@ -69,21 +71,28 @@ function MesasPage() {
     return () => clearInterval(t);
   }, []);
 
+  const openingRef = useRef<Set<string>>(new Set());
   const openMesa = async (m: MesaCard) => {
     if (!profile) return;
-    let orderId = m.open_order_id;
-    let createdNow = false;
-    if (!orderId) {
-      const { data, error } = await supabase.from('orders').insert({
-        company_id: profile.company_id, table_id: m.id, user_id: profile.id,
-        service_fee_percentage: 10,
-      }).select('id').single();
-      if (error) { toast.error(error.message); return; }
-      orderId = data.id;
-      createdNow = true;
-      await supabase.from('tables').update({ status: 'ocupada' }).eq('id', m.id);
+    if (openingRef.current.has(m.id)) return;
+    openingRef.current.add(m.id);
+    try {
+      let orderId = m.open_order_id;
+      let createdNow = false;
+      if (!orderId) {
+        const { data, error } = await supabase.from('orders').insert({
+          company_id: profile.company_id, table_id: m.id, user_id: profile.id,
+          service_fee_percentage: 10,
+        }).select('id').single();
+        if (error) { toast.error(error.message); return; }
+        orderId = data.id;
+        createdNow = true;
+        await supabase.from('tables').update({ status: 'ocupada' }).eq('id', m.id);
+      }
+      setOrderSheet({ tableId: m.id, orderId, tableName: m.name, createdNow });
+    } finally {
+      openingRef.current.delete(m.id);
     }
-    setOrderSheet({ tableId: m.id, orderId, tableName: m.name, createdNow });
   };
 
   const handleSheetClose = async () => {
@@ -142,6 +151,9 @@ function MesasPage() {
                   )} />
                 </div>
                 <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">{ocupada ? 'Ocupada' : 'Livre'}</div>
+                {ocupada && m.customer_name && (
+                  <div className="mt-1 text-xs text-foreground/80 truncate">{m.customer_name}</div>
+                )}
 
                 {ocupada ? (
                   <div className="mt-4 space-y-1.5">
