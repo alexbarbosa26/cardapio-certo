@@ -18,6 +18,7 @@ interface MesaCard {
   open_total: number;
   opened_at: string | null;
   items_count: number;
+  customer_name: string | null;
 }
 
 function MesasPage() {
