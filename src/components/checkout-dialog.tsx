@@ -364,7 +364,7 @@ function PayTotalTab({ pending, orderId, companyId, onPaid }: { pending: number;
           Taxa {FEES[method]}% = {fmtBRL(fee)} · líquido {fmtBRL(pending - fee)}
         </div>
       )}
-      <Button className="w-full" disabled={pending <= 0}
+      <BusyButton className="w-full" disabled={pending <= 0} busyText="Registrando…"
         onClick={async () => {
           const ok = await registerPayment({
             orderId, companyId, method, amount: pending,
@@ -373,7 +373,7 @@ function PayTotalTab({ pending, orderId, companyId, onPaid }: { pending: number;
           if (ok) { setReceived(''); onPaid(); }
         }}>
         Pagar {fmtBRL(pending)}
-      </Button>
+      </BusyButton>
     </div>
   );
 }
