@@ -33,7 +33,7 @@ function MesasPage() {
     const { data: tables } = await supabase
       .from('tables').select('*').eq('company_id', profile.company_id).order('number');
     const { data: orders } = await supabase
-      .from('orders').select('id, table_id, total, opened_at, order_items(id)')
+      .from('orders').select('id, table_id, total, opened_at, customer_name, order_items(id)')
       .eq('company_id', profile.company_id).eq('status', 'aberto');
 
     const map: MesaCard[] = (tables ?? []).map((t: any) => {
@@ -44,6 +44,7 @@ function MesasPage() {
         open_total: Number(o?.total ?? 0),
         opened_at: o?.opened_at ?? null,
         items_count: o?.order_items?.length ?? 0,
+        customer_name: o?.customer_name ?? null,
       };
     });
     setMesas(map);
