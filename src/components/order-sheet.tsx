@@ -166,11 +166,17 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   };
 
   const cancelOrder = async () => {
-    // Deleta itens, opções (cascade via RLS join) e o pedido. Libera a mesa.
-    await supabase.from('order_items').delete().eq('order_id', orderId);
-    await supabase.from('orders').delete().eq('id', orderId);
+    // Mantém o pedido no histórico: marca como cancelado e libera a mesa.
+    const { error } = await supabase.from('orders').update({
+      status: 'cancelado',
+      canceled_at: new Date().toISOString(),
+      canceled_by: profile?.id ?? null,
+      cancellation_reason: 'Cancelado pelo atendente na tela de mesas',
+      closed_at: new Date().toISOString(),
+    }).eq('id', orderId);
+    if (error) { toast.error(error.message); return; }
     await supabase.from('tables').update({ status: 'livre' }).eq('id', tableId);
-    toast.success('Pedido cancelado');
+    toast.success('Pedido cancelado (mantido no histórico)');
     setConfirmCancelOrder(false);
     onOpenChange(false);
   };
