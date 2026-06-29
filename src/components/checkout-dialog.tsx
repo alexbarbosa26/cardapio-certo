@@ -236,9 +236,9 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
               <BookmarkPlus className="h-4 w-4 mr-1" />Pendurar
             </Button>
           )}
-          <Button onClick={finalize} disabled={!quitada} className="bg-primary">
+          <BusyButton onClick={finalize} disabled={!quitada} busyText="Finalizando…" className="bg-primary">
             <CheckCircle2 className="h-4 w-4 mr-1" />Finalizar mesa
-          </Button>
+          </BusyButton>
         </DialogFooter>
       </DialogContent>
       <PendurarContaDialog
