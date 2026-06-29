@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - master
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   sonarqube:
@@ -32,9 +34,15 @@ jobs:
 
       - name: Build do projeto
         run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Análise SonarQube
         uses: SonarSource/sonarqube-scan-action@v7
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
