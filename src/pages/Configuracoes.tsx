@@ -70,10 +70,12 @@ function CompanyTab() {
   const onUpload = async (file: File) => {
     if (!profile) return;
     if (file.size > 2 * 1024 * 1024) { toast.error('Imagem deve ter até 2MB'); return; }
+    let safe;
+    try { safe = await validateImageFile(file); }
+    catch (e: any) { toast.error(e.message); return; }
     setUploading(true);
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
-    const path = `${profile.company_id}/logo-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from('branding').upload(path, file, { upsert: true, contentType: file.type });
+    const path = `${profile.company_id}/logo-${Date.now()}.${safe.ext}`;
+    const { error } = await supabase.storage.from('branding').upload(path, file, { upsert: true, contentType: safe.contentType });
     if (error) { toast.error(error.message); setUploading(false); return; }
     const { data: pub } = supabase.storage.from('branding').getPublicUrl(path);
     setLogoUrl(pub.publicUrl);
