@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 import { applyTenantFontsPreview } from '@/hooks/use-tenant-typography';
 import { applyTenantColorsPreview, useTenantBranding } from '@/hooks/use-tenant-branding';
+import { validateImageFile } from '@/lib/image-validation';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
