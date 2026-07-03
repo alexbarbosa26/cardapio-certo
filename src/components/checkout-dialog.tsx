@@ -114,7 +114,10 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
     // eslint-disable-next-line
   }, [open, orderId, profile?.company_id]);
 
-  const itemsSubtotal = useMemo(() => items.reduce((s, i) => s + i.total_price, 0), [items]);
+  const itemsSubtotal = useMemo(
+    () => items.reduce((s, i) => s + (i.kitchen_status === 'cancelado' ? 0 : i.total_price), 0),
+    [items],
+  );
   const fee = withFee ? itemsSubtotal * (feePct / 100) : 0;
   const total = Math.max(0, itemsSubtotal + fee - discount);
   const activePaid = useMemo(
