@@ -74,7 +74,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
     });
     const { data: its } = await supabase
       .from('order_items')
-      .select('id, product_name, quantity, unit_price, total_price, paid_quantity, payment_status')
+      .select('id, product_name, quantity, unit_price, total_price, paid_quantity, payment_status, kitchen_status')
       .eq('order_id', orderId).order('created_at');
     setItems((its ?? []).map((i: any) => ({
       ...i,
