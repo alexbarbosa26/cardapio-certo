@@ -197,7 +197,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
               <PaySplitTab total={total} pending={pending} orderId={orderId} companyId={order.company_id} onPaid={load} />
             </TabsContent>
             <TabsContent value="itens" className="m-0">
-              <PayItemsTab items={items} orderId={orderId} companyId={order.company_id} onPaid={load} />
+              <PayItemsTab items={items.filter(i => i.kitchen_status !== 'cancelado')} orderId={orderId} companyId={order.company_id} onPaid={load} />
             </TabsContent>
             <TabsContent value="parcial" className="m-0">
               <PayPartialTab pending={pending} orderId={orderId} companyId={order.company_id} onPaid={load} />
