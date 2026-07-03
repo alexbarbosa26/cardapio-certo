@@ -539,8 +539,8 @@ function DashboardPage() {
         title="Produtos e categorias"
         description="Desempenho dos últimos 30 dias."
       >
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Panel title="Top 10 produtos por faturamento">
+        <div className="grid gap-4 lg:grid-cols-2 min-w-0">
+          <Panel title="Top 10 produtos por faturamento" className="min-w-0">
             <RankingList
               items={topByRevenue.map((p, _i, arr) => ({
                 name: p.name,
@@ -550,7 +550,7 @@ function DashboardPage() {
               }))}
             />
           </Panel>
-          <Panel title="Top 10 produtos por quantidade">
+          <Panel title="Top 10 produtos por quantidade" className="min-w-0">
             <RankingList
               items={topByQty.map((p, _i, arr) => ({
                 name: p.name,
@@ -560,7 +560,7 @@ function DashboardPage() {
               }))}
             />
           </Panel>
-          <Panel title="Top categorias por faturamento">
+          <Panel title="Top categorias por faturamento" className="min-w-0">
             <RankingList
               items={topCategories.map((c, _i, arr) => ({
                 name: c.name,
@@ -569,7 +569,7 @@ function DashboardPage() {
               }))}
             />
           </Panel>
-          <Panel title="Produtos com baixo giro (≤1 un. em 30d)">
+          <Panel title="Produtos com baixo giro (≤1 un. em 30d)" className="min-w-0">
             {lowTurnover.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4">
                 Todos os produtos ativos tiveram saída no período.
@@ -577,12 +577,12 @@ function DashboardPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {lowTurnover.map((p) => (
-                  <li key={p.name} className="py-2 flex justify-between text-sm">
-                    <span className="flex items-center gap-2">
-                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                      {p.name}
+                  <li key={p.name} className="py-2 flex justify-between text-sm gap-3">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                      <span className="truncate">{p.name}</span>
                     </span>
-                    <span className="tabular-nums text-muted-foreground">
+                    <span className="tabular-nums text-muted-foreground whitespace-nowrap">
                       {p.qty === 0 ? 'sem venda' : `${p.qty} un.`}
                     </span>
                   </li>

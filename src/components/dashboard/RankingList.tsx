@@ -14,12 +14,14 @@ export function RankingList({ items, emptyMessage = 'Sem dados no período.' }: 
     return <p className="text-sm text-muted-foreground py-4">{emptyMessage}</p>;
   }
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 min-w-0">
       {items.map((it, idx) => (
-        <div key={`${it.name}-${idx}`}>
-          <div className="flex justify-between text-sm mb-1 gap-3">
-            <span className="font-medium truncate">{idx + 1}. {it.name}</span>
-            <span className="tabular-nums text-muted-foreground whitespace-nowrap">
+        <div key={`${it.name}-${idx}`} className="min-w-0">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-3 mb-1 min-w-0">
+            <span className="font-medium text-sm truncate min-w-0">
+              {idx + 1}. {it.name}
+            </span>
+            <span className="tabular-nums text-muted-foreground text-sm whitespace-nowrap">
               {it.primary}
               {it.secondary && (
                 <span className="text-xs opacity-70 ml-1">{it.secondary}</span>

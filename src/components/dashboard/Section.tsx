@@ -35,14 +35,14 @@ interface PanelProps {
 
 export function Panel({ title, action, children, className }: PanelProps) {
   return (
-    <div className={cn('rounded-xl border border-border bg-card p-5 shadow-card', className)}>
+    <div className={cn('rounded-xl border border-border bg-card p-5 shadow-card min-w-0', className)}>
       {(title || action) && (
-        <div className="mb-4 flex items-center justify-between gap-2">
-          {title && <h3 className="font-display text-lg">{title}</h3>}
+        <div className="mb-4 flex items-center justify-between gap-2 min-w-0">
+          {title && <h3 className="font-display text-lg truncate">{title}</h3>}
           {action}
         </div>
       )}
-      {children}
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
