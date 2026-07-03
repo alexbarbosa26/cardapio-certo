@@ -229,7 +229,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             title: tableName,
             subtitle: `Conta · Pedido #${order.order_number}`,
             brand, showPrices: true, showUnitPrice: true,
-            items: items.map((i) => ({
+            items: items.filter(i => i.kitchen_status !== 'cancelado').map((i) => ({
               quantity: i.quantity, product_name: i.product_name,
               unit_price: i.unit_price, total_price: i.total_price,
             })),
