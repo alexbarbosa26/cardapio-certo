@@ -33,17 +33,18 @@ function MesasPage() {
     const { data: tables } = await supabase
       .from('tables').select('*').eq('company_id', profile.company_id).order('number');
     const { data: orders } = await supabase
-      .from('orders').select('id, table_id, total, opened_at, customer_name, order_items(id)')
+      .from('orders').select('id, table_id, total, opened_at, customer_name, order_items(id, kitchen_status)')
       .eq('company_id', profile.company_id).eq('status', 'aberto');
 
     const map: MesaCard[] = (tables ?? []).map((t: any) => {
       const o = (orders ?? []).find((x: any) => x.table_id === t.id);
+      const activeItems = (o?.order_items ?? []).filter((i: any) => i.kitchen_status !== 'cancelado');
       return {
         id: t.id, name: t.name, number: t.number, status: t.status,
         open_order_id: o?.id ?? null,
         open_total: Number(o?.total ?? 0),
         opened_at: o?.opened_at ?? null,
-        items_count: o?.order_items?.length ?? 0,
+        items_count: activeItems.length,
         customer_name: o?.customer_name ?? null,
       };
     });
