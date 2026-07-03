@@ -40,6 +40,7 @@ interface ItemRow {
   id: string; product_name: string; quantity: number;
   unit_price: number; total_price: number;
   paid_quantity: number; payment_status: 'pendente' | 'parcial' | 'pago';
+  kitchen_status: string;
 }
 interface PaymentRow {
   id: string; method: Method; amount: number; fee_percentage: number;
