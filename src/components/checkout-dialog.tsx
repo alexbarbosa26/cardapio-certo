@@ -40,6 +40,7 @@ interface ItemRow {
   id: string; product_name: string; quantity: number;
   unit_price: number; total_price: number;
   paid_quantity: number; payment_status: 'pendente' | 'parcial' | 'pago';
+  kitchen_status: string;
 }
 interface PaymentRow {
   id: string; method: Method; amount: number; fee_percentage: number;
@@ -73,7 +74,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
     });
     const { data: its } = await supabase
       .from('order_items')
-      .select('id, product_name, quantity, unit_price, total_price, paid_quantity, payment_status')
+      .select('id, product_name, quantity, unit_price, total_price, paid_quantity, payment_status, kitchen_status')
       .eq('order_id', orderId).order('created_at');
     setItems((its ?? []).map((i: any) => ({
       ...i,
@@ -113,7 +114,10 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
     // eslint-disable-next-line
   }, [open, orderId, profile?.company_id]);
 
-  const itemsSubtotal = useMemo(() => items.reduce((s, i) => s + i.total_price, 0), [items]);
+  const itemsSubtotal = useMemo(
+    () => items.reduce((s, i) => s + (i.kitchen_status === 'cancelado' ? 0 : i.total_price), 0),
+    [items],
+  );
   const fee = withFee ? itemsSubtotal * (feePct / 100) : 0;
   const total = Math.max(0, itemsSubtotal + fee - discount);
   const activePaid = useMemo(
@@ -150,19 +154,19 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl w-[calc(100vw-1rem)] sm:w-full max-h-[92vh] flex flex-col overflow-hidden p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-baseline gap-2">
+          <DialogTitle className="flex items-baseline gap-2 flex-wrap pr-8">
             <span className="font-display text-2xl">{tableName}</span>
             <span className="text-xs uppercase text-muted-foreground">Pedido #{order.order_number}</span>
             {quitada && <Badge className="bg-success text-success-foreground ml-auto">Conta quitada</Badge>}
           </DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto -mx-6 px-6 space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden -mx-4 sm:-mx-6 px-4 sm:px-6 space-y-4">
 
         <Totals total={total} paid={activePaid} pending={pending} />
 
-        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card p-2.5">
           <div className="text-xs">
             <div className="font-medium">Taxa serviço ({feePct}%)</div>
             <div className="text-muted-foreground">{fmtBRL(fee)}</div>
@@ -171,19 +175,20 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             <Label className="text-xs">Desconto</Label>
             <Input type="number" min={0} step="0.01" value={discount}
               onChange={(e) => setDiscount(Number(e.target.value) || 0)}
-              className="h-8 w-24" />
+              className="h-8 w-20 sm:w-24" />
             <Switch checked={withFee} onCheckedChange={setWithFee} />
           </div>
         </div>
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="w-full">
-          <TabsList className="grid grid-cols-5 w-full">
-            <TabsTrigger value="total">Total</TabsTrigger>
-            <TabsTrigger value="dividir">Dividir</TabsTrigger>
-            <TabsTrigger value="itens">Por itens</TabsTrigger>
-            <TabsTrigger value="parcial">Parcial</TabsTrigger>
-            <TabsTrigger value="conjunto">+ Comandas</TabsTrigger>
+          <TabsList className="grid grid-cols-5 w-full h-auto gap-1 p-1">
+            <TabsTrigger value="total" className="text-[11px] sm:text-sm px-1 sm:px-3">Total</TabsTrigger>
+            <TabsTrigger value="dividir" className="text-[11px] sm:text-sm px-1 sm:px-3">Dividir</TabsTrigger>
+            <TabsTrigger value="itens" className="text-[11px] sm:text-sm px-1 sm:px-3">Itens</TabsTrigger>
+            <TabsTrigger value="parcial" className="text-[11px] sm:text-sm px-1 sm:px-3">Parcial</TabsTrigger>
+            <TabsTrigger value="conjunto" className="text-[11px] sm:text-sm px-1 sm:px-3">+Comandas</TabsTrigger>
           </TabsList>
+
 
           <div className="mt-3">
             <TabsContent value="total" className="m-0">
@@ -193,7 +198,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
               <PaySplitTab total={total} pending={pending} orderId={orderId} companyId={order.company_id} onPaid={load} />
             </TabsContent>
             <TabsContent value="itens" className="m-0">
-              <PayItemsTab items={items} orderId={orderId} companyId={order.company_id} onPaid={load} />
+              <PayItemsTab items={items.filter(i => i.kitchen_status !== 'cancelado')} orderId={orderId} companyId={order.company_id} onPaid={load} />
             </TabsContent>
             <TabsContent value="parcial" className="m-0">
               <PayPartialTab pending={pending} orderId={orderId} companyId={order.company_id} onPaid={load} />
@@ -225,7 +230,7 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
             title: tableName,
             subtitle: `Conta · Pedido #${order.order_number}`,
             brand, showPrices: true, showUnitPrice: true,
-            items: items.map((i) => ({
+            items: items.filter(i => i.kitchen_status !== 'cancelado').map((i) => ({
               quantity: i.quantity, product_name: i.product_name,
               unit_price: i.unit_price, total_price: i.total_price,
             })),
@@ -272,10 +277,10 @@ function Totals({ total, paid, pending }: { total: number; paid: number; pending
 }
 function Box({ label, value, tone }: { label: string; value: string; tone?: 'success' | 'warning' }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={cn(
-        'font-display text-xl tabular-nums',
+        'font-display text-base sm:text-xl tabular-nums truncate',
         tone === 'success' && 'text-success',
         tone === 'warning' && 'text-warning',
       )}>{value}</div>
