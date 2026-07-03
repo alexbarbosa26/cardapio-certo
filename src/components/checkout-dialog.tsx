@@ -277,10 +277,10 @@ function Totals({ total, paid, pending }: { total: number; paid: number; pending
 }
 function Box({ label, value, tone }: { label: string; value: string; tone?: 'success' | 'warning' }) {
   return (
-    <div>
+    <div className="min-w-0">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={cn(
-        'font-display text-xl tabular-nums',
+        'font-display text-base sm:text-xl tabular-nums truncate',
         tone === 'success' && 'text-success',
         tone === 'warning' && 'text-warning',
       )}>{value}</div>
