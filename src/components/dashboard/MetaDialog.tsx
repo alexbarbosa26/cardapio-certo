@@ -64,12 +64,11 @@ export function MetaDialog({ open, onOpenChange, companyId, year, month, initial
         <div className="space-y-3">
           <div>
             <Label>Meta de faturamento (R$)</Label>
-            <Input
+            <DecimalInput
               autoFocus
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(v) => setValue(Number.isFinite(v) ? v : 0)}
               placeholder="0,00"
-              inputMode="decimal"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Defina o valor que sua operação pretende faturar no mês.
