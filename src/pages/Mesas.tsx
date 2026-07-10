@@ -173,13 +173,23 @@ function MesasPage() {
                 )}
 
                 {ocupada && (
-                  <Button
-                    size="sm" variant="outline"
-                    onClick={(e) => { e.stopPropagation(); setCheckout({ orderId: m.open_order_id!, tableId: m.id, tableName: m.name }); }}
-                    className="mt-3 w-full text-xs"
-                  >
-                    Fechar conta
-                  </Button>
+                  <div className="mt-3 grid grid-cols-2 gap-1.5">
+                    <Button
+                      size="sm" variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setTransfer({ orderId: m.open_order_id!, tableId: m.id, tableName: m.name }); }}
+                      className="text-[11px] px-2"
+                      title="Transferir pedido para outra mesa"
+                    >
+                      <ArrowLeftRight className="h-3 w-3 mr-1" /> Transferir
+                    </Button>
+                    <Button
+                      size="sm" variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setCheckout({ orderId: m.open_order_id!, tableId: m.id, tableName: m.name }); }}
+                      className="text-[11px] px-2"
+                    >
+                      Fechar conta
+                    </Button>
+                  </div>
                 )}
               </button>
             );
@@ -203,6 +213,16 @@ function MesasPage() {
           tableName={checkout.tableName}
           open
           onOpenChange={(o) => { if (!o) { setCheckout(null); load(); } }}
+        />
+      )}
+      {transfer && (
+        <TransferOrderDialog
+          orderId={transfer.orderId}
+          fromTableId={transfer.tableId}
+          fromTableName={transfer.tableName}
+          open
+          onOpenChange={(o) => { if (!o) setTransfer(null); }}
+          onTransferred={load}
         />
       )}
     </div>
