@@ -603,8 +603,8 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
             {weighted && (
               <div>
                 <Label htmlFor="grams">Peso (gramas)</Label>
-                <Input id="grams" type="number" inputMode="decimal" value={grams}
-                  onChange={(e) => setGrams(e.target.value)} placeholder="ex: 750" autoFocus />
+                <Input id="grams" type="text" inputMode="decimal" value={grams}
+                  onChange={(e) => setGrams(e.target.value.replace(/[^0-9.,]/g, ''))} placeholder="ex: 750" autoFocus />
                 <p className="text-xs text-muted-foreground mt-1">{fmtBRL(product.price_per_kg)}/kg</p>
               </div>
             )}

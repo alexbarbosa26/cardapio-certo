@@ -5,8 +5,9 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
+import { parseDecimal } from '@/lib/decimal';
 
 interface Props {
   open: boolean;
@@ -19,15 +20,15 @@ interface Props {
 }
 
 export function MetaDialog({ open, onOpenChange, companyId, year, month, initialValue, onSaved }: Props) {
-  const [value, setValue] = useState('');
+  const [value, setValue] = useState<number>(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) setValue(initialValue > 0 ? initialValue.toFixed(2).replace('.', ',') : '');
+    if (open) setValue(initialValue > 0 ? initialValue : 0);
   }, [open, initialValue]);
 
   const save = async () => {
-    const n = Number(value.replace(/\./g, '').replace(',', '.'));
+    const n = Number.isFinite(value) ? value : parseDecimal(value);
     if (!Number.isFinite(n) || n < 0) {
       toast.error('Informe um valor válido.');
       return;
@@ -63,12 +64,11 @@ export function MetaDialog({ open, onOpenChange, companyId, year, month, initial
         <div className="space-y-3">
           <div>
             <Label>Meta de faturamento (R$)</Label>
-            <Input
+            <DecimalInput
               autoFocus
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(v) => setValue(Number.isFinite(v) ? v : 0)}
               placeholder="0,00"
-              inputMode="decimal"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Defina o valor que sua operação pretende faturar no mês.

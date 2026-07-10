@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { fmtBRL, minutesSince } from '@/lib/format';
-import { Plus, Users, Clock } from 'lucide-react';
+import { Plus, Users, Clock, ArrowLeftRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { OrderSheet } from '@/components/order-sheet';
 import { CheckoutDialog } from '@/components/checkout-dialog';
+import { TransferOrderDialog } from '@/components/transfer-order-dialog';
 import { toast } from 'sonner';
 
 interface MesaCard {
@@ -27,6 +28,7 @@ function MesasPage() {
   const [loading, setLoading] = useState(true);
   const [orderSheet, setOrderSheet] = useState<{ tableId: string; orderId: string | null; tableName: string; createdNow: boolean } | null>(null);
   const [checkout, setCheckout] = useState<{ orderId: string; tableId: string; tableName: string } | null>(null);
+  const [transfer, setTransfer] = useState<{ orderId: string; tableId: string; tableName: string } | null>(null);
 
   const load = async () => {
     if (!profile) return;
@@ -171,13 +173,23 @@ function MesasPage() {
                 )}
 
                 {ocupada && (
-                  <Button
-                    size="sm" variant="outline"
-                    onClick={(e) => { e.stopPropagation(); setCheckout({ orderId: m.open_order_id!, tableId: m.id, tableName: m.name }); }}
-                    className="mt-3 w-full text-xs"
-                  >
-                    Fechar conta
-                  </Button>
+                  <div className="mt-3 grid grid-cols-2 gap-1.5">
+                    <Button
+                      size="sm" variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setTransfer({ orderId: m.open_order_id!, tableId: m.id, tableName: m.name }); }}
+                      className="text-[11px] px-2"
+                      title="Transferir pedido para outra mesa"
+                    >
+                      <ArrowLeftRight className="h-3 w-3 mr-1" /> Transferir
+                    </Button>
+                    <Button
+                      size="sm" variant="outline"
+                      onClick={(e) => { e.stopPropagation(); setCheckout({ orderId: m.open_order_id!, tableId: m.id, tableName: m.name }); }}
+                      className="text-[11px] px-2"
+                    >
+                      Fechar conta
+                    </Button>
+                  </div>
                 )}
               </button>
             );
@@ -201,6 +213,16 @@ function MesasPage() {
           tableName={checkout.tableName}
           open
           onOpenChange={(o) => { if (!o) { setCheckout(null); load(); } }}
+        />
+      )}
+      {transfer && (
+        <TransferOrderDialog
+          orderId={transfer.orderId}
+          fromTableId={transfer.tableId}
+          fromTableName={transfer.tableName}
+          open
+          onOpenChange={(o) => { if (!o) setTransfer(null); }}
+          onTransferred={load}
         />
       )}
     </div>
