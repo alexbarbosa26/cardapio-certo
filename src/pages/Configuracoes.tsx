@@ -130,7 +130,9 @@ function SettingsTab() {
   };
   if (!s) return null;
   const F = (k: string, label: string, step = '0.01') => (
-    <div><Label>{label}</Label><Input type="number" step={step} value={s[k] ?? 0} onChange={(e) => setS({ ...s, [k]: Number(e.target.value) })}/></div>
+    step === '1'
+      ? <div><Label>{label}</Label><Input type="number" step={step} value={s[k] ?? 0} onChange={(e) => setS({ ...s, [k]: Number(e.target.value) })}/></div>
+      : <div><Label>{label}</Label><DecimalInput value={s[k] ?? 0} onChange={(v) => setS({ ...s, [k]: Number.isFinite(v) ? v : 0 })}/></div>
   );
   return (
     <div className="rounded-xl border border-border bg-card p-5 mt-4 space-y-4">
