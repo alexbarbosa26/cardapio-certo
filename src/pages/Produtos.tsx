@@ -145,7 +145,7 @@ function ProdutosPage() {
             <div className="space-y-3">
               <div><Label>Nome</Label><Input value={editing.name ?? ''} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Preço (R$)</Label><Input type="number" step="0.01" value={editing.price ?? 0} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} /></div>
+                <div><Label>Preço (R$)</Label><DecimalInput value={editing.price ?? 0} onChange={(v) => setEditing({ ...editing, price: Number.isFinite(v) ? v : 0 })} /></div>
                 <div>
                   <Label>Categoria</Label>
                   <select value={editing.category_id ?? ''} onChange={(e) => setEditing({ ...editing, category_id: e.target.value || null })}
@@ -168,8 +168,8 @@ function ProdutosPage() {
               </div>
               {editing.is_weighted && (
                 <div><Label>Preço por kg (R$)</Label>
-                  <Input type="number" step="0.01" value={editing.price_per_kg ?? 0}
-                    onChange={(e) => setEditing({ ...editing, price_per_kg: Number(e.target.value) })} />
+                  <DecimalInput value={editing.price_per_kg ?? 0}
+                    onChange={(v) => setEditing({ ...editing, price_per_kg: Number.isFinite(v) ? v : 0 })} />
                 </div>
               )}
               {editing.id && profile && (

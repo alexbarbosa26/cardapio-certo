@@ -173,8 +173,8 @@ export function CheckoutDialog({ orderId, tableId, tableName, open, onOpenChange
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-xs">Desconto</Label>
-            <Input type="number" min={0} step="0.01" value={discount}
-              onChange={(e) => setDiscount(Number(e.target.value) || 0)}
+            <DecimalInput min={0} value={discount}
+              onChange={(v) => setDiscount(Number.isFinite(v) ? v : 0)}
               className="h-8 w-20 sm:w-24" />
             <Switch checked={withFee} onCheckedChange={setWithFee} />
           </div>

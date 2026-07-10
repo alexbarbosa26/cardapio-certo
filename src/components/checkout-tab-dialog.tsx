@@ -152,14 +152,14 @@ export function CheckoutTabDialog({ tabId, open, onOpenChange, onFinalized }: Pr
         <div className="flex items-center justify-between rounded-lg border border-border bg-card p-2.5">
           <div className="flex items-center gap-2 text-xs">
             <Label className="text-xs">Taxa serviço (%)</Label>
-            <Input type="number" min={0} step="0.5" value={feePct} disabled={!withFee}
-              onChange={(e) => setFeePct(Number(e.target.value) || 0)} className="h-8 w-20" />
+            <DecimalInput min={0} value={feePct} disabled={!withFee}
+              onChange={(v) => setFeePct(Number.isFinite(v) ? v : 0)} className="h-8 w-20" />
             <Switch checked={withFee} onCheckedChange={setWithFee} />
           </div>
           <div className="flex items-center gap-2">
             <Label className="text-xs">Desconto</Label>
-            <Input type="number" min={0} step="0.01" value={discount}
-              onChange={(e) => setDiscount(Number(e.target.value) || 0)} className="h-8 w-24" />
+            <DecimalInput min={0} value={discount}
+              onChange={(v) => setDiscount(Number.isFinite(v) ? v : 0)} className="h-8 w-24" />
           </div>
         </div>
 
