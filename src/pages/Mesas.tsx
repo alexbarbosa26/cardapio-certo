@@ -173,19 +173,19 @@ function MesasPage() {
                 )}
 
                 {ocupada && (
-                  <div className="mt-3 grid grid-cols-2 gap-1.5">
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     <Button
                       size="sm" variant="outline"
                       onClick={(e) => { e.stopPropagation(); setTransfer({ orderId: m.open_order_id!, tableId: m.id, tableName: m.name }); }}
-                      className="text-[11px] px-2"
+                      className="text-[10px] sm:text-[11px] px-1.5 sm:px-2 h-7 sm:h-8 whitespace-nowrap justify-center"
                       title="Transferir pedido para outra mesa"
                     >
-                      <ArrowLeftRight className="h-3 w-3 mr-1" /> Transferir
+                      <ArrowLeftRight className="h-3 w-3 mr-1 shrink-0" /> Transferir
                     </Button>
                     <Button
                       size="sm" variant="outline"
                       onClick={(e) => { e.stopPropagation(); setCheckout({ orderId: m.open_order_id!, tableId: m.id, tableName: m.name }); }}
-                      className="text-[11px] px-2"
+                      className="text-[10px] sm:text-[11px] px-1.5 sm:px-2 h-7 sm:h-8 whitespace-nowrap justify-center"
                     >
                       Fechar conta
                     </Button>
