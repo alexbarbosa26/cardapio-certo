@@ -143,7 +143,7 @@ function FiadoPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="grid grid-cols-12 gap-2 px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
+          <div className="hidden sm:grid grid-cols-12 gap-2 px-4 py-2 text-[10px] uppercase tracking-wider text-muted-foreground border-b border-border">
             <div className="col-span-4">Cliente</div>
             <div className="col-span-2">Telefone</div>
             <div className="col-span-2 text-center">Comandas</div>
@@ -154,18 +154,42 @@ function FiadoPage() {
             {filtered.map((c) => (
               <li key={c.id}>
                 <button onClick={() => setSelectedId(c.id)}
-                  className="w-full grid grid-cols-12 gap-2 items-center px-4 py-3 text-left hover:bg-accent/30 transition">
-                  <div className="col-span-4 font-medium flex items-center gap-2">
-                    {c.name}
+                  className="w-full text-left hover:bg-accent/30 transition px-4 py-3 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center">
+                  {/* Mobile layout */}
+                  <div className="sm:hidden flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium flex items-center gap-2 flex-wrap">
+                        <span className="truncate">{c.name}</span>
+                        {c.total_due > 0 && c.last_at && daysSince(c.last_at) > 30 && (
+                          <Badge variant="outline" className="text-[9px] text-warning border-warning/40">Atrasada</Badge>
+                        )}
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span>{c.phone ?? 'Sem telefone'}</span>
+                        <span>·</span>
+                        <span>{c.open_count} comanda(s)</span>
+                        {c.last_at && <><span>·</span><span>{fmtDate(c.last_at)}</span></>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <div className={cn('text-right tabular-nums font-semibold text-sm',
+                        c.total_due > 0 ? 'text-warning' : 'text-success')}>{fmtBRL(c.total_due)}</div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+
+                  {/* Desktop layout */}
+                  <div className="hidden sm:flex col-span-4 font-medium items-center gap-2 min-w-0">
+                    <span className="truncate">{c.name}</span>
                     {c.total_due > 0 && c.last_at && daysSince(c.last_at) > 30 && (
                       <Badge variant="outline" className="text-[9px] text-warning border-warning/40">Atrasada</Badge>
                     )}
                   </div>
-                  <div className="col-span-2 text-sm text-muted-foreground truncate">{c.phone ?? '—'}</div>
-                  <div className="col-span-2 text-center text-sm">{c.open_count}</div>
-                  <div className={cn('col-span-2 text-right tabular-nums font-semibold',
+                  <div className="hidden sm:block col-span-2 text-sm text-muted-foreground truncate">{c.phone ?? '—'}</div>
+                  <div className="hidden sm:block col-span-2 text-center text-sm">{c.open_count}</div>
+                  <div className={cn('hidden sm:block col-span-2 text-right tabular-nums font-semibold',
                     c.total_due > 0 ? 'text-warning' : 'text-success')}>{fmtBRL(c.total_due)}</div>
-                  <div className="col-span-2 text-right text-xs text-muted-foreground flex items-center justify-end gap-1">
+                  <div className="hidden sm:flex col-span-2 text-right text-xs text-muted-foreground items-center justify-end gap-1">
                     {c.last_at ? fmtDate(c.last_at) : '—'} <ChevronRight className="h-3 w-3" />
                   </div>
                 </button>
