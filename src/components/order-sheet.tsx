@@ -279,9 +279,9 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                   )}>
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-mono text-xs text-muted-foreground">{it.quantity}×</span>
-                          <span className={cn('text-sm font-medium truncate', canceled && 'line-through')}>{it.product_name}</span>
+                        <div className="flex items-baseline gap-2 min-w-0">
+                          <span className="font-mono text-xs text-muted-foreground shrink-0">{it.quantity}×</span>
+                          <span className={cn('text-sm font-medium break-words min-w-0 flex-1', canceled && 'line-through')}>{it.product_name}</span>
                         </div>
                         {it.options.length > 0 && (
                           <div className="mt-1 text-[11px] text-muted-foreground">
