@@ -223,7 +223,7 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
               {items.map((it) => (
                 <div key={it.id} className="rounded-lg border border-border bg-card p-3 flex items-start gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{it.product_name}</div>
+                    <div className="text-sm font-medium break-words">{it.product_name}</div>
                     <div className="text-[11px] text-muted-foreground">
                       {it.item_type === 'peso' && it.weight_grams
                         ? `${(it.weight_grams/1000).toFixed(3)} kg × ${fmtBRL(it.unit_price)}/kg`
