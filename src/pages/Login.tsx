@@ -70,7 +70,7 @@ function LoginPage() {
             'radial-gradient(circle at 20% 30%, oklch(0.72 0.13 75) 0, transparent 40%), radial-gradient(circle at 80% 70%, oklch(0.72 0.13 75) 0, transparent 40%)',
         }}/>
         <div className="relative flex h-full flex-col justify-between p-16">
-          <div className="text-sm font-medium uppercase tracking-[0.2em] text-accent">White Label · 2026</div>
+          <div />
           <div>
             <p className="font-display text-5xl leading-tight text-balance">
               "A operação inteira do salão à cozinha, num só lugar."
