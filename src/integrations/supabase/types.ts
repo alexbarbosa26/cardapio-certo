@@ -1078,6 +1078,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          accepted_at: string | null
+          accepted_by: string | null
           canceled_at: string | null
           canceled_by: string | null
           cancellation_reason: string | null
@@ -1088,9 +1090,12 @@ export type Database = {
           customer_name: string | null
           customer_notes: string | null
           customer_phone: string | null
+          delivered_at: string | null
           delivery_address: Json | null
           delivery_fee: number
           discount: number
+          dispatched_at: string | null
+          estimated_minutes: number | null
           id: string
           is_credit: boolean
           opened_at: string
@@ -1099,6 +1104,8 @@ export type Database = {
           paid_amount: number
           payment_method: string | null
           public_token: string
+          ready_at: string | null
+          rejection_reason: string | null
           service_fee_amount: number
           service_fee_percentage: number
           service_mode: string
@@ -1109,6 +1116,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
           canceled_at?: string | null
           canceled_by?: string | null
           cancellation_reason?: string | null
@@ -1119,9 +1128,12 @@ export type Database = {
           customer_name?: string | null
           customer_notes?: string | null
           customer_phone?: string | null
+          delivered_at?: string | null
           delivery_address?: Json | null
           delivery_fee?: number
           discount?: number
+          dispatched_at?: string | null
+          estimated_minutes?: number | null
           id?: string
           is_credit?: boolean
           opened_at?: string
@@ -1130,6 +1142,8 @@ export type Database = {
           paid_amount?: number
           payment_method?: string | null
           public_token?: string
+          ready_at?: string | null
+          rejection_reason?: string | null
           service_fee_amount?: number
           service_fee_percentage?: number
           service_mode?: string
@@ -1140,6 +1154,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
           canceled_at?: string | null
           canceled_by?: string | null
           cancellation_reason?: string | null
@@ -1150,9 +1166,12 @@ export type Database = {
           customer_name?: string | null
           customer_notes?: string | null
           customer_phone?: string | null
+          delivered_at?: string | null
           delivery_address?: Json | null
           delivery_fee?: number
           discount?: number
+          dispatched_at?: string | null
+          estimated_minutes?: number | null
           id?: string
           is_credit?: boolean
           opened_at?: string
@@ -1161,6 +1180,8 @@ export type Database = {
           paid_amount?: number
           payment_method?: string | null
           public_token?: string
+          ready_at?: string | null
+          rejection_reason?: string | null
           service_fee_amount?: number
           service_fee_percentage?: number
           service_mode?: string
@@ -2061,6 +2082,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_delivery_order_status: {
+        Args: {
+          _estimated_minutes?: number
+          _new_status: string
+          _order_id: string
+          _reason?: string
+        }
+        Returns: Json
+      }
       company_plan_limits: {
         Args: { _company: string }
         Returns: {
@@ -2137,6 +2167,10 @@ export type Database = {
         | "cancelado"
         | "aguardando_aceite"
         | "recusado"
+        | "em_preparo"
+        | "pronto"
+        | "em_entrega"
+        | "entregue"
       payment_method: "dinheiro" | "pix" | "debito" | "credito"
       payment_status: "ativo" | "cancelado"
       subscription_status:
@@ -2308,6 +2342,10 @@ export const Constants = {
         "cancelado",
         "aguardando_aceite",
         "recusado",
+        "em_preparo",
+        "pronto",
+        "em_entrega",
+        "entregue",
       ],
       payment_method: ["dinheiro", "pix", "debito", "credito"],
       payment_status: ["ativo", "cancelado"],
