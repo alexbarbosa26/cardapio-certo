@@ -200,7 +200,7 @@ function ScreenshotFrame({
             loading={priority ? 'eager' : 'lazy'}
             decoding="async"
             onError={() => setErrored(true)}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain object-top"
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
