@@ -969,7 +969,7 @@ export type Database = {
           paid_quantity: number
           payment_status: Database["public"]["Enums"]["item_payment_status"]
           price_per_kg: number | null
-          product_id: string
+          product_id: string | null
           product_name: string
           quantity: number
           ready_at: string | null
@@ -992,7 +992,7 @@ export type Database = {
           paid_quantity?: number
           payment_status?: Database["public"]["Enums"]["item_payment_status"]
           price_per_kg?: number | null
-          product_id: string
+          product_id?: string | null
           product_name: string
           quantity?: number
           ready_at?: string | null
@@ -1015,7 +1015,7 @@ export type Database = {
           paid_quantity?: number
           payment_status?: Database["public"]["Enums"]["item_payment_status"]
           price_per_kg?: number | null
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           quantity?: number
           ready_at?: string | null
@@ -1081,20 +1081,30 @@ export type Database = {
           canceled_at: string | null
           canceled_by: string | null
           cancellation_reason: string | null
+          change_for: number | null
+          client_token: string | null
           closed_at: string | null
           company_id: string
           customer_name: string | null
+          customer_notes: string | null
+          customer_phone: string | null
+          delivery_address: Json | null
+          delivery_fee: number
           discount: number
           id: string
           is_credit: boolean
           opened_at: string
           order_number: number
+          origin: string
           paid_amount: number
+          payment_method: string | null
+          public_token: string
           service_fee_amount: number
           service_fee_percentage: number
+          service_mode: string
           status: Database["public"]["Enums"]["order_status"]
           subtotal: number
-          table_id: string
+          table_id: string | null
           total: number
           user_id: string | null
         }
@@ -1102,20 +1112,30 @@ export type Database = {
           canceled_at?: string | null
           canceled_by?: string | null
           cancellation_reason?: string | null
+          change_for?: number | null
+          client_token?: string | null
           closed_at?: string | null
           company_id: string
           customer_name?: string | null
+          customer_notes?: string | null
+          customer_phone?: string | null
+          delivery_address?: Json | null
+          delivery_fee?: number
           discount?: number
           id?: string
           is_credit?: boolean
           opened_at?: string
           order_number?: number
+          origin?: string
           paid_amount?: number
+          payment_method?: string | null
+          public_token?: string
           service_fee_amount?: number
           service_fee_percentage?: number
+          service_mode?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
-          table_id: string
+          table_id?: string | null
           total?: number
           user_id?: string | null
         }
@@ -1123,20 +1143,30 @@ export type Database = {
           canceled_at?: string | null
           canceled_by?: string | null
           cancellation_reason?: string | null
+          change_for?: number | null
+          client_token?: string | null
           closed_at?: string | null
           company_id?: string
           customer_name?: string | null
+          customer_notes?: string | null
+          customer_phone?: string | null
+          delivery_address?: Json | null
+          delivery_fee?: number
           discount?: number
           id?: string
           is_credit?: boolean
           opened_at?: string
           order_number?: number
+          origin?: string
           paid_amount?: number
+          payment_method?: string | null
+          public_token?: string
           service_fee_amount?: number
           service_fee_percentage?: number
+          service_mode?: string
           status?: Database["public"]["Enums"]["order_status"]
           subtotal?: number
-          table_id?: string
+          table_id?: string | null
           total?: number
           user_id?: string | null
         }
@@ -2039,9 +2069,25 @@ export type Database = {
           max_users: number
         }[]
       }
+      create_public_order: {
+        Args: {
+          _address: Json
+          _change_for: number
+          _client_token: string
+          _customer_name: string
+          _customer_notes: string
+          _customer_phone: string
+          _items: Json
+          _payment_method: string
+          _service_mode: string
+          _slug: string
+        }
+        Returns: Json
+      }
       current_company_id: { Args: never; Returns: string }
       current_open_register: { Args: { _company: string }; Returns: string }
       get_public_menu: { Args: { _slug: string }; Returns: Json }
+      get_public_order: { Args: { _token: string }; Returns: Json }
       get_public_settings: {
         Args: never
         Returns: {
@@ -2085,7 +2131,12 @@ export type Database = {
         | "entregue"
         | "cancelado"
       option_selection_type: "unica" | "multipla"
-      order_status: "aberto" | "fechado" | "cancelado"
+      order_status:
+        | "aberto"
+        | "fechado"
+        | "cancelado"
+        | "aguardando_aceite"
+        | "recusado"
       payment_method: "dinheiro" | "pix" | "debito" | "credito"
       payment_status: "ativo" | "cancelado"
       subscription_status:
@@ -2251,7 +2302,13 @@ export const Constants = {
         "cancelado",
       ],
       option_selection_type: ["unica", "multipla"],
-      order_status: ["aberto", "fechado", "cancelado"],
+      order_status: [
+        "aberto",
+        "fechado",
+        "cancelado",
+        "aguardando_aceite",
+        "recusado",
+      ],
       payment_method: ["dinheiro", "pix", "debito", "credito"],
       payment_status: ["ativo", "cancelado"],
       subscription_status: [
