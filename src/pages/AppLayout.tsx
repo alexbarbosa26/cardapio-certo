@@ -5,7 +5,7 @@ import { useTenantBranding } from '@/hooks/use-tenant-branding';
 import {
   LayoutDashboard, UtensilsCrossed, ChefHat, Package, Users, Wallet,
   BarChart3, Settings as SettingsIcon, MessageSquare, Receipt, LogOut, Menu, ChefHat as Logo, ListPlus,
-  ClipboardList, CreditCard, BookmarkPlus,
+  ClipboardList, CreditCard, BookmarkPlus, Smartphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
