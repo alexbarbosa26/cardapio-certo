@@ -1,70 +1,64 @@
-# Gestão Global de Usuários (Super Admin)
 
-Implementação incremental sobre a estrutura existente (`admin-users` Edge Function, tabelas `profiles`/`user_roles`/`companies`, layout `/global/*`). Nenhuma refatoração de auth, permissões ou tenants — apenas extensão para o superadmin.
+# Módulo Cardápio Digital + Delivery — Plano por fases
 
-## Escopo
+Implementação incremental. Reaproveita `products`, `option_groups`/`option_items`, `orders`/`order_items`, cozinha (KDS), impressão (`print-order`) e permissões existentes. Nada nos fluxos atuais é refatorado.
 
-### 1. Backend — Edge Function `admin-users` (extensão)
-Adicionar novas actions restritas a `super_admin`:
-- `list_all` — lista usuários de todas as empresas (join com `profiles`, `user_roles`, `companies`, `auth.users` p/ `created_at`/`last_sign_in_at`). Filtros: busca por nome/email, empresa, role, status.
-- `create_global` — cria usuário e vincula à empresa escolhida. Role permitida: `admin`, `staff` ou `super_admin` (este último exige confirmação no frontend).
-- `update_global` — edita nome, empresa (`company_id`), role, status. Bloqueia auto-remoção do último `super_admin` ativo.
-- `reset_password_global` — define nova senha (via `auth.admin.updateUserById`).
+## Reutilização mapeada
+- **Produtos e adicionais**: itens do cardápio referenciam `products` (FK), sem duplicar cadastro. Adicionais reaproveitam `option_groups`/`option_items` já usados no `order-sheet`.
+- **Pedidos**: pedidos de delivery gravam em `orders` (`origin='digital_menu'`, `service_mode='delivery'|'pickup'`, sem `table_id`) e `order_items`. Isso preserva cozinha, caixa, histórico e impressão sem alterações.
+- **Cozinha/Impressão**: só após aceite, o pedido ganha `status='aberto'` e aparece no KDS/impressão atuais. Antes disso fica em `status='aguardando_aceite'` (novo valor), invisível para cozinha.
+- **Permissões**: nova permission `manage_digital_menu` (admin) e feature flag por empresa (`digital_menu_enabled`).
 
-Regras de segurança (todas verificadas no servidor):
-- Todas as actions novas exigem `role === 'super_admin'` do caller.
-- Actions antigas (`create`, `update`) continuam funcionando para admins de empresa (fluxo `/usuarios` intacto), mas ganham guarda: **não podem tocar em usuários com role `super_admin`** nem promover ninguém a `super_admin`.
-- Antes de rebaixar/inativar um super_admin, contar quantos existem — impedir se for o último.
-- Auditoria: gravar em `audit_logs` (já existe) evento por ação: `user.created`, `user.updated`, `user.role_changed`, `user.company_changed`, `user.password_reset`, `user.status_changed`. Nunca logar senha.
+## Fase 1 (esta entrega) — Configuração + Cardápio público read-only
 
-### 2. Frontend — nova página `/global/usuarios`
-- Novo item de menu em `GlobalAdminLayout` (ícone Users).
-- `GlobalUsuarios.tsx`: tabela com nome, email, empresa, role (badge colorido), status, criado em, último acesso. Filtros de busca/empresa/role. Ações: Editar, Resetar senha.
-- Diálogo "Novo usuário": nome, email, senha + confirmação, empresa (select carregando `companies`), role (admin/staff/super_admin com aviso). Super_admin pode ser criado sem empresa.
-- Diálogo "Editar": nome, empresa, role, status.
-- Diálogo "Resetar senha": nova senha + confirmação.
+**Backend (migration)**
+- `companies`: `digital_menu_enabled boolean`, `digital_menu_contracted boolean`, `slug text unique`.
+- `digital_menu_settings` (1:1 com company): logo, capa, apresentação, telefone, whatsapp, endereço, instagram, cor primária, tempo médio preparo, pedido mínimo, taxa entrega fixa, entrega/retirada habilitadas, aceitando_pedidos, observações.
+- `digital_menu_hours` (company_id, weekday 0-6, open bool, period1_start/end, period2_start/end).
+- `digital_menu_categories` (company_id, name, description, sort_order, active).
+- `digital_menu_items` (company_id, category_id, product_id nullable, name, description, price, image_url, active, available_delivery, featured, sort_order, extra_prep_min, sold_out).
+- RLS: SELECT público (anon) apenas via função `public.get_public_menu(_slug text)` SECURITY DEFINER que devolve JSON já sanitizado (nada de exposição direta de tabelas ao anon). Admin/staff da empresa via `current_company_id()`.
+- GRANTs conforme padrão do projeto; superadmin com bypass via `is_super_admin()`.
 
-### 3. Componente compartilhado `PasswordStrengthField`
-- Input com toggle de visibilidade.
-- Medidor visual (fraca/média/forte) baseado em: ≥8 chars, maiúscula, minúscula, número, símbolo, HIBP-safe (Supabase valida no servidor).
-- Lista de requisitos com check verde/cinza em tempo real.
-- Erros do servidor traduzidos: senha vazada (HIBP), muito curta, muito comum, etc.
-- Reutilizado em: criação global, reset global, e opcionalmente no fluxo `/usuarios` atual.
+**Frontend admin — nova página `/cardapio`**
+- Guard: exige `digital_menu_contracted && digital_menu_enabled` (senão card informativo).
+- Abas: **Configurações**, **Horários**, **Categorias**, **Itens**, **Prévia & QR**.
+- Categorias: CRUD + reordenar (setas up/down, sem lib nova).
+- Itens: CRUD com seletor de produto existente (autocomplete), upload de imagem no bucket `branding` (reuso), toggle esgotado/ativo/destaque.
+- Prévia: iframe/`<Link target=_blank>` para `/cardapio/:slug`. Botão copiar link + QR code (lib `qrcode` já leve, ~15KB) com download PNG.
 
-### 4. Rota e guard
-- `App.tsx`: rota `/global/usuarios` dentro de `RequireSuperAdmin` + `GlobalAdminLayout`.
-- Nada muda para `admin`/`staff` — eles não veem o menu, e o RequireSuperAdmin já bloqueia URL direta.
+**Frontend público — rota `/cardapio/:slug`** (fora de todos os guards)
+- Página SSR-like via React Query: chama RPC `get_public_menu(slug)`.
+- Layout mobile-first, sem gradiente exagerado: header com logo+nome+status aberto/fechado, busca, lista de categorias sticky, cards de item com foto opcional, badge "Esgotado" quando aplicável.
+- Estado fechado: banner "Abrimos hoje às HH:MM" calculado do lado cliente a partir dos horários retornados.
+- Sem carrinho/checkout ainda (Fase 2). Cliente vê o cardápio; botão "Fazer pedido" fica desabilitado com tooltip "Em breve".
+- SEO: `<title>` e meta por empresa; Open Graph com logo.
 
-## Fora de escopo (por segurança e brevidade)
-- Não alterar `RequireCompanyAccess`, `AuthProvider`, tipo `AppRole` (já inclui `super_admin`).
-- Não migrar dados nem alterar tabelas — reaproveitar `audit_logs`, `profiles`, `user_roles`.
-- Não expor `SERVICE_ROLE_KEY` no frontend (mantido só na Edge Function).
-- Envio de link de recovery por email fica para depois (usa apenas reset manual).
+**Arquivos**
+- Migration única com tabelas + RLS + RPC.
+- `src/pages/admin/CardapioDigital.tsx` + subcomponentes por aba em `src/components/cardapio/*`.
+- `src/pages/public/CardapioPublico.tsx` (rota `/cardapio/:slug`, sem AppLayout).
+- `src/lib/digital-menu.ts` (client helpers).
+- `App.tsx`: rota admin dentro de `RequireCompanyAccess`, rota pública fora.
+- Item de menu no `AppLayout` condicional à feature flag.
 
-## Detalhes técnicos
+**Validação Fase 1**
+- Empresa sem flag não vê o menu nem acessa `/cardapio` direto.
+- Cardápio público carrega em <1s (dados via 1 RPC), responsivo, mostra fechado fora de horário.
+- Nenhum impacto em produtos/pedidos/cozinha atuais (nenhum arquivo desses módulos alterado).
 
-**Fetch de `last_sign_in_at`**: usar `admin.auth.admin.listUsers({ page, perPage })` na Edge Function e cruzar com `profiles` por id (o super_admin já tem permissão de listar). Paginação server-side (50/pág).
+## Fases seguintes (apenas escopo, sem código agora)
 
-**Proteção do último super_admin**:
-```sql
-select count(*) from user_roles where role='super_admin'
-  and user_id in (select id from profiles where status='ativo')
-```
-Se count=1 e o alvo é esse mesmo user, bloquear rebaixar/inativar.
+- **Fase 2** — Carrinho, checkout público sem cadastro, cliente/endereço mínimo, taxa, formas de pagamento, troco, idempotência (chave `client_token` no insert), criação do `orders` com `status='aguardando_aceite'`.
+- **Fase 3** — Tela `/cardapio/pedidos` (aguardando aceite / em andamento), botões Aceitar/Recusar, envio para KDS (muda status para `aberto` e insere `order_items` conforme fluxo atual), impressão reutilizando `print-order`.
+- **Fase 4** — Página pública `/cardapio/:slug/pedido/:public_token` com timeline e polling leve (Realtime canal filtrado por token).
+- **Fase 5** — Promoções destacadas + relatórios (join em `orders.origin='digital_menu'`).
 
-**Bloqueio de escalação por admin de empresa** (action `update` já existente):
-```ts
-const { data: targetRole } = await admin.from('user_roles')
-  .select('role').eq('user_id', user_id).maybeSingle();
-if (targetRole?.role === 'super_admin') return json({ error: 'Não autorizado' }, 403);
-if (newRole === 'super_admin' && callerRole !== 'super_admin')
-  return json({ error: 'Não autorizado' }, 403);
-```
+## Fora de escopo
+- Pagamento online real (Pix/cartão), taxa por bairro/CEP, integrações com iFood/WhatsApp Business, PWA/notificações push, criação de conta do cliente.
 
-**Arquivos afetados**:
-- `supabase/functions/admin-users/index.ts` (adicionar actions, refatorar guarda de role)
-- `src/lib/admin-users.ts` (novas funções `adminListAllUsers`, `adminCreateGlobalUser`, `adminUpdateGlobalUser`, `adminResetPasswordGlobal`)
-- `src/pages/global/GlobalUsuarios.tsx` (novo)
-- `src/pages/global/GlobalAdminLayout.tsx` (item de menu)
-- `src/components/password-strength-field.tsx` (novo)
-- `src/App.tsx` (rota)
+## Detalhes técnicos relevantes
+- RPC pública `get_public_menu(_slug)` retorna `jsonb` com company básica + settings + hours + categorias com itens (nada de e-mail, telefone interno de staff, etc.).
+- Slug validado por regex `^[a-z0-9-]{3,40}$`, unique index.
+- Feature flag lida via `settings` já hidratado no `useAuth`? Não — vamos ler de `companies` em `TenantBrandingProvider` (já busca a empresa) para evitar nova ida ao banco.
+- Cor primária do cardápio limitada a paleta segura (contraste AA via helper simples), sem permitir fundo branco em texto claro.

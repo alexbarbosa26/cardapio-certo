@@ -236,6 +236,9 @@ export type Database = {
           accent_color: string | null
           city: string | null
           created_at: string
+          digital_menu_contracted: boolean
+          digital_menu_enabled: boolean
+          digital_menu_slug: string | null
           document: string | null
           id: string
           internal_notes: string | null
@@ -255,6 +258,9 @@ export type Database = {
           accent_color?: string | null
           city?: string | null
           created_at?: string
+          digital_menu_contracted?: boolean
+          digital_menu_enabled?: boolean
+          digital_menu_slug?: string | null
           document?: string | null
           id?: string
           internal_notes?: string | null
@@ -274,6 +280,9 @@ export type Database = {
           accent_color?: string | null
           city?: string | null
           created_at?: string
+          digital_menu_contracted?: boolean
+          digital_menu_enabled?: boolean
+          digital_menu_slug?: string | null
           document?: string | null
           id?: string
           internal_notes?: string | null
@@ -584,6 +593,247 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      digital_menu_categories: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_menu_categories_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_menu_hours: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_open: boolean
+          period1_end: string | null
+          period1_start: string | null
+          period2_end: string | null
+          period2_start: string | null
+          updated_at: string
+          weekday: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          period1_end?: string | null
+          period1_start?: string | null
+          period2_end?: string | null
+          period2_start?: string | null
+          updated_at?: string
+          weekday: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_open?: boolean
+          period1_end?: string | null
+          period1_start?: string | null
+          period2_end?: string | null
+          period2_start?: string | null
+          updated_at?: string
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_menu_hours_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_menu_items: {
+        Row: {
+          active: boolean
+          available_delivery: boolean
+          category_id: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          extra_prep_min: number
+          featured: boolean
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          product_id: string | null
+          sold_out: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          available_delivery?: boolean
+          category_id?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          extra_prep_min?: number
+          featured?: boolean
+          id?: string
+          image_url?: string | null
+          name: string
+          price?: number
+          product_id?: string | null
+          sold_out?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          available_delivery?: boolean
+          category_id?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          extra_prep_min?: number
+          featured?: boolean
+          id?: string
+          image_url?: string | null
+          name?: string
+          price?: number
+          product_id?: string | null
+          sold_out?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_menu_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "digital_menu_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_menu_items_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "digital_menu_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_menu_settings: {
+        Row: {
+          accepting_orders: boolean
+          address: string | null
+          avg_prep_min: number
+          company_id: string
+          cover_url: string | null
+          created_at: string
+          delivery_enabled: boolean
+          delivery_fee: number
+          display_name: string | null
+          free_delivery_min: number | null
+          instagram: string | null
+          min_order_amount: number
+          notes: string | null
+          phone: string | null
+          pickup_enabled: boolean
+          presentation: string | null
+          primary_color: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          accepting_orders?: boolean
+          address?: string | null
+          avg_prep_min?: number
+          company_id: string
+          cover_url?: string | null
+          created_at?: string
+          delivery_enabled?: boolean
+          delivery_fee?: number
+          display_name?: string | null
+          free_delivery_min?: number | null
+          instagram?: string | null
+          min_order_amount?: number
+          notes?: string | null
+          phone?: string | null
+          pickup_enabled?: boolean
+          presentation?: string | null
+          primary_color?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          accepting_orders?: boolean
+          address?: string | null
+          avg_prep_min?: number
+          company_id?: string
+          cover_url?: string | null
+          created_at?: string
+          delivery_enabled?: boolean
+          delivery_fee?: number
+          display_name?: string | null
+          free_delivery_min?: number | null
+          instagram?: string | null
+          min_order_amount?: number
+          notes?: string | null
+          phone?: string | null
+          pickup_enabled?: boolean
+          presentation?: string | null
+          primary_color?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_menu_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       option_groups: {
         Row: {
@@ -1791,6 +2041,7 @@ export type Database = {
       }
       current_company_id: { Args: never; Returns: string }
       current_open_register: { Args: { _company: string }; Returns: string }
+      get_public_menu: { Args: { _slug: string }; Returns: Json }
       get_public_settings: {
         Args: never
         Returns: {

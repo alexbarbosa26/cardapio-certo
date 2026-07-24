@@ -15,6 +15,9 @@ export interface TenantBranding {
   enablePrinting: boolean;
   enableServiceFee: boolean;
   enableCreditAccounts: boolean;
+  digitalMenuContracted: boolean;
+  digitalMenuEnabled: boolean;
+  digitalMenuSlug: string | null;
   tabNumberingMode: 'manual' | 'auto';
   receiptMessage: string | null;
   establishmentData: Record<string, unknown>;
@@ -41,6 +44,9 @@ const DEFAULTS: Omit<TenantBranding, 'refresh'> = {
   enablePrinting: true,
   enableServiceFee: true,
   enableCreditAccounts: false,
+  digitalMenuContracted: false,
+  digitalMenuEnabled: false,
+  digitalMenuSlug: null,
   tabNumberingMode: 'manual',
   receiptMessage: null,
   establishmentData: {},
@@ -97,7 +103,7 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
     if (!profile?.company_id) { setState(DEFAULTS); return; }
     const [{ data: settings }, { data: company }, plan] = await Promise.all([
       supabase.from('settings').select('*').eq('company_id', profile.company_id).maybeSingle(),
-      supabase.from('companies').select('logo_url, primary_color, secondary_color, accent_color, trade_name, name').eq('id', profile.company_id).maybeSingle(),
+      supabase.from('companies').select('logo_url, primary_color, secondary_color, accent_color, trade_name, name, digital_menu_contracted, digital_menu_enabled, digital_menu_slug').eq('id', profile.company_id).maybeSingle(),
       subscription?.plan_id
         ? supabase.from('plans').select('*').eq('id', subscription.plan_id).maybeSingle().then((r) => r.data)
         : Promise.resolve(null),
@@ -116,6 +122,9 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
       enablePrinting: settings?.enable_printing ?? true,
       enableServiceFee: settings?.enable_service_fee ?? true,
       enableCreditAccounts: (settings as any)?.enable_credit_accounts ?? false,
+      digitalMenuContracted: (company as any)?.digital_menu_contracted ?? false,
+      digitalMenuEnabled: (company as any)?.digital_menu_enabled ?? false,
+      digitalMenuSlug: (company as any)?.digital_menu_slug ?? null,
       tabNumberingMode: (settings?.tab_numbering_mode as 'manual' | 'auto') ?? 'manual',
       receiptMessage: settings?.receipt_message ?? null,
       establishmentData: (settings?.establishment_data as Record<string, unknown>) ?? {},
