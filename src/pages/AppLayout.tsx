@@ -28,6 +28,7 @@ const NAV: NavItem[] = [
   { key: 'historico', to: '/historico-pedidos', label: 'Histórico de pedidos', icon: ClipboardList, admin: true },
   { key: 'relatorios', to: '/relatorios', label: 'Relatórios', icon: BarChart3, admin: true },
   { key: 'config', to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
+  { key: 'cardapio', to: '/cardapio-digital', label: 'Cardápio Digital', icon: Smartphone, admin: true },
   { key: 'assinatura', to: '/assinatura', label: 'Minha assinatura', icon: CreditCard, admin: true },
   { key: 'wpp', to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
   { key: 'nf', to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
