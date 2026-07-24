@@ -36,6 +36,8 @@ import GlobalPlanos from '@/pages/global/GlobalPlanos';
 import GlobalAssinaturas from '@/pages/global/GlobalAssinaturas';
 import GlobalAuditoria from '@/pages/global/GlobalAuditoria';
 import GlobalUsuarios from '@/pages/global/GlobalUsuarios';
+import CardapioDigital from '@/pages/admin/CardapioDigital';
+import CardapioPublico from '@/pages/public/CardapioPublico';
 
 const queryClient = new QueryClient({
   defaultOptions: {
