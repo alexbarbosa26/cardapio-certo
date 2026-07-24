@@ -1,12 +1,13 @@
 import { Link, Outlet, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Building2, Package, Receipt, FileClock, LogOut, ChefHat } from 'lucide-react';
+import { LayoutDashboard, Building2, Package, Receipt, FileClock, LogOut, ChefHat, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NAV = [
   { to: '/global/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
   { to: '/global/empresas', label: 'Empresas', icon: Building2 },
+  { to: '/global/usuarios', label: 'Usuários', icon: Users },
   { to: '/global/planos', label: 'Planos', icon: Package },
   { to: '/global/assinaturas', label: 'Assinaturas', icon: Receipt },
   { to: '/global/auditoria', label: 'Auditoria', icon: FileClock },
