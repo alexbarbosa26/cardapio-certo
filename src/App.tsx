@@ -37,6 +37,7 @@ import GlobalAssinaturas from '@/pages/global/GlobalAssinaturas';
 import GlobalAuditoria from '@/pages/global/GlobalAuditoria';
 import GlobalUsuarios from '@/pages/global/GlobalUsuarios';
 import CardapioDigital from '@/pages/admin/CardapioDigital';
+import PedidosDelivery from '@/pages/admin/PedidosDelivery';
 import CardapioPublico from '@/pages/public/CardapioPublico';
 import CardapioPedido from '@/pages/public/CardapioPedido';
 
@@ -101,6 +102,7 @@ export default function App() {
                   <Route path="/usuarios" element={<Usuarios />} />
                   <Route path="/assinatura" element={<MinhaAssinatura />} />
                   <Route path="/cardapio-digital" element={<CardapioDigital />} />
+                  <Route path="/pedidos-delivery" element={<PedidosDelivery />} />
                 </Route>
               </Route>
 

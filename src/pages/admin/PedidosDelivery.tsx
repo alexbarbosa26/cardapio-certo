@@ -135,8 +135,8 @@ export default function PedidosDelivery() {
     const { error } = await supabase.rpc('admin_update_delivery_order_status', {
       _order_id: order.id,
       _new_status: next,
-      _reason: opts.reason ?? null,
-      _estimated_minutes: opts.estimated ?? null,
+      _reason: opts.reason,
+      _estimated_minutes: opts.estimated,
     });
     if (error) { toast.error(error.message || 'Erro ao atualizar pedido'); return; }
     toast.success('Pedido atualizado');
