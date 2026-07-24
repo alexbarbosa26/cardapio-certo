@@ -7,7 +7,11 @@ import { CheckCircle2, Clock, ChefHat, Bike, PackageCheck, XCircle, ArrowLeft } 
 
 const STATUS_LABEL: Record<string, { label: string; tone: string; icon: typeof Clock }> = {
   aguardando_aceite: { label: 'Aguardando o restaurante aceitar', tone: 'bg-amber-100 text-amber-900 border-amber-200', icon: Clock },
+  em_preparo: { label: 'Em preparo na cozinha', tone: 'bg-blue-100 text-blue-900 border-blue-200', icon: ChefHat },
   aberto: { label: 'Em preparo', tone: 'bg-blue-100 text-blue-900 border-blue-200', icon: ChefHat },
+  pronto: { label: 'Pronto para retirada/saída', tone: 'bg-emerald-100 text-emerald-900 border-emerald-200', icon: PackageCheck },
+  em_entrega: { label: 'Saiu para entrega', tone: 'bg-indigo-100 text-indigo-900 border-indigo-200', icon: Bike },
+  entregue: { label: 'Entregue', tone: 'bg-emerald-100 text-emerald-900 border-emerald-200', icon: CheckCircle2 },
   fechado: { label: 'Concluído', tone: 'bg-emerald-100 text-emerald-900 border-emerald-200', icon: PackageCheck },
   cancelado: { label: 'Cancelado', tone: 'bg-neutral-100 text-neutral-700 border-neutral-200', icon: XCircle },
   recusado: { label: 'Recusado pelo estabelecimento', tone: 'bg-red-100 text-red-900 border-red-200', icon: XCircle },
