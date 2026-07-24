@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'fiado' | 'historico' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf';
+type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'fiado' | 'historico' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf' | 'cardapio';
 interface NavItem { key: NavKey; to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
 
 const NAV: NavItem[] = [
