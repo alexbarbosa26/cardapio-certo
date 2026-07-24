@@ -35,6 +35,7 @@ import GlobalEmpresas from '@/pages/global/GlobalEmpresas';
 import GlobalPlanos from '@/pages/global/GlobalPlanos';
 import GlobalAssinaturas from '@/pages/global/GlobalAssinaturas';
 import GlobalAuditoria from '@/pages/global/GlobalAuditoria';
+import GlobalUsuarios from '@/pages/global/GlobalUsuarios';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,6 +72,7 @@ export default function App() {
                 <Route element={<GlobalAdminLayout />}>
                   <Route path="/global/dashboard" element={<GlobalDashboard />} />
                   <Route path="/global/empresas" element={<GlobalEmpresas />} />
+                  <Route path="/global/usuarios" element={<GlobalUsuarios />} />
                   <Route path="/global/planos" element={<GlobalPlanos />} />
                   <Route path="/global/assinaturas" element={<GlobalAssinaturas />} />
                   <Route path="/global/auditoria" element={<GlobalAuditoria />} />
