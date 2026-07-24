@@ -103,7 +103,7 @@ export function TenantBrandingProvider({ children }: { children: ReactNode }) {
     if (!profile?.company_id) { setState(DEFAULTS); return; }
     const [{ data: settings }, { data: company }, plan] = await Promise.all([
       supabase.from('settings').select('*').eq('company_id', profile.company_id).maybeSingle(),
-      supabase.from('companies').select('logo_url, primary_color, secondary_color, accent_color, trade_name, name').eq('id', profile.company_id).maybeSingle(),
+      supabase.from('companies').select('logo_url, primary_color, secondary_color, accent_color, trade_name, name, digital_menu_contracted, digital_menu_enabled, digital_menu_slug').eq('id', profile.company_id).maybeSingle(),
       subscription?.plan_id
         ? supabase.from('plans').select('*').eq('id', subscription.plan_id).maybeSingle().then((r) => r.data)
         : Promise.resolve(null),
