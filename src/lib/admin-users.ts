@@ -29,28 +29,53 @@ export interface GlobalUserRow {
   last_sign_in_at: string | null;
 }
 
-async function invoke<T = unknown>(action: string, payload: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke("admin-users", {
-    body: { action, payload },
-  });
-  if (error) {
-    let responseError: string | undefined;
-    const context = (error as { context?: unknown }).context;
-    if (context instanceof Response) {
-      try {
-        const body = await context.clone().json();
-        if (body && typeof body === "object" && "error" in body) {
-          responseError = String((body as Record<string, unknown>).error);
-        }
-      } catch {
-        try { responseError = await context.clone().text(); } catch { responseError = undefined; }
+async function callOnce(action: string, payload: Record<string, unknown>) {
+  return supabase.functions.invoke("admin-users", { body: { action, payload } });
+}
+
+async function extractError(error: unknown, data: unknown): Promise<{ msg: string; status?: number }> {
+  let responseError: string | undefined;
+  let status: number | undefined;
+  const context = (error as { context?: unknown })?.context;
+  if (context instanceof Response) {
+    status = context.status;
+    try {
+      const body = await context.clone().json();
+      if (body && typeof body === "object" && "error" in body) {
+        responseError = String((body as Record<string, unknown>).error);
       }
+    } catch {
+      try { responseError = await context.clone().text(); } catch { /* ignore */ }
     }
-    const msg =
-      (data && typeof data === "object" && "error" in (data as Record<string, unknown>) &&
-        String((data as Record<string, unknown>).error)) ||
-      responseError || error.message || "Erro ao chamar admin-users.";
-    throw new Error(msg);
+  }
+  const msg =
+    (data && typeof data === "object" && "error" in (data as Record<string, unknown>) &&
+      String((data as Record<string, unknown>).error)) ||
+    responseError ||
+    (error as { message?: string })?.message ||
+    "Erro ao chamar admin-users.";
+  return { msg, status };
+}
+
+async function invoke<T = unknown>(action: string, payload: Record<string, unknown>): Promise<T> {
+  let { data, error } = await callOnce(action, payload);
+  if (error) {
+    const { msg, status } = await extractError(error, data);
+    // Token revogado/expirado: força refresh e tenta novamente uma vez.
+    if (status === 401 || /unauthorized|jwt|session/i.test(msg)) {
+      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr || !refreshed.session) {
+        await supabase.auth.signOut().catch(() => {});
+        throw new Error("Sua sessão expirou. Faça login novamente.");
+      }
+      ({ data, error } = await callOnce(action, payload));
+      if (error) {
+        const retry = await extractError(error, data);
+        throw new Error(retry.msg);
+      }
+    } else {
+      throw new Error(msg);
+    }
   }
   if (data && typeof data === "object" && "error" in (data as Record<string, unknown>)) {
     throw new Error(String((data as Record<string, unknown>).error));
