@@ -214,10 +214,10 @@ function SettingsTab({ companyId, slug, onSlug }: { companyId: string; slug: str
             <Input type="number" min={0} value={s.avg_prep_min} onChange={(e) => setS({ ...s, avg_prep_min: Number(e.target.value) || 0 })} />
           </Field>
           <Field label="Pedido mínimo">
-            <DecimalInput value={s.min_order_amount} onValueChange={(v) => setS({ ...s, min_order_amount: v ?? 0 })} />
+            <DecimalInput value={s.min_order_amount} onChange={(v) => setS({ ...s, min_order_amount: Number.isFinite(v) ? v : 0 })} />
           </Field>
           <Field label="Taxa de entrega fixa">
-            <DecimalInput value={s.delivery_fee} onValueChange={(v) => setS({ ...s, delivery_fee: v ?? 0 })} />
+            <DecimalInput value={s.delivery_fee} onChange={(v) => setS({ ...s, delivery_fee: Number.isFinite(v) ? v : 0 })} />
           </Field>
         </div>
 
@@ -517,7 +517,7 @@ function ItemsTab({ companyId }: { companyId: string }) {
                   <SelectContent>{cats.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </Field>
-              <Field label="Preço"><DecimalInput value={editing?.price ?? 0} onValueChange={(v) => setEditing({ ...editing, price: v ?? 0 })} /></Field>
+              <Field label="Preço"><DecimalInput value={editing?.price ?? 0} onChange={(v) => setEditing({ ...editing, price: Number.isFinite(v) ? v : 0 })} /></Field>
               <Field label="Imagem (URL)"><Input value={editing?.image_url ?? ''} onChange={(e) => setEditing({ ...editing, image_url: e.target.value })} /></Field>
               <Field label="Descrição" className="sm:col-span-2"><Textarea rows={2} value={editing?.description ?? ''} onChange={(e) => setEditing({ ...editing, description: e.target.value })} /></Field>
               <Field label="Tempo adicional de preparo (min)"><Input type="number" min={0} value={editing?.extra_prep_min ?? 0} onChange={(e) => setEditing({ ...editing, extra_prep_min: Number(e.target.value) || 0 })} /></Field>
