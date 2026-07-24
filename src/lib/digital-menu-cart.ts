@@ -89,18 +89,19 @@ const ORDER_ERRORS: Record<string, string> = {
 };
 
 export async function submitPublicOrder(input: SubmitOrderInput): Promise<SubmitOrderResult> {
-  const { data, error } = await supabase.rpc('create_public_order', {
+  const args = {
     _slug: input.slug.toLowerCase(),
     _client_token: input.client_token,
     _service_mode: input.service_mode,
     _customer_name: input.customer_name,
     _customer_phone: input.customer_phone,
-    _address: (input.address ?? null) as unknown as never,
+    _address: input.address ?? null,
     _payment_method: input.payment_method,
     _change_for: input.change_for ?? null,
     _customer_notes: input.customer_notes ?? null,
-    _items: input.items as unknown as never,
-  });
+    _items: input.items,
+  } as unknown as Parameters<typeof supabase.rpc<'create_public_order'>>[1];
+  const { data, error } = await supabase.rpc('create_public_order', args);
   if (error) {
     const code = (error.message || '').match(/[a-z_]+/g)?.find((k) => k in ORDER_ERRORS);
     throw new Error(code ? ORDER_ERRORS[code] : 'Não foi possível enviar o pedido. Tente novamente.');
