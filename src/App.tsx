@@ -63,6 +63,7 @@ export default function App() {
               <Route path="/checkout/:sessionId" element={<Checkout />} />
               <Route path="/confianca" element={<Confianca />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/cardapio/:slug" element={<CardapioPublico />} />
 
               {/* Tela informativa de bloqueio – exige login mas não exige assinatura ativa */}
               <Route element={<RequireAuth />}>
@@ -97,6 +98,7 @@ export default function App() {
                   <Route path="/historico-pedidos" element={<PedidosHistorico />} />
                   <Route path="/usuarios" element={<Usuarios />} />
                   <Route path="/assinatura" element={<MinhaAssinatura />} />
+                  <Route path="/cardapio-digital" element={<CardapioDigital />} />
                 </Route>
               </Route>
 
