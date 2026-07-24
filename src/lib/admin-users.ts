@@ -15,6 +15,20 @@ type UpdateInput = {
   password?: string;
 };
 
+export type GlobalRole = "admin" | "staff" | "super_admin";
+
+export interface GlobalUserRow {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+  created_at: string;
+  company_id: string | null;
+  company_name: string | null;
+  role: GlobalRole | null;
+  last_sign_in_at: string | null;
+}
+
 async function invoke<T = unknown>(action: string, payload: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke("admin-users", {
     body: { action, payload },
@@ -22,7 +36,6 @@ async function invoke<T = unknown>(action: string, payload: Record<string, unkno
   if (error) {
     let responseError: string | undefined;
     const context = (error as { context?: unknown }).context;
-
     if (context instanceof Response) {
       try {
         const body = await context.clone().json();
@@ -30,23 +43,13 @@ async function invoke<T = unknown>(action: string, payload: Record<string, unkno
           responseError = String((body as Record<string, unknown>).error);
         }
       } catch {
-        try {
-          responseError = await context.clone().text();
-        } catch {
-          responseError = undefined;
-        }
+        try { responseError = await context.clone().text(); } catch { responseError = undefined; }
       }
     }
-
-    // edge function returns { error } on 4xx — surface that message when available
     const msg =
-      (data &&
-        typeof data === "object" &&
-        "error" in (data as Record<string, unknown>) &&
+      (data && typeof data === "object" && "error" in (data as Record<string, unknown>) &&
         String((data as Record<string, unknown>).error)) ||
-      responseError ||
-      error.message ||
-      "Erro ao chamar admin-users.";
+      responseError || error.message || "Erro ao chamar admin-users.";
     throw new Error(msg);
   }
   if (data && typeof data === "object" && "error" in (data as Record<string, unknown>)) {
@@ -61,4 +64,30 @@ export function adminCreateUser(input: CreateInput) {
 
 export function adminUpdateUser(input: UpdateInput) {
   return invoke<{ ok: true }>("update", input);
+}
+
+// ============ Super admin (global) ============
+
+export function adminListAllUsers(filters: {
+  search?: string; company_id?: string; role?: string; status?: string;
+} = {}) {
+  return invoke<{ users: GlobalUserRow[] }>("list_all", filters);
+}
+
+export function adminCreateGlobalUser(input: {
+  name: string; email: string; password: string;
+  company_id: string | null; role: GlobalRole;
+}) {
+  return invoke<{ id: string }>("create_global", input);
+}
+
+export function adminUpdateGlobalUser(input: {
+  user_id: string; name: string; company_id: string | null;
+  role: GlobalRole; status: "ativo" | "inativo";
+}) {
+  return invoke<{ ok: true }>("update_global", input);
+}
+
+export function adminResetPasswordGlobal(user_id: string, password: string) {
+  return invoke<{ ok: true }>("reset_password_global", { user_id, password });
 }
