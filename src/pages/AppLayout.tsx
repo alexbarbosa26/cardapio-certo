@@ -55,6 +55,7 @@ function AppLayout() {
     if (k === 'cozinha') return branding.plan.allowKitchen && branding.enableKitchen;
     if (k === 'dashboard') return branding.plan.allowAdvancedDashboard;
     if (k === 'fiado') return branding.enableCreditAccounts;
+    if (k === 'cardapio') return branding.digitalMenuContracted;
     return true;
   };
   const items = NAV.filter((i) => (!i.admin || profile.role === 'admin') && isAllowed(i.key));
