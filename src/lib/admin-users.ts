@@ -48,9 +48,11 @@ async function extractError(error: unknown, data: unknown): Promise<{ msg: strin
       try { responseError = await context.clone().text(); } catch { /* ignore */ }
     }
   }
+  const dataErr = data && typeof data === "object" && "error" in (data as Record<string, unknown>)
+    ? String((data as Record<string, unknown>).error)
+    : undefined;
   const msg =
-    (data && typeof data === "object" && "error" in (data as Record<string, unknown>) &&
-      String((data as Record<string, unknown>).error)) ||
+    dataErr ||
     responseError ||
     (error as { message?: string })?.message ||
     "Erro ao chamar admin-users.";
