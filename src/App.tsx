@@ -65,6 +65,7 @@ export default function App() {
               <Route path="/confianca" element={<Confianca />} />
               <Route path="/login" element={<Login />} />
               <Route path="/cardapio/:slug" element={<CardapioPublico />} />
+              <Route path="/cardapio/:slug/pedido/:token" element={<CardapioPedido />} />
 
               {/* Tela informativa de bloqueio – exige login mas não exige assinatura ativa */}
               <Route element={<RequireAuth />}>
