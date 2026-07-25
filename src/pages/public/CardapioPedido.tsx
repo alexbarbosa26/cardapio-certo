@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchPublicOrder, PAYMENT_LABELS, type PaymentMethod } from '@/lib/digital-menu-cart';
 import { fmtBRL, fmtDateTime } from '@/lib/format';
-import { CheckCircle2, Clock, ChefHat, Bike, PackageCheck, XCircle, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Clock, ChefHat, Bike, PackageCheck, XCircle, ArrowLeft, Circle, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const STATUS_LABEL: Record<string, { label: string; tone: string; icon: typeof Clock }> = {
   aguardando_aceite: { label: 'Aguardando o restaurante aceitar', tone: 'bg-amber-100 text-amber-900 border-amber-200', icon: Clock },
@@ -17,12 +18,36 @@ const STATUS_LABEL: Record<string, { label: string; tone: string; icon: typeof C
   recusado: { label: 'Recusado pelo estabelecimento', tone: 'bg-red-100 text-red-900 border-red-200', icon: XCircle },
 };
 
+const FINAL_STATUSES = new Set(['entregue', 'fechado', 'cancelado', 'recusado']);
+
+type Step = { key: string; label: string; at: string | null; icon: typeof Clock };
+
+function buildSteps(order: NonNullable<Awaited<ReturnType<typeof fetchPublicOrder>>['order']>): Step[] {
+  const steps: Step[] = [
+    { key: 'opened', label: 'Pedido recebido', at: order.opened_at, icon: CheckCircle2 },
+    { key: 'accepted', label: 'Aceito pelo estabelecimento', at: order.accepted_at, icon: ChefHat },
+    { key: 'ready', label: order.service_mode === 'delivery' ? 'Pronto para sair' : 'Pronto para retirada', at: order.ready_at, icon: PackageCheck },
+  ];
+  if (order.service_mode === 'delivery') {
+    steps.push({ key: 'dispatched', label: 'Saiu para entrega', at: order.dispatched_at, icon: Bike });
+    steps.push({ key: 'delivered', label: 'Entregue', at: order.delivered_at, icon: CheckCircle2 });
+  } else {
+    steps.push({ key: 'delivered', label: 'Retirado', at: order.delivered_at, icon: CheckCircle2 });
+  }
+  return steps;
+}
+
 export default function CardapioPedido() {
   const { slug = '', token = '' } = useParams();
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ['public-order', token],
     queryFn: () => fetchPublicOrder(token),
-    refetchInterval: 15_000,
+    refetchInterval: (q) => {
+      const s = (q.state.data as any)?.order?.status;
+      if (s && FINAL_STATUSES.has(s)) return false;
+      return 10_000;
+    },
+    refetchIntervalInBackground: false,
     enabled: !!token,
   });
 
@@ -30,8 +55,14 @@ export default function CardapioPedido() {
     if (data?.company?.name) document.title = `Pedido · ${data.company.name}`;
   }, [data]);
 
+  const order = data?.order;
+  const brand = data?.company?.primary_color ?? '#111827';
+  const steps = useMemo(() => (order ? buildSteps(order) : []), [order]);
+
+  const eta = useEtaLabel(order?.accepted_at ?? null, order?.estimated_minutes ?? null, order?.status);
+
   if (isLoading) return <div className="min-h-screen grid place-items-center text-neutral-500">Carregando pedido…</div>;
-  if (error || !data?.found || !data.order) {
+  if (error || !data?.found || !order) {
     return (
       <div className="min-h-screen grid place-items-center bg-neutral-50 px-6">
         <div className="max-w-sm text-center">
@@ -43,33 +74,90 @@ export default function CardapioPedido() {
     );
   }
 
-  const order = data.order;
-  const brand = data.company?.primary_color ?? '#111827';
   const st = STATUS_LABEL[order.status] ?? STATUS_LABEL.aberto;
   const Icon = st.icon;
+  const isFinal = FINAL_STATUSES.has(order.status);
+  const isCancelled = order.status === 'cancelado' || order.status === 'recusado';
 
   return (
     <div className="min-h-screen bg-neutral-50 pb-16">
-      <header className="border-b bg-white">
+      <header className="border-b bg-white sticky top-0 z-10">
         <div className="mx-auto max-w-2xl px-4 py-4 flex items-center justify-between">
           <Link to={`/cardapio/${slug}`} className="inline-flex items-center gap-1 text-sm text-neutral-600 hover:text-neutral-900">
             <ArrowLeft className="h-4 w-4" /> Cardápio
           </Link>
           <div className="text-sm font-medium truncate">{data.company?.name}</div>
+          <div className="w-6 flex justify-end text-neutral-400">
+            {isFetching && !isFinal ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-2xl px-4 py-6 space-y-5">
         <div className="rounded-2xl bg-white p-6 text-center shadow-sm border">
           <div className="mx-auto grid h-14 w-14 place-items-center rounded-full text-white" style={{ background: brand }}>
-            <CheckCircle2 className="h-7 w-7" />
+            <Icon className="h-7 w-7" />
           </div>
           <h1 className="mt-3 text-xl font-semibold">Pedido #{order.order_number}</h1>
           <p className="text-sm text-neutral-500">Enviado em {fmtDateTime(order.opened_at)}</p>
           <div className={`mt-4 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${st.tone}`}>
             <Icon className="h-4 w-4" /> {st.label}
           </div>
+          {eta && !isFinal && (
+            <p className="mt-3 text-sm text-neutral-600">
+              Previsão: <span className="font-medium text-neutral-900">{eta}</span>
+            </p>
+          )}
+          {isCancelled && order.rejection_reason && (
+            <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+              Motivo: {order.rejection_reason}
+            </p>
+          )}
         </div>
+
+        {!isCancelled && (
+          <Section title="Acompanhamento">
+            <ol className="relative">
+              {steps.map((s, idx) => {
+                const done = !!s.at;
+                const isCurrent = !done && steps.slice(0, idx).every((p) => !!p.at);
+                const StepIcon = s.icon;
+                return (
+                  <li key={s.key} className="flex gap-3 pb-4 last:pb-0 relative">
+                    {idx < steps.length - 1 && (
+                      <span
+                        className={cn(
+                          'absolute left-[15px] top-8 bottom-0 w-px',
+                          done ? 'bg-emerald-400' : 'bg-neutral-200',
+                        )}
+                      />
+                    )}
+                    <div
+                      className={cn(
+                        'relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border-2',
+                        done
+                          ? 'bg-emerald-500 border-emerald-500 text-white'
+                          : isCurrent
+                            ? 'bg-white border-blue-500 text-blue-600 animate-pulse'
+                            : 'bg-white border-neutral-300 text-neutral-400',
+                      )}
+                    >
+                      {done ? <CheckCircle2 className="h-4 w-4" /> : isCurrent ? <StepIcon className="h-4 w-4" /> : <Circle className="h-3 w-3" />}
+                    </div>
+                    <div className="min-w-0 pt-1">
+                      <div className={cn('text-sm font-medium', done ? 'text-neutral-900' : isCurrent ? 'text-neutral-900' : 'text-neutral-500')}>
+                        {s.label}
+                      </div>
+                      <div className="text-xs text-neutral-500">
+                        {done ? fmtDateTime(s.at!) : isCurrent ? 'Em andamento…' : 'Pendente'}
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </Section>
+        )}
 
         <Section title="Itens">
           <ul className="divide-y">
@@ -114,9 +202,30 @@ export default function CardapioPedido() {
         {order.customer_notes && (
           <Section title="Observações"><div className="text-sm text-neutral-700 whitespace-pre-wrap">{order.customer_notes}</div></Section>
         )}
+
+        {!isFinal && (
+          <p className="text-center text-xs text-neutral-400">
+            Esta página atualiza automaticamente a cada poucos segundos.
+          </p>
+        )}
       </div>
     </div>
   );
+}
+
+function useEtaLabel(acceptedAt: string | null, estimatedMinutes: number | null, status: string | undefined) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (!acceptedAt || !estimatedMinutes || (status && FINAL_STATUSES.has(status))) return;
+    const t = setInterval(() => tick((x) => x + 1), 30_000);
+    return () => clearInterval(t);
+  }, [acceptedAt, estimatedMinutes, status]);
+  if (!acceptedAt || !estimatedMinutes) return null;
+  const target = new Date(acceptedAt).getTime() + estimatedMinutes * 60_000;
+  const diffMin = Math.round((target - Date.now()) / 60_000);
+  if (diffMin <= 0) return 'a qualquer momento';
+  if (diffMin === 1) return 'cerca de 1 minuto';
+  return `cerca de ${diffMin} minutos`;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

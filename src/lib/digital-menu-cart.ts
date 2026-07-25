@@ -129,6 +129,12 @@ export async function fetchPublicOrder(token: string) {
       delivery_fee: number;
       total: number;
       opened_at: string;
+      accepted_at: string | null;
+      ready_at: string | null;
+      dispatched_at: string | null;
+      delivered_at: string | null;
+      estimated_minutes: number | null;
+      rejection_reason: string | null;
       items: Array<{ name: string; quantity: number; unit_price: number; total_price: number; notes: string | null; kitchen_status: string }>;
     };
     company?: { name: string; slug: string; logo_url: string | null; primary_color: string | null };
@@ -145,3 +151,4 @@ export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   cartao_credito: 'Cartão de crédito',
   cartao_debito: 'Cartão de débito',
 };
+
