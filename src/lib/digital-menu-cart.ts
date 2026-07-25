@@ -151,19 +151,4 @@ export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   cartao_credito: 'Cartão de crédito',
   cartao_debito: 'Cartão de débito',
 };
-// ---
-const _keep = null;
-    company?: { name: string; slug: string; logo_url: string | null; primary_color: string | null };
-  };
-}
 
-export function newClientToken() {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
-  dinheiro: 'Dinheiro',
-  pix: 'Pix',
-  cartao_credito: 'Cartão de crédito',
-  cartao_debito: 'Cartão de débito',
-};
