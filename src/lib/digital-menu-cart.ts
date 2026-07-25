@@ -129,8 +129,30 @@ export async function fetchPublicOrder(token: string) {
       delivery_fee: number;
       total: number;
       opened_at: string;
+      accepted_at: string | null;
+      ready_at: string | null;
+      dispatched_at: string | null;
+      delivered_at: string | null;
+      estimated_minutes: number | null;
+      rejection_reason: string | null;
       items: Array<{ name: string; quantity: number; unit_price: number; total_price: number; notes: string | null; kitchen_status: string }>;
     };
+    company?: { name: string; slug: string; logo_url: string | null; primary_color: string | null };
+  };
+}
+
+export function newClientToken() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  dinheiro: 'Dinheiro',
+  pix: 'Pix',
+  cartao_credito: 'Cartão de crédito',
+  cartao_debito: 'Cartão de débito',
+};
+// ---
+const _keep = null;
     company?: { name: string; slug: string; logo_url: string | null; primary_color: string | null };
   };
 }
