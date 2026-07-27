@@ -120,8 +120,46 @@ export default function CardapioPublico() {
           </div>
         )}
 
+        {!q && featuredItems(data).length > 0 && (
+          <section className="mt-6">
+            <h2 className="text-lg font-semibold tracking-tight">Destaques</h2>
+            <p className="text-sm text-neutral-500 mt-0.5">Promoções e queridinhos da casa</p>
+            <ul className="mt-3 flex gap-3 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1 snap-x">
+              {featuredItems(data).map((it) => (
+                <li key={it.id}
+                    className="snap-start w-44 flex-shrink-0 rounded-xl border border-neutral-200 bg-white overflow-hidden">
+                  {it.image_url ? (
+                    <img src={it.image_url} alt={it.name} loading="lazy" className="h-24 w-full object-cover bg-neutral-100" />
+                  ) : (
+                    <div className="h-24 w-full" style={{ background: `${brand}14` }} />
+                  )}
+                  <div className="p-3">
+                    <span className="text-[10px] uppercase tracking-wider text-white rounded px-1.5 py-0.5"
+                          style={{ background: brand }}>Destaque</span>
+                    <h3 className="mt-1.5 text-sm font-medium leading-tight line-clamp-2">{it.name}</h3>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold" style={{ color: brand }}>{fmtBRL(it.price)}</span>
+                      <button
+                        type="button"
+                        aria-label={`Adicionar ${it.name}`}
+                        disabled={!canOrder}
+                        onClick={() => addItem(it)}
+                        className="grid h-7 w-7 place-items-center rounded-full text-white disabled:opacity-40"
+                        style={{ background: brand }}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {filtered.length === 0 ? (
           <div className="mt-16 text-center text-neutral-500">Nenhum item encontrado.</div>
+
         ) : (
           filtered.map((c) => (
             <section key={c.id} id={`cat-${c.id}`} className="mt-8 scroll-mt-32">
