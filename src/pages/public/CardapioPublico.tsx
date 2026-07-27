@@ -49,6 +49,7 @@ export default function CardapioPublico() {
   if (!data.available) return <FullMessage title="Cardápio indisponível" msg="Este estabelecimento não está disponibilizando o cardápio digital no momento." logo={data.company?.logo_url ?? null} />;
 
   const filtered = filterMenu(data, q);
+  const highlights = featuredItems(data);
   const brand = data.company?.primary_color ?? '#111827';
   const settings = data.settings ?? {};
   const canOrder = status.open && settings.accepting_orders !== false && (settings.delivery_enabled || settings.pickup_enabled);
@@ -120,12 +121,12 @@ export default function CardapioPublico() {
           </div>
         )}
 
-        {!q && featuredItems(data).length > 0 && (
+        {!q && highlights.length > 0 && (
           <section className="mt-6">
             <h2 className="text-lg font-semibold tracking-tight">Destaques</h2>
             <p className="text-sm text-neutral-500 mt-0.5">Promoções e queridinhos da casa</p>
             <ul className="mt-3 flex gap-3 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1 snap-x">
-              {featuredItems(data).map((it) => (
+              {highlights.map((it) => (
                 <li key={it.id}
                     className="snap-start w-44 flex-shrink-0 rounded-xl border border-neutral-200 bg-white overflow-hidden">
                   {it.image_url ? (
