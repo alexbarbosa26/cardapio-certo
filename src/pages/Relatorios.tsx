@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 
 const COLORS = ['var(--accent)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-2)'];
 
-type Origin = 'todas' | 'mesa' | 'comanda';
+type Origin = 'todas' | 'mesa' | 'comanda' | 'delivery';
 type RangePreset = '7' | '30' | '90' | 'custom';
 
 const toLocalKey = (d: Date) => {
