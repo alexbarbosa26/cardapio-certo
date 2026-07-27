@@ -104,7 +104,7 @@ function RelatoriosPage() {
       const [paysRes, tabPaysRes, ordersRes, deliveryRes, tabItemsRes, prodRes, catRes] = await Promise.all([
         supabase.from('payments').select('amount, method, created_at').eq('company_id', cid).eq('status', 'ativo').gte('created_at', sinceISO).lte('created_at', untilISO),
         supabase.from('tab_payments').select('amount, method, created_at').eq('company_id', cid).eq('status', 'ativo').gte('created_at', sinceISO).lte('created_at', untilISO),
-        supabase.from('orders').select('id, closed_at').eq('company_id', cid).eq('origin', 'pdv').eq('status', 'fechado').gte('closed_at', sinceISO).lte('closed_at', untilISO),
+        supabase.from('orders').select('id, closed_at').eq('company_id', cid).neq('origin', 'digital_menu').eq('status', 'fechado').gte('closed_at', sinceISO).lte('closed_at', untilISO),
         supabase.from('orders')
           .select('id, total, delivery_fee, service_mode, payment_method, opened_at')
           .eq('company_id', cid).eq('origin', 'digital_menu')
