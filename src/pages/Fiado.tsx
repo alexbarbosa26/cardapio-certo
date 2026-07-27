@@ -217,13 +217,16 @@ function daysSince(iso: string): number {
 function CustomerDetailDialog({ customerId, open, onOpenChange }:
   { customerId: string; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { profile } = useAuth();
+  const { isAdmin } = usePermissions();
   const [customer, setCustomer] = useState<{ name: string; phone: string | null; notes: string | null } | null>(null);
   const [receivables, setReceivables] = useState<Receivable[]>([]);
-  const [history, setHistory] = useState<Array<{ id: string; amount: number; method: Method; created_at: string; notes: string | null }>>([]);
+  const [history, setHistory] = useState<PaymentRow[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [method, setMethod] = useState<Method>('dinheiro');
   const [customAmount, setCustomAmount] = useState('');
   const [paying, setPaying] = useState(false);
+  const [editing, setEditing] = useState<PaymentRow | null>(null);
+  const [reversing, setReversing] = useState<PaymentRow | null>(null);
 
   const load = async () => {
     const { data: c } = await supabase.from('credit_customers')
@@ -246,12 +249,13 @@ function CustomerDetailDialog({ customerId, open, onOpenChange }:
     })));
 
     const { data: pays } = await supabase.from('credit_payments')
-      .select('id, amount, method, created_at, notes')
+      .select('id, amount, method, created_at, notes, reversed_at, reversal_reason')
       .eq('customer_id', customerId).order('created_at', { ascending: false }).limit(20);
     setHistory((pays ?? []).map((p: any) => ({ ...p, amount: Number(p.amount) })));
   };
 
   useEffect(() => { if (open) load(); /* eslint-disable-next-line */ }, [open, customerId]);
+
 
   const openRecs = useMemo(
     () => receivables.filter((r) => r.status === 'open' || r.status === 'partially_paid'),
