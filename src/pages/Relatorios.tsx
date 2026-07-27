@@ -341,6 +341,7 @@ function RelatoriosPage() {
               <SelectItem value="todas">Todas</SelectItem>
               <SelectItem value="mesa">Mesas</SelectItem>
               <SelectItem value="comanda">Comandas</SelectItem>
+              <SelectItem value="delivery">Delivery / Cardápio digital</SelectItem>
             </SelectContent>
           </Select>
         </div>
