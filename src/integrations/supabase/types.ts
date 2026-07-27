@@ -398,6 +398,9 @@ export type Database = {
           notes: string | null
           received_by: string | null
           register_id: string | null
+          reversal_reason: string | null
+          reversed_at: string | null
+          reversed_by: string | null
         }
         Insert: {
           amount: number
@@ -409,6 +412,9 @@ export type Database = {
           notes?: string | null
           received_by?: string | null
           register_id?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
         }
         Update: {
           amount?: number
@@ -420,6 +426,9 @@ export type Database = {
           notes?: string | null
           received_by?: string | null
           register_id?: string | null
+          reversal_reason?: string | null
+          reversed_at?: string | null
+          reversed_by?: string | null
         }
         Relationships: [
           {
@@ -2082,6 +2091,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_credit_payment: {
+        Args: {
+          _new_amount: number
+          _new_method: Database["public"]["Enums"]["payment_method"]
+          _payment_id: string
+          _reason?: string
+        }
+        Returns: Json
+      }
+      admin_reverse_credit_payment: {
+        Args: { _payment_id: string; _reason?: string }
+        Returns: Json
+      }
       admin_update_delivery_order_status: {
         Args: {
           _estimated_minutes?: number

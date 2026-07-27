@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { usePermissions } from '@/hooks/use-permissions';
+
 import { useTenantBranding } from '@/hooks/use-tenant-branding';
 import { Navigate } from 'react-router-dom';
 import { fmtBRL, fmtDateTime } from '@/lib/format';
@@ -13,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
-import { Search, ChevronRight, Banknote, QrCode, CreditCard, AlertCircle, Wallet } from 'lucide-react';
+import { Search, ChevronRight, Banknote, QrCode, CreditCard, AlertCircle, Wallet, Pencil, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -42,6 +44,17 @@ interface Receivable {
   tab_number: number | null;
   order_number: number | null;
 }
+
+interface PaymentRow {
+  id: string;
+  amount: number;
+  method: Method;
+  created_at: string;
+  notes: string | null;
+  reversed_at: string | null;
+  reversal_reason: string | null;
+}
+
 
 function FiadoPage() {
   const { profile } = useAuth();
@@ -217,13 +230,16 @@ function daysSince(iso: string): number {
 function CustomerDetailDialog({ customerId, open, onOpenChange }:
   { customerId: string; open: boolean; onOpenChange: (o: boolean) => void }) {
   const { profile } = useAuth();
+  const { isAdmin } = usePermissions();
   const [customer, setCustomer] = useState<{ name: string; phone: string | null; notes: string | null } | null>(null);
   const [receivables, setReceivables] = useState<Receivable[]>([]);
-  const [history, setHistory] = useState<Array<{ id: string; amount: number; method: Method; created_at: string; notes: string | null }>>([]);
+  const [history, setHistory] = useState<PaymentRow[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [method, setMethod] = useState<Method>('dinheiro');
   const [customAmount, setCustomAmount] = useState('');
   const [paying, setPaying] = useState(false);
+  const [editing, setEditing] = useState<PaymentRow | null>(null);
+  const [reversing, setReversing] = useState<PaymentRow | null>(null);
 
   const load = async () => {
     const { data: c } = await supabase.from('credit_customers')
@@ -246,12 +262,13 @@ function CustomerDetailDialog({ customerId, open, onOpenChange }:
     })));
 
     const { data: pays } = await supabase.from('credit_payments')
-      .select('id, amount, method, created_at, notes')
+      .select('id, amount, method, created_at, notes, reversed_at, reversal_reason')
       .eq('customer_id', customerId).order('created_at', { ascending: false }).limit(20);
     setHistory((pays ?? []).map((p: any) => ({ ...p, amount: Number(p.amount) })));
   };
 
   useEffect(() => { if (open) load(); /* eslint-disable-next-line */ }, [open, customerId]);
+
 
   const openRecs = useMemo(
     () => receivables.filter((r) => r.status === 'open' || r.status === 'partially_paid'),
@@ -447,25 +464,165 @@ function CustomerDetailDialog({ customerId, open, onOpenChange }:
               </div>
               <ul className="divide-y divide-border max-h-64 overflow-y-auto">
                 {history.map((h) => (
-                  <li key={h.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                    <div>
-                      <div className="font-medium">{LABELS[h.method]} · {fmtBRL(h.amount)}</div>
-                      <div className="text-[10px] text-muted-foreground">{fmtDateTime(h.created_at)}</div>
+                  <li key={h.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                    <div className="min-w-0">
+                      <div className={cn('font-medium', h.reversed_at && 'line-through text-muted-foreground')}>
+                        {LABELS[h.method]} · {fmtBRL(h.amount)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {fmtDateTime(h.created_at)}
+                        {h.reversed_at && ` · estornado${h.reversal_reason ? ` — ${h.reversal_reason}` : ''}`}
+                      </div>
                     </div>
+                    {isAdmin && !h.reversed_at && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                          onClick={() => setEditing(h)}>
+                          <Pencil className="h-3 w-3 mr-1" />Corrigir
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive"
+                          onClick={() => setReversing(h)}>
+                          <Undo2 className="h-3 w-3 mr-1" />Desfazer
+                        </Button>
+                      </div>
+                    )}
+                    {h.reversed_at && <Badge variant="outline" className="text-[9px] shrink-0">Estornado</Badge>}
                   </li>
                 ))}
               </ul>
             </div>
           )}
+
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
         </DialogFooter>
       </DialogContent>
+
+      {editing && (
+        <AdjustPaymentDialog
+          payment={editing}
+          onClose={() => setEditing(null)}
+          onDone={async () => { setEditing(null); await load(); }}
+        />
+      )}
+      {reversing && (
+        <ReversePaymentDialog
+          payment={reversing}
+          onClose={() => setReversing(null)}
+          onDone={async () => { setReversing(null); await load(); }}
+        />
+      )}
     </Dialog>
   );
 }
+
+function ReversePaymentDialog({ payment, onClose, onDone }:
+  { payment: PaymentRow; onClose: () => void; onDone: () => void | Promise<void> }) {
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc('admin_reverse_credit_payment', {
+      _payment_id: payment.id,
+      _reason: reason.trim() || undefined,
+    });
+    setBusy(false);
+    if (error) { toast.error(translateRpcError(error.message)); return; }
+    toast.success('Pagamento estornado.');
+    await onDone();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Desfazer pagamento</DialogTitle>
+          <DialogDescription>
+            {LABELS[payment.method]} · {fmtBRL(payment.amount)} · {fmtDateTime(payment.created_at)}.
+            O valor volta para as contas em aberto do cliente e, se for dinheiro com caixa aberto, é lançada uma sangria de estorno.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label className="text-xs">Motivo (opcional)</Label>
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: lançamento em duplicidade" />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="destructive" disabled={busy} onClick={confirm}>Confirmar estorno</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AdjustPaymentDialog({ payment, onClose, onDone }:
+  { payment: PaymentRow; onClose: () => void; onDone: () => void | Promise<void> }) {
+  const [amount, setAmount] = useState(payment.amount.toFixed(2));
+  const [method, setMethod] = useState<Method>(payment.method);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const value = Math.max(0, Number(amount.replace(',', '.')) || 0);
+
+  const confirm = async () => {
+    if (value <= 0) { toast.error('Valor inválido'); return; }
+    setBusy(true);
+    const { error } = await supabase.rpc('admin_adjust_credit_payment', {
+      _payment_id: payment.id,
+      _new_amount: +value.toFixed(2),
+      _new_method: method,
+      _reason: reason.trim() || undefined,
+    });
+    setBusy(false);
+    if (error) { toast.error(translateRpcError(error.message)); return; }
+    toast.success('Pagamento corrigido.');
+    await onDone();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Corrigir pagamento</DialogTitle>
+          <DialogDescription>
+            Original: {LABELS[payment.method]} · {fmtBRL(payment.amount)} · {fmtDateTime(payment.created_at)}.
+            O novo valor é redistribuído nas contas em aberto do cliente.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs">Novo valor</Label>
+            <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
+          </div>
+          <div>
+            <Label className="text-xs">Forma de pagamento</Label>
+            <div className="mt-1"><MethodPicker method={method} onChange={setMethod} /></div>
+          </div>
+          <div>
+            <Label className="text-xs">Motivo (opcional)</Label>
+            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: valor digitado errado" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button disabled={busy || value <= 0} onClick={confirm}>Salvar correção</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function translateRpcError(msg: string): string {
+  if (msg.includes('forbidden') || msg.includes('unauthorized')) return 'Apenas administradores podem alterar pagamentos de fiado.';
+  if (msg.includes('already_reversed')) return 'Este pagamento já foi estornado.';
+  if (msg.includes('amount_exceeds_debt')) return 'O valor informado é maior que o total devido pelo cliente.';
+  if (msg.includes('invalid_amount')) return 'Valor inválido.';
+  return msg || 'Não foi possível concluir a operação.';
+}
+
 
 const LABELS: Record<Method, string> = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito' };
 
