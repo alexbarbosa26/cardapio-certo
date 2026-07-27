@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { usePermissions } from '@/hooks/use-permissions';
+
 import { useTenantBranding } from '@/hooks/use-tenant-branding';
 import { Navigate } from 'react-router-dom';
 import { fmtBRL, fmtDateTime } from '@/lib/format';
