@@ -12,6 +12,27 @@ const COLORS = ['var(--accent)', 'var(--chart-3)', 'var(--chart-4)', 'var(--char
 
 type Origin = 'todas' | 'mesa' | 'comanda' | 'delivery';
 type RangePreset = '7' | '30' | '90' | 'custom';
+type ItemOrigin = 'mesa' | 'comanda' | 'delivery';
+
+type DeliveryOrder = {
+  id: string;
+  total: number;
+  delivery_fee: number;
+  service_mode: string;
+  payment_method: string | null;
+  created_at: string;
+};
+
+/** Normaliza a forma de pagamento do cardápio digital para o padrão interno. */
+const normalizeDeliveryMethod = (m: string | null): string => {
+  switch (m) {
+    case 'cartao_credito': return 'credito';
+    case 'cartao_debito': return 'debito';
+    case 'pix': return 'pix';
+    case 'dinheiro': return 'dinheiro';
+    default: return m ?? 'outros';
+  }
+};
 
 const toLocalKey = (d: Date) => {
   const y = d.getFullYear();
