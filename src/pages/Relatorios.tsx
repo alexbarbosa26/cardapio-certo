@@ -284,6 +284,7 @@ function RelatoriosPage() {
   const total = payments.reduce((s, p) => s + p.amount, 0);
   const totalMesa = payments.filter((p) => p.origin === 'mesa').reduce((s, p) => s + p.amount, 0);
   const totalComanda = payments.filter((p) => p.origin === 'comanda').reduce((s, p) => s + p.amount, 0);
+  const totalDelivery = payments.filter((p) => p.origin === 'delivery').reduce((s, p) => s + p.amount, 0);
 
   if (redirectNonAdmin) return <Navigate to="/mesas" />;
 
@@ -297,6 +298,7 @@ function RelatoriosPage() {
             Total: <span className="font-semibold text-foreground">{fmtBRL(total)}</span>
             {' · '}Mesas: <span className="font-semibold text-foreground">{fmtBRL(totalMesa)}</span>
             {' · '}Comandas: <span className="font-semibold text-foreground">{fmtBRL(totalComanda)}</span>
+            {' · '}Delivery: <span className="font-semibold text-foreground">{fmtBRL(totalDelivery)}</span>
           </p>
         </div>
         <Tabs value={preset} onValueChange={(v) => applyPreset(v as RangePreset)}>
