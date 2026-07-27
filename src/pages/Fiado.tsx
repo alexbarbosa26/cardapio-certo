@@ -43,6 +43,17 @@ interface Receivable {
   order_number: number | null;
 }
 
+interface PaymentRow {
+  id: string;
+  amount: number;
+  method: Method;
+  created_at: string;
+  notes: string | null;
+  reversed_at: string | null;
+  reversal_reason: string | null;
+}
+
+
 function FiadoPage() {
   const { profile } = useAuth();
   const branding = useTenantBranding();
