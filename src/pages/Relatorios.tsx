@@ -40,7 +40,8 @@ function RelatoriosPage() {
 
   const [orderPays, setOrderPays] = useState<any[]>([]);
   const [tabPays, setTabPays] = useState<any[]>([]);
-  const [items, setItems] = useState<{ name: string; category: string; quantity: number; total: number; origin: 'mesa' | 'comanda' }[]>([]);
+  const [deliveryOrders, setDeliveryOrders] = useState<DeliveryOrder[]>([]);
+  const [items, setItems] = useState<{ name: string; category: string; quantity: number; total: number; origin: ItemOrigin }[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
   const applyPreset = (p: RangePreset) => {
