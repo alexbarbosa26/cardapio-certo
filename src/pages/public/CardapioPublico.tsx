@@ -542,3 +542,11 @@ function filterMenu(data: PublicMenuResponse, q: string) {
     .map((c) => ({ ...c, items: c.items.filter((i) => i.name.toLowerCase().includes(query) || (i.description ?? '').toLowerCase().includes(query)) }))
     .filter((c) => c.items.length > 0);
 }
+
+/** Itens marcados como destaque/promoção, disponíveis para pedido. */
+function featuredItems(data: PublicMenuResponse) {
+  return (data.categories ?? [])
+    .flatMap((c) => c.items)
+    .filter((i) => i.featured && !i.sold_out)
+    .slice(0, 12);
+}
