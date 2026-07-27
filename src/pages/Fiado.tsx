@@ -13,7 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
-import { Search, ChevronRight, Banknote, QrCode, CreditCard, AlertCircle, Wallet } from 'lucide-react';
+import { Search, ChevronRight, Banknote, QrCode, CreditCard, AlertCircle, Wallet, Pencil, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
