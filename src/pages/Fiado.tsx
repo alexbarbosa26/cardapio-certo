@@ -527,7 +527,7 @@ function ReversePaymentDialog({ payment, onClose, onDone }:
     setBusy(true);
     const { error } = await supabase.rpc('admin_reverse_credit_payment', {
       _payment_id: payment.id,
-      _reason: reason.trim() || null,
+      _reason: reason.trim() || undefined,
     });
     setBusy(false);
     if (error) { toast.error(translateRpcError(error.message)); return; }
@@ -574,7 +574,7 @@ function AdjustPaymentDialog({ payment, onClose, onDone }:
       _payment_id: payment.id,
       _new_amount: +value.toFixed(2),
       _new_method: method,
-      _reason: reason.trim() || null,
+      _reason: reason.trim() || undefined,
     });
     setBusy(false);
     if (error) { toast.error(translateRpcError(error.message)); return; }
