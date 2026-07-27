@@ -179,13 +179,14 @@ function RelatoriosPage() {
   );
 
   const payments = useMemo(() => {
-    const fromOrders = orderPays.map((p) => ({ ...p, origin: 'mesa' as const }));
-    const fromTabs = tabPays.map((p) => ({ ...p, origin: 'comanda' as const }));
-    let all = [...fromOrders, ...fromTabs];
+    const fromOrders = orderPays.map((p) => ({ ...p, origin: 'mesa' as ItemOrigin }));
+    const fromTabs = tabPays.map((p) => ({ ...p, origin: 'comanda' as ItemOrigin }));
+    const fromDelivery = deliveryPays.map((p) => ({ ...p, origin: 'delivery' as ItemOrigin }));
+    let all = [...fromOrders, ...fromTabs, ...fromDelivery];
     if (origin !== 'todas') all = all.filter((p) => p.origin === origin);
     if (methodFilter !== 'todos') all = all.filter((p) => p.method === methodFilter);
     return all;
-  }, [orderPays, tabPays, origin, methodFilter]);
+  }, [orderPays, tabPays, deliveryPays, origin, methodFilter]);
 
   const filteredItems = useMemo(() => {
     let all = items;
@@ -196,9 +197,43 @@ function RelatoriosPage() {
 
   const methods = useMemo(() => {
     const s = new Set<string>();
-    [...orderPays, ...tabPays].forEach((p) => s.add(p.method));
+    [...orderPays, ...tabPays, ...deliveryPays].forEach((p) => s.add(p.method));
     return Array.from(s);
-  }, [orderPays, tabPays]);
+  }, [orderPays, tabPays, deliveryPays]);
+
+  /** Métricas específicas do cardápio digital (Fase 5). */
+  const delivery = useMemo(() => {
+    const count = deliveryOrders.length;
+    const revenue = deliveryOrders.reduce((s, o) => s + o.total, 0);
+    const fees = deliveryOrders.reduce((s, o) => s + o.delivery_fee, 0);
+    const entrega = deliveryOrders.filter((o) => o.service_mode === 'delivery');
+    const retirada = deliveryOrders.filter((o) => o.service_mode !== 'delivery');
+    const byMode = [
+      { name: 'Entrega', value: entrega.reduce((s, o) => s + o.total, 0), qty: entrega.length },
+      { name: 'Retirada', value: retirada.reduce((s, o) => s + o.total, 0), qty: retirada.length },
+    ].filter((m) => m.qty > 0);
+    const dailyMap = new Map<string, number>();
+    for (const k of dayList) dailyMap.set(k, 0);
+    for (const o of deliveryOrders) {
+      const k = toLocalKey(new Date(o.created_at));
+      if (dailyMap.has(k)) dailyMap.set(k, (dailyMap.get(k) ?? 0) + o.total);
+    }
+    const daily = Array.from(dailyMap.entries()).map(([d, v]) => {
+      const [y, m, day] = d.split('-').map(Number);
+      return { date: new Date(y, m - 1, day).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }), total: v };
+    });
+    const topMap = new Map<string, { qty: number; total: number }>();
+    for (const i of items.filter((x) => x.origin === 'delivery')) {
+      const cur = topMap.get(i.name) ?? { qty: 0, total: 0 };
+      cur.qty += i.quantity; cur.total += i.total;
+      topMap.set(i.name, cur);
+    }
+    const top = Array.from(topMap.entries())
+      .map(([name, v]) => ({ name, ...v }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+    return { count, revenue, fees, ticket: count ? revenue / count : 0, byMode, daily, top };
+  }, [deliveryOrders, items, dayList]);
 
   const daily = useMemo(() => {
     const map = new Map<string, number>();
