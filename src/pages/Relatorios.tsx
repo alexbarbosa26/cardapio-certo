@@ -101,10 +101,15 @@ function RelatoriosPage() {
     (async () => {
       const cid = profile.company_id;
 
-      const [paysRes, tabPaysRes, ordersRes, tabItemsRes, prodRes, catRes] = await Promise.all([
+      const [paysRes, tabPaysRes, ordersRes, deliveryRes, tabItemsRes, prodRes, catRes] = await Promise.all([
         supabase.from('payments').select('amount, method, created_at').eq('company_id', cid).eq('status', 'ativo').gte('created_at', sinceISO).lte('created_at', untilISO),
         supabase.from('tab_payments').select('amount, method, created_at').eq('company_id', cid).eq('status', 'ativo').gte('created_at', sinceISO).lte('created_at', untilISO),
-        supabase.from('orders').select('id, closed_at').eq('company_id', cid).eq('status', 'fechado').gte('closed_at', sinceISO).lte('closed_at', untilISO),
+        supabase.from('orders').select('id, closed_at').eq('company_id', cid).eq('origin', 'pdv').eq('status', 'fechado').gte('closed_at', sinceISO).lte('closed_at', untilISO),
+        supabase.from('orders')
+          .select('id, total, delivery_fee, service_mode, payment_method, opened_at')
+          .eq('company_id', cid).eq('origin', 'digital_menu')
+          .in('status', ['entregue', 'fechado'])
+          .gte('opened_at', sinceISO).lte('opened_at', untilISO),
         supabase.from('tab_items').select('product_name, category_name, quantity, total_price, created_at').eq('company_id', cid).is('canceled_at', null).gte('created_at', sinceISO).lte('created_at', untilISO),
         supabase.from('products').select('id, name, category_id').eq('company_id', cid),
         supabase.from('categories').select('id, name').eq('company_id', cid),
@@ -113,30 +118,47 @@ function RelatoriosPage() {
       setOrderPays((paysRes.data ?? []).map((p: any) => ({ ...p, amount: Number(p.amount) })));
       setTabPays((tabPaysRes.data ?? []).map((p: any) => ({ ...p, amount: Number(p.amount) })));
 
+      const deliveries: DeliveryOrder[] = (deliveryRes.data ?? []).map((o: any) => ({
+        id: o.id,
+        total: Number(o.total ?? 0),
+        delivery_fee: Number(o.delivery_fee ?? 0),
+        service_mode: o.service_mode ?? 'delivery',
+        payment_method: o.payment_method ?? null,
+        created_at: o.opened_at,
+      }));
+      setDeliveryOrders(deliveries);
+
       const catName = new Map<string, string>((catRes.data ?? []).map((c: any) => [c.id, c.name]));
       const prodMap = new Map<string, string>((prodRes.data ?? []).map((p: any) => [p.id, catName.get(p.category_id) ?? 'Outros']));
 
       const orderIds = (ordersRes.data ?? []).map((o: any) => o.id);
-      let oi: any[] = [];
-      if (orderIds.length) {
-        const { data } = await supabase.from('order_items').select('product_name, product_id, quantity, total_price').in('order_id', orderIds).is('canceled_at', null);
-        oi = data ?? [];
-      }
+      const deliveryIds = deliveries.map((o) => o.id);
+      const fetchItems = async (ids: string[]) => {
+        if (!ids.length) return [] as any[];
+        const { data } = await supabase.from('order_items')
+          .select('product_name, product_id, quantity, total_price')
+          .in('order_id', ids).is('canceled_at', null);
+        return data ?? [];
+      };
+      const [oi, di] = await Promise.all([fetchItems(orderIds), fetchItems(deliveryIds)]);
+
+      const mapItem = (i: any, o: ItemOrigin) => ({
+        name: i.product_name as string,
+        category: prodMap.get(i.product_id) ?? 'Outros',
+        quantity: Number(i.quantity),
+        total: Number(i.total_price),
+        origin: o,
+      });
 
       const allItems = [
-        ...oi.map((i: any) => ({
-          name: i.product_name as string,
-          category: prodMap.get(i.product_id) ?? 'Outros',
-          quantity: Number(i.quantity),
-          total: Number(i.total_price),
-          origin: 'mesa' as const,
-        })),
+        ...oi.map((i: any) => mapItem(i, 'mesa')),
+        ...di.map((i: any) => mapItem(i, 'delivery')),
         ...(tabItemsRes.data ?? []).map((i: any) => ({
           name: i.product_name as string,
           category: i.category_name ?? 'Outros',
           quantity: Number(i.quantity),
           total: Number(i.total_price),
-          origin: 'comanda' as const,
+          origin: 'comanda' as ItemOrigin,
         })),
       ];
       setItems(allItems);
@@ -146,6 +168,15 @@ function RelatoriosPage() {
       setCategories(Array.from(cats).sort());
     })();
   }, [profile?.company_id, sinceISO, untilISO]);
+
+  const deliveryPays = useMemo(
+    () => deliveryOrders.map((o) => ({
+      amount: o.total,
+      method: normalizeDeliveryMethod(o.payment_method),
+      created_at: o.created_at,
+    })),
+    [deliveryOrders],
+  );
 
   const payments = useMemo(() => {
     const fromOrders = orderPays.map((p) => ({ ...p, origin: 'mesa' as const }));
