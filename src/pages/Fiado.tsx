@@ -447,16 +447,35 @@ function CustomerDetailDialog({ customerId, open, onOpenChange }:
               </div>
               <ul className="divide-y divide-border max-h-64 overflow-y-auto">
                 {history.map((h) => (
-                  <li key={h.id} className="flex items-center justify-between px-3 py-2 text-sm">
-                    <div>
-                      <div className="font-medium">{LABELS[h.method]} · {fmtBRL(h.amount)}</div>
-                      <div className="text-[10px] text-muted-foreground">{fmtDateTime(h.created_at)}</div>
+                  <li key={h.id} className="flex items-center justify-between gap-2 px-3 py-2 text-sm">
+                    <div className="min-w-0">
+                      <div className={cn('font-medium', h.reversed_at && 'line-through text-muted-foreground')}>
+                        {LABELS[h.method]} · {fmtBRL(h.amount)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {fmtDateTime(h.created_at)}
+                        {h.reversed_at && ` · estornado${h.reversal_reason ? ` — ${h.reversal_reason}` : ''}`}
+                      </div>
                     </div>
+                    {isAdmin && !h.reversed_at && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                          onClick={() => setEditing(h)}>
+                          <Pencil className="h-3 w-3 mr-1" />Corrigir
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive"
+                          onClick={() => setReversing(h)}>
+                          <Undo2 className="h-3 w-3 mr-1" />Desfazer
+                        </Button>
+                      </div>
+                    )}
+                    {h.reversed_at && <Badge variant="outline" className="text-[9px] shrink-0">Estornado</Badge>}
                   </li>
                 ))}
               </ul>
             </div>
           )}
+
         </div>
 
         <DialogFooter>
