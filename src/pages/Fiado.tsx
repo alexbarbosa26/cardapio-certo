@@ -499,9 +499,130 @@ function CustomerDetailDialog({ customerId, open, onOpenChange }:
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
         </DialogFooter>
       </DialogContent>
+
+      {editing && (
+        <AdjustPaymentDialog
+          payment={editing}
+          onClose={() => setEditing(null)}
+          onDone={async () => { setEditing(null); await load(); }}
+        />
+      )}
+      {reversing && (
+        <ReversePaymentDialog
+          payment={reversing}
+          onClose={() => setReversing(null)}
+          onDone={async () => { setReversing(null); await load(); }}
+        />
+      )}
     </Dialog>
   );
 }
+
+function ReversePaymentDialog({ payment, onClose, onDone }:
+  { payment: PaymentRow; onClose: () => void; onDone: () => void | Promise<void> }) {
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const confirm = async () => {
+    setBusy(true);
+    const { error } = await supabase.rpc('admin_reverse_credit_payment', {
+      _payment_id: payment.id,
+      _reason: reason.trim() || null,
+    });
+    setBusy(false);
+    if (error) { toast.error(translateRpcError(error.message)); return; }
+    toast.success('Pagamento estornado.');
+    await onDone();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Desfazer pagamento</DialogTitle>
+          <DialogDescription>
+            {LABELS[payment.method]} · {fmtBRL(payment.amount)} · {fmtDateTime(payment.created_at)}.
+            O valor volta para as contas em aberto do cliente e, se for dinheiro com caixa aberto, é lançada uma sangria de estorno.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Label className="text-xs">Motivo (opcional)</Label>
+          <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: lançamento em duplicidade" />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button variant="destructive" disabled={busy} onClick={confirm}>Confirmar estorno</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AdjustPaymentDialog({ payment, onClose, onDone }:
+  { payment: PaymentRow; onClose: () => void; onDone: () => void | Promise<void> }) {
+  const [amount, setAmount] = useState(payment.amount.toFixed(2));
+  const [method, setMethod] = useState<Method>(payment.method);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const value = Math.max(0, Number(amount.replace(',', '.')) || 0);
+
+  const confirm = async () => {
+    if (value <= 0) { toast.error('Valor inválido'); return; }
+    setBusy(true);
+    const { error } = await supabase.rpc('admin_adjust_credit_payment', {
+      _payment_id: payment.id,
+      _new_amount: +value.toFixed(2),
+      _new_method: method,
+      _reason: reason.trim() || null,
+    });
+    setBusy(false);
+    if (error) { toast.error(translateRpcError(error.message)); return; }
+    toast.success('Pagamento corrigido.');
+    await onDone();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Corrigir pagamento</DialogTitle>
+          <DialogDescription>
+            Original: {LABELS[payment.method]} · {fmtBRL(payment.amount)} · {fmtDateTime(payment.created_at)}.
+            O novo valor é redistribuído nas contas em aberto do cliente.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs">Novo valor</Label>
+            <Input value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
+          </div>
+          <div>
+            <Label className="text-xs">Forma de pagamento</Label>
+            <div className="mt-1"><MethodPicker method={method} onChange={setMethod} /></div>
+          </div>
+          <div>
+            <Label className="text-xs">Motivo (opcional)</Label>
+            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: valor digitado errado" />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button disabled={busy || value <= 0} onClick={confirm}>Salvar correção</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function translateRpcError(msg: string): string {
+  if (msg.includes('forbidden') || msg.includes('unauthorized')) return 'Apenas administradores podem alterar pagamentos de fiado.';
+  if (msg.includes('already_reversed')) return 'Este pagamento já foi estornado.';
+  if (msg.includes('amount_exceeds_debt')) return 'O valor informado é maior que o total devido pelo cliente.';
+  if (msg.includes('invalid_amount')) return 'Valor inválido.';
+  return msg || 'Não foi possível concluir a operação.';
+}
+
 
 const LABELS: Record<Method, string> = { dinheiro: 'Dinheiro', pix: 'Pix', debito: 'Débito', credito: 'Crédito' };
 
