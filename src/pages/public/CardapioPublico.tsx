@@ -49,6 +49,7 @@ export default function CardapioPublico() {
   if (!data.available) return <FullMessage title="Cardápio indisponível" msg="Este estabelecimento não está disponibilizando o cardápio digital no momento." logo={data.company?.logo_url ?? null} />;
 
   const filtered = filterMenu(data, q);
+  const highlights = featuredItems(data);
   const brand = data.company?.primary_color ?? '#111827';
   const settings = data.settings ?? {};
   const canOrder = status.open && settings.accepting_orders !== false && (settings.delivery_enabled || settings.pickup_enabled);
@@ -120,8 +121,46 @@ export default function CardapioPublico() {
           </div>
         )}
 
+        {!q && highlights.length > 0 && (
+          <section className="mt-6">
+            <h2 className="text-lg font-semibold tracking-tight">Destaques</h2>
+            <p className="text-sm text-neutral-500 mt-0.5">Promoções e queridinhos da casa</p>
+            <ul className="mt-3 flex gap-3 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1 snap-x">
+              {highlights.map((it) => (
+                <li key={it.id}
+                    className="snap-start w-44 flex-shrink-0 rounded-xl border border-neutral-200 bg-white overflow-hidden">
+                  {it.image_url ? (
+                    <img src={it.image_url} alt={it.name} loading="lazy" className="h-24 w-full object-cover bg-neutral-100" />
+                  ) : (
+                    <div className="h-24 w-full" style={{ background: `${brand}14` }} />
+                  )}
+                  <div className="p-3">
+                    <span className="text-[10px] uppercase tracking-wider text-white rounded px-1.5 py-0.5"
+                          style={{ background: brand }}>Destaque</span>
+                    <h3 className="mt-1.5 text-sm font-medium leading-tight line-clamp-2">{it.name}</h3>
+                    <div className="mt-2 flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold" style={{ color: brand }}>{fmtBRL(it.price)}</span>
+                      <button
+                        type="button"
+                        aria-label={`Adicionar ${it.name}`}
+                        disabled={!canOrder}
+                        onClick={() => addItem(it)}
+                        className="grid h-7 w-7 place-items-center rounded-full text-white disabled:opacity-40"
+                        style={{ background: brand }}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         {filtered.length === 0 ? (
           <div className="mt-16 text-center text-neutral-500">Nenhum item encontrado.</div>
+
         ) : (
           filtered.map((c) => (
             <section key={c.id} id={`cat-${c.id}`} className="mt-8 scroll-mt-32">
@@ -503,4 +542,12 @@ function filterMenu(data: PublicMenuResponse, q: string) {
   return cats
     .map((c) => ({ ...c, items: c.items.filter((i) => i.name.toLowerCase().includes(query) || (i.description ?? '').toLowerCase().includes(query)) }))
     .filter((c) => c.items.length > 0);
+}
+
+/** Itens marcados como destaque/promoção, disponíveis para pedido. */
+function featuredItems(data: PublicMenuResponse) {
+  return (data.categories ?? [])
+    .flatMap((c) => c.items)
+    .filter((i) => i.featured && !i.sold_out)
+    .slice(0, 12);
 }
