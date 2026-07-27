@@ -443,6 +443,84 @@ function RelatoriosPage() {
           </div>
         </div>
       </div>
+
+      <section className="mt-10">
+        <div className="mb-4">
+          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Cardápio digital</p>
+          <h2 className="font-display text-2xl mt-1">Delivery e retirada</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Pedidos concluídos originados do cardápio digital no período selecionado.
+          </p>
+        </div>
+
+        {delivery.count === 0 ? (
+          <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
+            Nenhum pedido de delivery concluído neste período.
+          </div>
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <MiniStat label="Pedidos" value={String(delivery.count)} />
+              <MiniStat label="Faturamento" value={fmtBRL(delivery.revenue)} />
+              <MiniStat label="Ticket médio" value={fmtBRL(delivery.ticket)} />
+              <MiniStat label="Taxas de entrega" value={fmtBRL(delivery.fees)} />
+            </div>
+
+            <div className="lg:col-span-2 rounded-xl border border-border bg-card p-5 min-w-0">
+              <h3 className="font-display text-lg mb-4">Faturamento delivery por dia</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={delivery.daily}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="date" stroke="var(--muted-foreground)" fontSize={12} />
+                    <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(v) => `R$${v}`} />
+                    <Tooltip formatter={(v: any) => fmtBRL(v as number)} contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                    <Line type="monotone" dataKey="total" stroke="var(--accent)" strokeWidth={2.5} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-5 min-w-0">
+              <h3 className="font-display text-lg mb-4">Entrega x Retirada</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={delivery.byMode} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
+                      {delivery.byMode.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: any) => fmtBRL(v as number)} contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8 }} />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="lg:col-span-3 rounded-xl border border-border bg-card p-5 min-w-0">
+              <h3 className="font-display text-lg mb-4">Itens mais pedidos no delivery</h3>
+              <ul className="divide-y divide-border">
+                {delivery.top.map((p) => (
+                  <li key={p.name} className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-sm break-words min-w-0">{p.name}</span>
+                    <span className="text-sm text-muted-foreground shrink-0">
+                      {p.qty} un. · <span className="font-semibold text-foreground">{fmtBRL(p.total)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4 min-w-0">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-1 font-display text-xl break-words">{value}</p>
     </div>
   );
 }
