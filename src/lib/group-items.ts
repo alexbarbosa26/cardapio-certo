@@ -32,8 +32,7 @@ export interface GroupableItem {
   options?: ItemOption[] | null;
   item_type?: string | null;
   weight_grams?: number | null;
-  /** discriminador extra (ex.: status na cozinha, pedido de origem) */
-  [key: string]: unknown;
+  id?: string;
 }
 
 /**
@@ -63,7 +62,7 @@ export interface Grouped<T> {
 }
 
 /** Agrupa uma lista preservando a ordem da primeira ocorrência. */
-export function groupItems<T extends GroupableItem & { id: string; quantity: number | string; total_price?: number | string }>(
+export function groupItems<T extends GroupableItem & { id: string; quantity: number | string; total_price?: number | string | null }>(
   items: T[],
   extra: (item: T) => Array<string | number | null | undefined> = () => [],
 ): Array<Grouped<T>> {
