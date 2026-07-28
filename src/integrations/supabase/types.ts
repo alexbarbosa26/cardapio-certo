@@ -603,6 +603,53 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_drivers: {
+        Row: {
+          active: boolean
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          plate: string | null
+          updated_at: string
+          vehicle: string | null
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          plate?: string | null
+          updated_at?: string
+          vehicle?: string | null
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          plate?: string | null
+          updated_at?: string
+          vehicle?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_drivers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       digital_menu_categories: {
         Row: {
           active: boolean
@@ -787,6 +834,9 @@ export type Database = {
           notes: string | null
           phone: string | null
           pickup_enabled: boolean
+          pix_holder: string | null
+          pix_key: string | null
+          pix_key_type: string | null
           presentation: string | null
           primary_color: string | null
           updated_at: string
@@ -808,6 +858,9 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           pickup_enabled?: boolean
+          pix_holder?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           presentation?: string | null
           primary_color?: string | null
           updated_at?: string
@@ -829,6 +882,9 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           pickup_enabled?: boolean
+          pix_holder?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
           presentation?: string | null
           primary_color?: string | null
           updated_at?: string
@@ -1104,6 +1160,8 @@ export type Database = {
           delivery_fee: number
           discount: number
           dispatched_at: string | null
+          driver_assigned_at: string | null
+          driver_id: string | null
           estimated_minutes: number | null
           id: string
           is_credit: boolean
@@ -1111,7 +1169,10 @@ export type Database = {
           order_number: number
           origin: string
           paid_amount: number
+          payment_confirmed_at: string | null
+          payment_confirmed_by: string | null
           payment_method: string | null
+          payment_status: string
           public_token: string
           ready_at: string | null
           rejection_reason: string | null
@@ -1142,6 +1203,8 @@ export type Database = {
           delivery_fee?: number
           discount?: number
           dispatched_at?: string | null
+          driver_assigned_at?: string | null
+          driver_id?: string | null
           estimated_minutes?: number | null
           id?: string
           is_credit?: boolean
@@ -1149,7 +1212,10 @@ export type Database = {
           order_number?: number
           origin?: string
           paid_amount?: number
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
           payment_method?: string | null
+          payment_status?: string
           public_token?: string
           ready_at?: string | null
           rejection_reason?: string | null
@@ -1180,6 +1246,8 @@ export type Database = {
           delivery_fee?: number
           discount?: number
           dispatched_at?: string | null
+          driver_assigned_at?: string | null
+          driver_id?: string | null
           estimated_minutes?: number | null
           id?: string
           is_credit?: boolean
@@ -1187,7 +1255,10 @@ export type Database = {
           order_number?: number
           origin?: string
           paid_amount?: number
+          payment_confirmed_at?: string | null
+          payment_confirmed_by?: string | null
           payment_method?: string | null
+          payment_status?: string
           public_token?: string
           ready_at?: string | null
           rejection_reason?: string | null
@@ -1206,6 +1277,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_drivers"
             referencedColumns: ["id"]
           },
           {
@@ -2100,8 +2178,16 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_assign_delivery_driver: {
+        Args: { _driver_id: string; _order_id: string }
+        Returns: Json
+      }
       admin_reverse_credit_payment: {
         Args: { _payment_id: string; _reason?: string }
+        Returns: Json
+      }
+      admin_set_delivery_payment_status: {
+        Args: { _order_id: string; _payment_status: string }
         Returns: Json
       }
       admin_update_delivery_order_status: {
