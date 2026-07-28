@@ -70,9 +70,10 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<Product | null>(null);
   const [swapItemId, setSwapItemId] = useState<string | null>(null);
-  const [editingNotes, setEditingNotes] = useState<OrderItem | null>(null);
+  const [editingNotes, setEditingNotes] = useState<ItemRow | null>(null);
   const [confirmCancelOrder, setConfirmCancelOrder] = useState(false);
-  const [confirmCancelItem, setConfirmCancelItem] = useState<OrderItem | null>(null);
+  const [confirmCancelItem, setConfirmCancelItem] = useState<ItemRow | null>(null);
+
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
   const [customerName, setCustomerName] = useState('');
   const [savedCustomerName, setSavedCustomerName] = useState('');
@@ -83,7 +84,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     const [{ data: cats }, { data: prods }, { data: ois }, { data: ord }] = await Promise.all([
       supabase.from('categories').select('id, name').eq('company_id', profile.company_id).eq('status', 'ativo').order('sort_order'),
       supabase.from('products').select('id, name, price, sends_to_kitchen, category_id, is_weighted, price_per_kg').eq('company_id', profile.company_id).eq('status', 'ativo').order('name'),
-      supabase.from('order_items').select('id, product_name, quantity, unit_price, total_price, notes, kitchen_status, sends_to_kitchen, order_item_options(option_group_name, option_item_name)').eq('order_id', orderId).order('created_at'),
+      supabase.from('order_items').select('id, product_id, product_name, quantity, unit_price, total_price, notes, kitchen_status, sends_to_kitchen, item_type, weight_grams, order_item_options(option_group_name, option_item_name)').eq('order_id', orderId).order('created_at'),
       supabase.from('orders').select('customer_name').eq('id', orderId).maybeSingle(),
     ]);
     setCategories(cats ?? []);
