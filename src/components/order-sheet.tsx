@@ -425,9 +425,9 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar item?</AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmCancelItem?.kitchen_status === 'pendente'
-                ? `O item "${confirmCancelItem?.product_name}" será removido do pedido.`
-                : `O item "${confirmCancelItem?.product_name}" já foi enviado à cozinha. Ele será marcado como cancelado e não será cobrado.`}
+              {confirmCancelItem?.it.kitchen_status === 'pendente'
+                ? `O item "${confirmCancelItem?.it.product_name}" será removido do pedido.`
+                : `O item "${confirmCancelItem?.it.product_name}" já foi enviado à cozinha. Ele será marcado como cancelado e não será cobrado.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
