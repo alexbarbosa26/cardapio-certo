@@ -360,24 +360,21 @@ function TicketCard({ ticket, settings, onStatus }: {
         {ticket.status === 'aguardando' ? 'Aguardando preparo' : ticket.status === 'preparo' ? 'Em preparo' : 'Pronto'}
       </span>
 
-      <ul className="mt-3 space-y-2">
-        {ticket.lines.map((l) => (
-          <li key={l.key} className="min-w-0">
-            <div className="flex items-baseline gap-2 min-w-0">
-              <span className="font-mono text-base font-semibold shrink-0">{l.quantity}×</span>
-              <span className="text-sm font-medium leading-tight break-words min-w-0">{l.name}</span>
-            </div>
-            {l.options.length > 0 && (
-              <ul className="mt-0.5 text-[11px] text-muted-foreground space-y-0.5">
-                {l.options.map((o, i) => <li key={i}>• {o.option_group_name}: {o.option_item_name}</li>)}
-              </ul>
-            )}
-            {l.notes && (
-              <div className="mt-1 rounded-md bg-warning/15 px-2 py-1 text-[11px] italic text-warning-foreground break-words">"{l.notes}"</div>
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className="mt-3 min-w-0">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="font-mono text-xl font-semibold shrink-0">{ticket.quantity}×</span>
+          <span className="text-base font-medium leading-tight break-words min-w-0">{ticket.name}</span>
+        </div>
+        {ticket.options.length > 0 && (
+          <ul className="mt-1 text-[11px] text-muted-foreground space-y-0.5">
+            {ticket.options.map((o, i) => <li key={i}>• {o.option_group_name}: {o.option_item_name}</li>)}
+          </ul>
+        )}
+        {ticket.notes && (
+          <div className="mt-1 rounded-md bg-warning/15 px-2 py-1 text-[11px] italic text-warning-foreground break-words">"{ticket.notes}"</div>
+        )}
+      </div>
+
 
       <div className="mt-4 flex flex-wrap gap-2">
         {ticket.status === 'aguardando' && (
