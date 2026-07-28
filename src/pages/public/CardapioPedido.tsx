@@ -181,6 +181,7 @@ export default function CardapioPedido() {
         <Section title="Entrega">
           <div className="text-sm space-y-1">
             <Row label="Modo" value={order.service_mode === 'delivery' ? <span className="inline-flex items-center gap-1"><Bike className="h-3.5 w-3.5" /> Entrega</span> : 'Retirada'} />
+            {order.driver_name && <Row label="Entregador" value={order.driver_name} />}
             {order.service_mode === 'delivery' && order.delivery_address && (
               <div className="text-neutral-700">
                 {order.delivery_address.street}, {order.delivery_address.number}
@@ -195,9 +196,33 @@ export default function CardapioPedido() {
         <Section title="Pagamento">
           <div className="text-sm space-y-1">
             <Row label="Forma" value={PAYMENT_LABELS[order.payment_method as PaymentMethod] ?? order.payment_method} />
+            <Row label="Situação" value={<PaymentBadge status={order.payment_status} />} />
             {order.change_for ? <Row label="Troco para" value={fmtBRL(order.change_for)} /> : null}
           </div>
+          {order.payment_method === 'pix' && data.pix?.key && order.payment_status !== 'pago' && (
+            <div className="mt-3 rounded-lg border bg-neutral-50 p-3 space-y-2">
+              <div className="text-xs font-medium text-neutral-700">
+                Pague com Pix{data.pix.holder ? ` para ${data.pix.holder}` : ''}
+                {data.pix.key_type ? ` · chave ${data.pix.key_type}` : ''}
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 break-all rounded bg-white border px-2 py-1.5 text-xs">{data.pix.key}</code>
+                <button
+                  type="button"
+                  onClick={() => { void navigator.clipboard.writeText(data.pix!.key); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                  className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-white"
+                  style={{ background: brand }}
+                >
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </button>
+              </div>
+              <p className="text-[11px] text-neutral-500">
+                Após o pagamento, envie o comprovante ao estabelecimento. A confirmação aparece aqui assim que for registrada.
+              </p>
+            </div>
+          )}
         </Section>
+
 
         {order.customer_notes && (
           <Section title="Observações"><div className="text-sm text-neutral-700 whitespace-pre-wrap">{order.customer_notes}</div></Section>
