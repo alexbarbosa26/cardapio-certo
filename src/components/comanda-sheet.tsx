@@ -104,10 +104,14 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
     });
   }, [products, activeCat, search]);
 
-  const removeItem = async (id: string) => {
-    await supabase.from('tab_items').delete().eq('id', id);
+  /** Itens idênticos (produto, preço e observação) exibidos em uma única linha. */
+  const groupedItems = useMemo(() => groupItems(items), [items]);
+
+  const removeItem = async (ids: string[]) => {
+    await supabase.from('tab_items').delete().in('id', ids);
     toast.success('Item removido');
   };
+
 
   const saveCustomerName = async () => {
     await supabase.from('customer_tabs').update({ customer_name: customerName || null }).eq('id', tabId);
@@ -222,28 +226,32 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
           <div className="flex flex-col bg-secondary/40 max-md:border-t max-md:border-border">
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {items.length === 0 && <div className="text-center text-xs text-muted-foreground py-12">Nenhum item ainda.</div>}
-              {items.map((it) => (
-                <div key={it.id} className="rounded-lg border border-border bg-card p-3 flex items-start gap-2">
+              {groupedItems.map((row) => {
+                const it = row.first;
+                return (
+                <div key={row.key} className="rounded-lg border border-border bg-card p-3 flex items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium break-words">{it.product_name}</div>
                     <div className="text-[11px] text-muted-foreground">
                       {it.item_type === 'peso' && it.weight_grams
                         ? `${(it.weight_grams/1000).toFixed(3)} kg × ${fmtBRL(it.unit_price)}/kg`
-                        : `${it.quantity} × ${fmtBRL(it.unit_price)}`}
+                        : `${row.quantity} × ${fmtBRL(it.unit_price)}`}
                       {it.category_name && ` · ${it.category_name}`}
                     </div>
                     {it.notes && <div className="text-[11px] italic text-muted-foreground mt-0.5">"{it.notes}"</div>}
                   </div>
                   <div className="text-right flex flex-col items-end gap-1">
-                    <div className="text-sm font-semibold">{fmtBRL(it.total_price)}</div>
+                    <div className="text-sm font-semibold">{fmtBRL(row.total_price)}</div>
                     {canEdit && (
-                      <button onClick={() => removeItem(it.id)} className="text-muted-foreground hover:text-destructive p-1">
+                      <button onClick={() => removeItem(row.ids)} className="text-muted-foreground hover:text-destructive p-1">
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
+
             </div>
             <div className="border-t border-border bg-card p-4 space-y-3">
               <div className="flex justify-between text-sm">
