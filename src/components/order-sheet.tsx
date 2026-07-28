@@ -132,17 +132,14 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     await supabase.from('orders').update({ subtotal: sub, service_fee_amount: 0, total: sub }).eq('id', orderId);
   };
 
-  const cancelItem = async (it: OrderItem) => {
+  const cancelItem = async (row: ItemRow) => {
     // Se ainda não foi enviado para a cozinha, remove. Caso contrário, marca como cancelado.
-    if (it.kitchen_status === 'pendente' || !it.sends_to_kitchen && it.kitchen_status === 'entregue' && !it.id) {
-      // pure pending → delete
-    }
-    if (it.kitchen_status === 'pendente') {
-      await supabase.from('order_items').delete().eq('id', it.id);
+    if (row.it.kitchen_status === 'pendente') {
+      await supabase.from('order_items').delete().in('id', row.ids);
     } else {
       await supabase.from('order_items').update({
         kitchen_status: 'cancelado', canceled_at: new Date().toISOString(),
-      }).eq('id', it.id);
+      }).in('id', row.ids);
     }
     await recalcOrder();
     toast.success('Item cancelado');
@@ -150,22 +147,23 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     load();
   };
 
-  const swapItem = (it: OrderItem) => {
-    if (it.kitchen_status !== 'pendente') {
+  const swapItem = (row: ItemRow) => {
+    if (row.it.kitchen_status !== 'pendente') {
       toast.error('Só é possível trocar itens ainda não enviados à cozinha.');
       return;
     }
-    setSwapItemId(it.id);
+    setSwapItemId(row.ids[0]);
     toast.info('Selecione o novo produto no cardápio');
   };
 
   const saveNotes = async (newNotes: string) => {
     if (!editingNotes) return;
-    await supabase.from('order_items').update({ notes: newNotes || null }).eq('id', editingNotes.id);
+    await supabase.from('order_items').update({ notes: newNotes || null }).in('id', editingNotes.ids);
     setEditingNotes(null);
     toast.success('Observação atualizada');
     load();
   };
+
 
   const cancelOrder = async () => {
     // Mantém o pedido no histórico: marca como cancelado e libera a mesa.
