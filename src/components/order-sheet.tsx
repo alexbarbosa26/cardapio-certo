@@ -524,11 +524,21 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
     }
     if (weighted && g <= 0) { toast.error('Informe o peso.'); return; }
     const now = new Date().toISOString();
+    const selectedOptions: { option_group_name: string; option_item_name: string; additional_price: number }[] = [];
+    for (const grp of groups) {
+      const set = picks[grp.id]; if (!set) continue;
+      for (const it of grp.items) {
+        if (set.has(it.id)) selectedOptions.push({
+          option_group_name: grp.name, option_item_name: it.name, additional_price: it.additional_price,
+        });
+      }
+    }
+    const kitchenStatus = product.sends_to_kitchen ? 'pendente' : 'entregue';
     const payload: any = {
       order_id: orderId, product_id: product.id, product_name: product.name,
       notes: notes || null,
       sends_to_kitchen: product.sends_to_kitchen,
-      kitchen_status: product.sends_to_kitchen ? 'pendente' : 'entregue',
+      kitchen_status: kitchenStatus,
       delivered_at: product.sends_to_kitchen ? null : now,
     };
     if (weighted) {
@@ -545,21 +555,47 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
       payload.unit_price = unit;
       payload.total_price = +(unit * qty).toFixed(2);
     }
-    const { data: oi, error } = await supabase.from('order_items').insert(payload).select('id').single();
-    if (error) { toast.error(error.message); return; }
-    const opts: any[] = [];
-    for (const grp of groups) {
-      const set = picks[grp.id]; if (!set) continue;
-      for (const it of grp.items) {
-        if (set.has(it.id)) opts.push({
-          order_item_id: oi.id, option_group_name: grp.name, option_item_name: it.name, additional_price: it.additional_price,
-        });
+
+    // Agrupa em uma linha existente idêntica (mesmo produto, adicionais,
+    // observação e preço) que ainda não foi enviada/entregue de forma divergente.
+    if (!weighted && !isSwap) {
+      const unit = product.price + extra;
+      const sig = optionsSignature(selectedOptions);
+      const { data: cands } = await supabase
+        .from('order_items')
+        .select('id, quantity, unit_price, notes, order_item_options(option_group_name, option_item_name)')
+        .eq('order_id', orderId)
+        .eq('product_id', product.id)
+        .eq('item_type', 'fixo')
+        .eq('kitchen_status', kitchenStatus);
+      const match = (cands ?? []).find((c: any) =>
+        Math.abs(Number(c.unit_price) - unit) < 0.005 &&
+        normalizeNotes(c.notes) === normalizeNotes(notes) &&
+        optionsSignature(c.order_item_options ?? []) === sig,
+      );
+      if (match) {
+        const newQty = Number(match.quantity) + qty;
+        const { error: upErr } = await supabase.from('order_items').update({
+          quantity: newQty, total_price: +(unit * newQty).toFixed(2),
+        }).eq('id', match.id);
+        if (upErr) { toast.error(upErr.message); return; }
+        toast.success(`${product.name} — agora ${newQty}×`);
+        onDone(match.id);
+        return;
       }
     }
-    if (opts.length) await supabase.from('order_item_options').insert(opts);
+
+    const { data: oi, error } = await supabase.from('order_items').insert(payload).select('id').single();
+    if (error) { toast.error(error.message); return; }
+    if (selectedOptions.length) {
+      await supabase.from('order_item_options').insert(
+        selectedOptions.map((o) => ({ ...o, order_item_id: oi.id })),
+      );
+    }
     toast.success(isSwap ? `${product.name} substituído` : `${product.name} adicionado`);
     onDone(oi.id);
   };
+
 
   return (
     <Dialog open onOpenChange={onClose}>
