@@ -116,6 +116,7 @@ export default function CardapioDigital() {
           <TabsTrigger value="hours">Horários</TabsTrigger>
           <TabsTrigger value="categories">Categorias</TabsTrigger>
           <TabsTrigger value="items">Itens</TabsTrigger>
+          <TabsTrigger value="drivers">Entregadores</TabsTrigger>
           <TabsTrigger value="link">Link & QR Code</TabsTrigger>
         </TabsList>
 
@@ -123,8 +124,10 @@ export default function CardapioDigital() {
         <TabsContent value="hours" className="mt-4"><HoursTab companyId={profile!.company_id} /></TabsContent>
         <TabsContent value="categories" className="mt-4"><CategoriesTab companyId={profile!.company_id} /></TabsContent>
         <TabsContent value="items" className="mt-4"><ItemsTab companyId={profile!.company_id} /></TabsContent>
+        <TabsContent value="drivers" className="mt-4"><DriversTab companyId={profile!.company_id} /></TabsContent>
         <TabsContent value="link" className="mt-4"><LinkTab slug={company.digital_menu_slug} enabled={!!company.digital_menu_enabled} /></TabsContent>
       </Tabs>
+
     </div>
   );
 }
