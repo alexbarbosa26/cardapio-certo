@@ -110,8 +110,10 @@ export default function CardapioPedido() {
           {eta && !isFinal && (
             <p className="mt-3 text-sm text-neutral-600">
               Previsão: <span className="font-medium text-neutral-900">{eta}</span>
+              {etaAt ? <span className="text-neutral-500"> (por volta das {etaAt})</span> : null}
             </p>
           )}
+
           {isCancelled && order.rejection_reason && (
             <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2">
               Motivo: {order.rejection_reason}
