@@ -352,7 +352,8 @@ export default function PedidosHistorico() {
                         </div>
 
                       </div>
-                    ))}
+                      );
+                    })}
                     {items.length === 0 && <div className="text-muted-foreground">Sem itens.</div>}
                     <div className="text-right text-xs text-muted-foreground">Soma dos itens ativos: <span className="tabular-nums">{fmtBRL(itemsTotal)}</span></div>
                   </div>
