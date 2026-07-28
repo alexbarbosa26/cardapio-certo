@@ -61,7 +61,7 @@ export default function CardapioPedido() {
   const brand = data?.company?.primary_color ?? '#111827';
   const steps = useMemo(() => (order ? buildSteps(order) : []), [order]);
 
-  const eta = useEtaLabel(order?.accepted_at ?? null, order?.estimated_minutes ?? null, order?.status);
+  const { label: eta, clock: etaAt } = useEta(order);
 
   if (isLoading) return <div className="min-h-screen grid place-items-center text-neutral-500">Carregando pedido…</div>;
   if (error || !data?.found || !order) {
