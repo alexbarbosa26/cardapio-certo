@@ -13,6 +13,8 @@ import { fmtBRL } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { normalizeNotes } from '@/lib/group-items';
+
 import { CheckoutTabDialog } from './checkout-tab-dialog';
 
 interface Props {
@@ -364,11 +366,38 @@ function AddProductDialog({
       total_price: +total.toFixed(2),
       notes: notes || null, created_by: userId,
     };
+
+    // Agrupa em item idêntico já existente (produto, preço e observação iguais).
+    if (!weighted) {
+      const { data: cands } = await supabase
+        .from('tab_items')
+        .select('id, quantity, unit_price, notes')
+        .eq('tab_id', tabId)
+        .eq('product_id', product.id)
+        .eq('item_type', 'fixo')
+        .is('canceled_at', null);
+      const match = (cands ?? []).find((c: any) =>
+        Math.abs(Number(c.unit_price) - product.price) < 0.005 &&
+        normalizeNotes(c.notes) === normalizeNotes(notes),
+      );
+      if (match) {
+        const newQty = Number(match.quantity) + qty;
+        const { error: upErr } = await supabase.from('tab_items').update({
+          quantity: newQty, total_price: +(product.price * newQty).toFixed(2),
+        }).eq('id', match.id);
+        if (upErr) { toast.error(upErr.message); return; }
+        toast.success(`${product.name} — agora ${newQty}×`);
+        onDone();
+        return;
+      }
+    }
+
     const { error } = await supabase.from('tab_items').insert(payload);
     if (error) { toast.error(error.message); return; }
     toast.success('Item adicionado');
     onDone();
   };
+
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>

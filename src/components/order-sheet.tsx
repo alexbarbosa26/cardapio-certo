@@ -19,6 +19,8 @@ import { fmtBRL } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { Plus, Minus, Send, X, Printer, MoreVertical, Pencil, Repeat, Ban, Trash2, Scale, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { optionsSignature, normalizeNotes, groupItems } from '@/lib/group-items';
+
 import { toast } from 'sonner';
 
 interface Props {
