@@ -39,7 +39,11 @@ type Settings = {
   delivery_fee: number;
   free_delivery_min: number | null;
   notes: string | null;
+  pix_key: string | null;
+  pix_key_type: string | null;
+  pix_holder: string | null;
 };
+
 
 type Category = { id: string; name: string; description: string | null; sort_order: number; active: boolean };
 type Item = {
