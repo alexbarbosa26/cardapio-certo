@@ -38,6 +38,7 @@ interface OptionGroup { id: string; name: string; required: boolean; selection_t
 
 interface OrderItem {
   id: string;
+  product_id?: string | null;
   product_name: string;
   quantity: number;
   unit_price: number;
@@ -45,8 +46,20 @@ interface OrderItem {
   notes: string | null;
   kitchen_status: string;
   sends_to_kitchen: boolean;
+  item_type?: string | null;
+  weight_grams?: number | null;
   options: { option_group_name: string; option_item_name: string }[];
 }
+
+/** Linha exibida: um ou mais registros idênticos agrupados. */
+interface ItemRow {
+  key: string;
+  ids: string[];
+  quantity: number;
+  total_price: number;
+  it: OrderItem;
+}
+
 
 export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: Props) {
   const { profile } = useAuth();
