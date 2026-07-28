@@ -240,20 +240,30 @@ export default function CardapioPedido() {
   );
 }
 
-function useEtaLabel(acceptedAt: string | null, estimatedMinutes: number | null, status: string | undefined) {
+/** ETA recalculado a partir dos marcos reais do pedido (aceite, pronto, saída). */
+function useEta(order: EtaSource | undefined) {
   const [, tick] = useState(0);
+  const status = order?.status;
   useEffect(() => {
-    if (!acceptedAt || !estimatedMinutes || (status && FINAL_STATUSES.has(status))) return;
+    if (!status || FINAL_STATUSES.has(status)) return;
     const t = setInterval(() => tick((x) => x + 1), 30_000);
     return () => clearInterval(t);
-  }, [acceptedAt, estimatedMinutes, status]);
-  if (!acceptedAt || !estimatedMinutes) return null;
-  const target = new Date(acceptedAt).getTime() + estimatedMinutes * 60_000;
-  const diffMin = Math.round((target - Date.now()) / 60_000);
-  if (diffMin <= 0) return 'a qualquer momento';
-  if (diffMin === 1) return 'cerca de 1 minuto';
-  return `cerca de ${diffMin} minutos`;
+  }, [status]);
+  if (!order) return { label: null as string | null, clock: null as string | null };
+  return { label: etaLabel(order), clock: etaClock(order) };
 }
+
+const PAYMENT_STATUS_META: Record<string, { label: string; tone: string }> = {
+  pendente: { label: 'Pagamento pendente', tone: 'bg-amber-100 text-amber-900 border-amber-200' },
+  pago: { label: 'Pagamento confirmado', tone: 'bg-emerald-100 text-emerald-900 border-emerald-200' },
+  estornado: { label: 'Pagamento estornado', tone: 'bg-red-100 text-red-900 border-red-200' },
+};
+
+function PaymentBadge({ status }: { status?: string | null }) {
+  const meta = PAYMENT_STATUS_META[status ?? 'pendente'] ?? PAYMENT_STATUS_META.pendente;
+  return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${meta.tone}`}>{meta.label}</span>;
+}
+
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
