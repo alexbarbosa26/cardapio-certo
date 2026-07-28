@@ -60,6 +60,8 @@ function AppLayout() {
     if (k === 'fiado') return branding.enableCreditAccounts;
     if (k === 'cardapio') return branding.digitalMenuContracted;
     if (k === 'delivery') return branding.digitalMenuContracted;
+    if (k === 'delivery-metricas') return branding.digitalMenuContracted;
+
     return true;
   };
   const items = NAV.filter((i) => (!i.admin || profile.role === 'admin') && isAllowed(i.key));
