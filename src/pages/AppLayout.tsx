@@ -30,6 +30,8 @@ const NAV: NavItem[] = [
   { key: 'config', to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
   { key: 'cardapio', to: '/cardapio-digital', label: 'Cardápio Digital', icon: Smartphone, admin: true },
   { key: 'delivery', to: '/pedidos-delivery', label: 'Pedidos Delivery', icon: Bike },
+  { key: 'delivery-metricas', to: '/delivery-metricas', label: 'Métricas Delivery', icon: BarChart3, admin: true },
+
   { key: 'assinatura', to: '/assinatura', label: 'Minha assinatura', icon: CreditCard, admin: true },
   { key: 'wpp', to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
   { key: 'nf', to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
