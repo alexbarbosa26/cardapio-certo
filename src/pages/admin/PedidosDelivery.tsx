@@ -314,17 +314,18 @@ function OrderDetailsDialog({ order, onClose, onUpdate, estimateDefault, onEstim
           <div>
             <div className="text-xs font-semibold uppercase text-muted-foreground mb-1">Itens</div>
             <ul className="divide-y rounded-lg border">
-              {items.map((it: any) => (
-                <li key={it.id} className="p-2 flex justify-between gap-2">
+              {groupItems(items as any).map((row) => (
+                <li key={row.key} className="p-2 flex justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="font-medium">{it.quantity}× {it.product_name}</div>
-                    {it.notes && <div className="text-xs text-muted-foreground">{it.notes}</div>}
+                    <div className="font-medium">{row.quantity}× {row.first.product_name}</div>
+                    {row.first.notes && <div className="text-xs text-muted-foreground">{row.first.notes}</div>}
                   </div>
-                  <div className="text-right tabular-nums">{fmtBRL(Number(it.total_price))}</div>
+                  <div className="text-right tabular-nums">{fmtBRL(Number(row.total_price))}</div>
                 </li>
               ))}
             </ul>
           </div>
+
 
           <div className="rounded-lg border p-3 space-y-1">
             <Row label="Subtotal" value={fmtBRL(order.subtotal)} />
