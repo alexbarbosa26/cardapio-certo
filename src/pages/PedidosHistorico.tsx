@@ -1,3 +1,4 @@
+import { groupItems } from '@/lib/group-items';
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
