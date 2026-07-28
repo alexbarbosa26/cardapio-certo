@@ -284,17 +284,18 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
               {items.length === 0 && (
                 <div className="text-center text-xs text-muted-foreground py-12">Nenhum item ainda.</div>
               )}
-              {items.map((it) => {
+              {groupedItems.map((row) => {
+                const it = row.it;
                 const canceled = it.kitchen_status === 'cancelado';
                 return (
-                  <div key={it.id} className={cn(
+                  <div key={row.key} className={cn(
                     'rounded-lg border border-border bg-card p-3',
                     canceled && 'opacity-60',
                   )}>
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 min-w-0">
-                          <span className="font-mono text-xs text-muted-foreground shrink-0">{it.quantity}×</span>
+                          <span className="font-mono text-xs text-muted-foreground shrink-0">{row.quantity}×</span>
                           <span className={cn('text-sm font-medium break-words min-w-0 flex-1', canceled && 'line-through')}>{it.product_name}</span>
                         </div>
                         {it.options.length > 0 && (
@@ -306,7 +307,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                         <KitchenBadge status={it.kitchen_status} />
                       </div>
                       <div className="text-right flex flex-col items-end gap-1">
-                        <div className={cn('text-sm font-semibold', canceled && 'line-through')}>{fmtBRL(it.total_price)}</div>
+                        <div className={cn('text-sm font-semibold', canceled && 'line-through')}>{fmtBRL(row.total_price)}</div>
                         {!canceled && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -315,15 +316,15 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
-                              <DropdownMenuItem onClick={() => setEditingNotes(it)}>
+                              <DropdownMenuItem onClick={() => setEditingNotes(row)}>
                                 <Pencil className="h-3.5 w-3.5 mr-2" /> Editar observação
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => swapItem(it)}>
+                              <DropdownMenuItem onClick={() => swapItem(row)}>
                                 <Repeat className="h-3.5 w-3.5 mr-2" /> Trocar produto
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => setConfirmCancelItem(it)}
+                                onClick={() => setConfirmCancelItem(row)}
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="h-3.5 w-3.5 mr-2" /> Cancelar item
@@ -336,6 +337,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                   </div>
                 );
               })}
+
             </div>
             <div className="border-t border-border bg-card p-4 space-y-3">
               <div className="flex justify-between text-sm">
