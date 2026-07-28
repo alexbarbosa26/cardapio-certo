@@ -39,6 +39,8 @@ function buildSteps(order: NonNullable<Awaited<ReturnType<typeof fetchPublicOrde
 
 export default function CardapioPedido() {
   const { slug = '', token = '' } = useParams();
+  const [copied, setCopied] = useState(false);
+
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ['public-order', token],
     queryFn: () => fetchPublicOrder(token),
