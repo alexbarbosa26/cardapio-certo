@@ -140,6 +140,14 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
 
   const subtotal = items.reduce((s, i) => s + (i.kitchen_status === 'cancelado' ? 0 : i.total_price), 0);
 
+  /** Linhas exibidas: registros idênticos (produto, adicionais, observação, preço) agrupados. */
+  const groupedItems: ItemRow[] = useMemo(
+    () => groupItems(items, (i) => [i.kitchen_status]).map((g) => ({
+      key: g.key, ids: g.ids, quantity: g.quantity, total_price: g.total_price, it: g.first,
+    })),
+    [items],
+  );
+
   const recalcOrder = async () => {
     const { data } = await supabase.from('order_items').select('total_price, kitchen_status').eq('order_id', orderId);
     const sub = (data ?? []).reduce((s, i: any) => s + (i.kitchen_status === 'cancelado' ? 0 : Number(i.total_price)), 0);
@@ -354,9 +362,9 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                     title: tableName,
                     subtitle: 'Comanda',
                     brand,
-                    items: items.filter((i) => i.kitchen_status !== 'cancelado').map((i) => ({
-                      quantity: i.quantity, product_name: i.product_name,
-                      total_price: i.total_price, notes: i.notes, options: i.options,
+                    items: groupedItems.filter((r) => r.it.kitchen_status !== 'cancelado').map((r) => ({
+                      quantity: r.quantity, product_name: r.it.product_name,
+                      total_price: r.total_price, notes: r.it.notes, options: r.it.options,
                     })),
                   })}
                 >
@@ -388,8 +396,8 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
 
       {editingNotes && (
         <EditNotesDialog
-          initial={editingNotes.notes ?? ''}
-          productName={editingNotes.product_name}
+          initial={editingNotes.it.notes ?? ''}
+          productName={editingNotes.it.product_name}
           onSave={saveNotes}
           onClose={() => setEditingNotes(null)}
         />
