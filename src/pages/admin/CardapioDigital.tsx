@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { WEEKDAYS } from '@/lib/digital-menu';
 import { fmtBRL } from '@/lib/format';
+import DriversTab from '@/components/delivery/DriversTab';
+
 
 type Settings = {
   company_id: string;
