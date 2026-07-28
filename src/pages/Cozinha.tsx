@@ -54,7 +54,7 @@ interface KitchenItem {
   service_mode: string;
 }
 
-/** Um "ticket": itens de um mesmo pedido que estão no mesmo status. */
+/** Um "ticket": UM item (agrupado por configuração idêntica) de um pedido. */
 interface Ticket {
   key: string;
   order_id: string;
@@ -66,24 +66,27 @@ interface Ticket {
   customer_name: string | null;
   since: string;
   itemIds: string[];
-  lines: { key: string; quantity: number; name: string; notes: string | null; options: { option_group_name: string; option_item_name: string }[] }[];
+  quantity: number;
+  name: string;
+  notes: string | null;
+  options: { option_group_name: string; option_item_name: string }[];
 }
 
 interface Settings { kitchen_warning_minutes: number; kitchen_danger_minutes: number; }
 
 function buildTickets(items: KitchenItem[]): Ticket[] {
-  const byTicket = new Map<string, KitchenItem[]>();
-  for (const it of items) {
-    const k = `${it.order_id}§${it.kitchen_status}`;
-    const arr = byTicket.get(k);
-    if (arr) arr.push(it); else byTicket.set(k, [it]);
-  }
-  const tickets: Ticket[] = [];
-  for (const [key, list] of byTicket) {
-    const first = list[0];
-    const grouped = groupItems(list);
-    tickets.push({
-      key,
+  // Agrupa apenas itens idênticos do MESMO pedido e MESMO status — cada linha
+  // de item vira um card independente, controlado individualmente.
+  const grouped = groupItems(items, (it) => [it.order_id, it.kitchen_status]);
+  const tickets: Ticket[] = grouped.map((g) => {
+    const first = g.first;
+    const since = g.ids.length === 1
+      ? first.sent_to_kitchen_at
+      : items
+          .filter((i) => g.ids.includes(i.id))
+          .reduce((min, i) => (i.sent_to_kitchen_at < min ? i.sent_to_kitchen_at : min), first.sent_to_kitchen_at);
+    return {
+      key: g.key,
       order_id: first.order_id,
       order_number: first.order_number,
       status: first.kitchen_status,
@@ -91,22 +94,20 @@ function buildTickets(items: KitchenItem[]): Ticket[] {
       service_mode: first.service_mode,
       table_name: first.table_name,
       customer_name: first.customer_name,
-      since: list.reduce((min, i) => (i.sent_to_kitchen_at < min ? i.sent_to_kitchen_at : min), first.sent_to_kitchen_at),
-      itemIds: list.map((i) => i.id),
-      lines: grouped.map((g) => ({
-        key: g.key,
-        quantity: g.quantity,
-        name: g.first.item_type === 'peso' && g.first.weight_grams
-          ? `${g.first.product_name} (${(g.first.weight_grams / 1000).toFixed(3)} kg)`
-          : g.first.product_name,
-        notes: g.first.notes,
-        options: g.first.options,
-      })),
-    });
-  }
+      since,
+      itemIds: g.ids,
+      quantity: g.quantity,
+      name: first.item_type === 'peso' && first.weight_grams
+        ? `${first.product_name} (${(first.weight_grams / 1000).toFixed(3)} kg)`
+        : first.product_name,
+      notes: first.notes,
+      options: first.options,
+    };
+  });
   // Mais antigos primeiro.
-  return tickets.sort((a, b) => a.since.localeCompare(b.since));
+  return tickets.sort((a, b) => a.since.localeCompare(b.since) || a.name.localeCompare(b.name));
 }
+
 
 function CozinhaPage() {
   const { profile } = useAuth();
@@ -359,24 +360,21 @@ function TicketCard({ ticket, settings, onStatus }: {
         {ticket.status === 'aguardando' ? 'Aguardando preparo' : ticket.status === 'preparo' ? 'Em preparo' : 'Pronto'}
       </span>
 
-      <ul className="mt-3 space-y-2">
-        {ticket.lines.map((l) => (
-          <li key={l.key} className="min-w-0">
-            <div className="flex items-baseline gap-2 min-w-0">
-              <span className="font-mono text-base font-semibold shrink-0">{l.quantity}×</span>
-              <span className="text-sm font-medium leading-tight break-words min-w-0">{l.name}</span>
-            </div>
-            {l.options.length > 0 && (
-              <ul className="mt-0.5 text-[11px] text-muted-foreground space-y-0.5">
-                {l.options.map((o, i) => <li key={i}>• {o.option_group_name}: {o.option_item_name}</li>)}
-              </ul>
-            )}
-            {l.notes && (
-              <div className="mt-1 rounded-md bg-warning/15 px-2 py-1 text-[11px] italic text-warning-foreground break-words">"{l.notes}"</div>
-            )}
-          </li>
-        ))}
-      </ul>
+      <div className="mt-3 min-w-0">
+        <div className="flex items-baseline gap-2 min-w-0">
+          <span className="font-mono text-xl font-semibold shrink-0">{ticket.quantity}×</span>
+          <span className="text-base font-medium leading-tight break-words min-w-0">{ticket.name}</span>
+        </div>
+        {ticket.options.length > 0 && (
+          <ul className="mt-1 text-[11px] text-muted-foreground space-y-0.5">
+            {ticket.options.map((o, i) => <li key={i}>• {o.option_group_name}: {o.option_item_name}</li>)}
+          </ul>
+        )}
+        {ticket.notes && (
+          <div className="mt-1 rounded-md bg-warning/15 px-2 py-1 text-[11px] italic text-warning-foreground break-words">"{ticket.notes}"</div>
+        )}
+      </div>
+
 
       <div className="mt-4 flex flex-wrap gap-2">
         {ticket.status === 'aguardando' && (
