@@ -38,6 +38,8 @@ import GlobalAuditoria from '@/pages/global/GlobalAuditoria';
 import GlobalUsuarios from '@/pages/global/GlobalUsuarios';
 import CardapioDigital from '@/pages/admin/CardapioDigital';
 import PedidosDelivery from '@/pages/admin/PedidosDelivery';
+import DeliveryMetricas from '@/pages/admin/DeliveryMetricas';
+
 import CardapioPublico from '@/pages/public/CardapioPublico';
 import CardapioPedido from '@/pages/public/CardapioPedido';
 
