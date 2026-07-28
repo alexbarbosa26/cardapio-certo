@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { WEEKDAYS } from '@/lib/digital-menu';
 import { fmtBRL } from '@/lib/format';
+import DriversTab from '@/components/delivery/DriversTab';
+
 
 type Settings = {
   company_id: string;
@@ -39,7 +41,11 @@ type Settings = {
   delivery_fee: number;
   free_delivery_min: number | null;
   notes: string | null;
+  pix_key: string | null;
+  pix_key_type: string | null;
+  pix_holder: string | null;
 };
+
 
 type Category = { id: string; name: string; description: string | null; sort_order: number; active: boolean };
 type Item = {
@@ -112,6 +118,7 @@ export default function CardapioDigital() {
           <TabsTrigger value="hours">Horários</TabsTrigger>
           <TabsTrigger value="categories">Categorias</TabsTrigger>
           <TabsTrigger value="items">Itens</TabsTrigger>
+          <TabsTrigger value="drivers">Entregadores</TabsTrigger>
           <TabsTrigger value="link">Link & QR Code</TabsTrigger>
         </TabsList>
 
@@ -119,8 +126,10 @@ export default function CardapioDigital() {
         <TabsContent value="hours" className="mt-4"><HoursTab companyId={profile!.company_id} /></TabsContent>
         <TabsContent value="categories" className="mt-4"><CategoriesTab companyId={profile!.company_id} /></TabsContent>
         <TabsContent value="items" className="mt-4"><ItemsTab companyId={profile!.company_id} /></TabsContent>
+        <TabsContent value="drivers" className="mt-4"><DriversTab companyId={profile!.company_id} /></TabsContent>
         <TabsContent value="link" className="mt-4"><LinkTab slug={company.digital_menu_slug} enabled={!!company.digital_menu_enabled} /></TabsContent>
       </Tabs>
+
     </div>
   );
 }
@@ -227,9 +236,40 @@ function SettingsTab({ companyId, slug, onSlug }: { companyId: string; slug: str
           <SwitchRow label="Aceitando pedidos" checked={s.accepting_orders} onChange={(v) => setS({ ...s, accepting_orders: v })} />
         </div>
 
+        <div className="rounded-lg border p-4 space-y-4">
+          <div>
+            <h4 className="text-sm font-medium">Pix (pagamento manual)</h4>
+            <p className="text-xs text-muted-foreground">
+              Exibido na página de acompanhamento quando o cliente escolhe Pix. A confirmação do pagamento é feita por você na tela de Pedidos Delivery.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Chave Pix">
+              <Input value={s.pix_key ?? ''} onChange={(e) => setS({ ...s, pix_key: e.target.value })} placeholder="e-mail, CPF/CNPJ, telefone…" />
+            </Field>
+            <Field label="Tipo da chave">
+              <Select value={s.pix_key_type ?? 'none'} onValueChange={(v) => setS({ ...s, pix_key_type: v === 'none' ? null : v })}>
+                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não informar</SelectItem>
+                  <SelectItem value="cpf">CPF</SelectItem>
+                  <SelectItem value="cnpj">CNPJ</SelectItem>
+                  <SelectItem value="email">E-mail</SelectItem>
+                  <SelectItem value="telefone">Telefone</SelectItem>
+                  <SelectItem value="aleatoria">Aleatória</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Titular da chave">
+              <Input value={s.pix_holder ?? ''} onChange={(e) => setS({ ...s, pix_holder: e.target.value })} />
+            </Field>
+          </div>
+        </div>
+
         <Field label="Observações gerais">
           <Textarea rows={2} value={s.notes ?? ''} onChange={(e) => setS({ ...s, notes: e.target.value })} />
         </Field>
+
 
         <div className="flex justify-end">
           <Button onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar configurações'}</Button>
@@ -245,8 +285,10 @@ function defaultsFor(companyId: string): Settings {
     address: null, instagram: null, cover_url: null, primary_color: null,
     avg_prep_min: 30, min_order_amount: 0, delivery_enabled: true, pickup_enabled: true,
     accepting_orders: true, delivery_fee: 0, free_delivery_min: null, notes: null,
+    pix_key: null, pix_key_type: null, pix_holder: null,
   };
 }
+
 
 /* ---------------- Hours ---------------- */
 function HoursTab({ companyId }: { companyId: string }) {

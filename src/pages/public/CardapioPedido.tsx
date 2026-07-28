@@ -5,6 +5,8 @@ import { fetchPublicOrder, PAYMENT_LABELS, type PaymentMethod } from '@/lib/digi
 import { fmtBRL, fmtDateTime } from '@/lib/format';
 import { CheckCircle2, Clock, ChefHat, Bike, PackageCheck, XCircle, ArrowLeft, Circle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { etaClock, etaLabel, type EtaSource } from '@/lib/delivery-notify';
+
 
 const STATUS_LABEL: Record<string, { label: string; tone: string; icon: typeof Clock }> = {
   aguardando_aceite: { label: 'Aguardando o restaurante aceitar', tone: 'bg-amber-100 text-amber-900 border-amber-200', icon: Clock },
@@ -39,6 +41,8 @@ function buildSteps(order: NonNullable<Awaited<ReturnType<typeof fetchPublicOrde
 
 export default function CardapioPedido() {
   const { slug = '', token = '' } = useParams();
+  const [copied, setCopied] = useState(false);
+
   const { data, isLoading, error, isFetching } = useQuery({
     queryKey: ['public-order', token],
     queryFn: () => fetchPublicOrder(token),
@@ -59,7 +63,7 @@ export default function CardapioPedido() {
   const brand = data?.company?.primary_color ?? '#111827';
   const steps = useMemo(() => (order ? buildSteps(order) : []), [order]);
 
-  const eta = useEtaLabel(order?.accepted_at ?? null, order?.estimated_minutes ?? null, order?.status);
+  const { label: eta, clock: etaAt } = useEta(order);
 
   if (isLoading) return <div className="min-h-screen grid place-items-center text-neutral-500">Carregando pedido…</div>;
   if (error || !data?.found || !order) {
@@ -106,8 +110,10 @@ export default function CardapioPedido() {
           {eta && !isFinal && (
             <p className="mt-3 text-sm text-neutral-600">
               Previsão: <span className="font-medium text-neutral-900">{eta}</span>
+              {etaAt ? <span className="text-neutral-500"> (por volta das {etaAt})</span> : null}
             </p>
           )}
+
           {isCancelled && order.rejection_reason && (
             <p className="mt-3 text-sm text-red-700 bg-red-50 border border-red-100 rounded-md px-3 py-2">
               Motivo: {order.rejection_reason}
@@ -181,6 +187,7 @@ export default function CardapioPedido() {
         <Section title="Entrega">
           <div className="text-sm space-y-1">
             <Row label="Modo" value={order.service_mode === 'delivery' ? <span className="inline-flex items-center gap-1"><Bike className="h-3.5 w-3.5" /> Entrega</span> : 'Retirada'} />
+            {order.driver_name && <Row label="Entregador" value={order.driver_name} />}
             {order.service_mode === 'delivery' && order.delivery_address && (
               <div className="text-neutral-700">
                 {order.delivery_address.street}, {order.delivery_address.number}
@@ -195,9 +202,33 @@ export default function CardapioPedido() {
         <Section title="Pagamento">
           <div className="text-sm space-y-1">
             <Row label="Forma" value={PAYMENT_LABELS[order.payment_method as PaymentMethod] ?? order.payment_method} />
+            <Row label="Situação" value={<PaymentBadge status={order.payment_status} />} />
             {order.change_for ? <Row label="Troco para" value={fmtBRL(order.change_for)} /> : null}
           </div>
+          {order.payment_method === 'pix' && data.pix?.key && order.payment_status !== 'pago' && (
+            <div className="mt-3 rounded-lg border bg-neutral-50 p-3 space-y-2">
+              <div className="text-xs font-medium text-neutral-700">
+                Pague com Pix{data.pix.holder ? ` para ${data.pix.holder}` : ''}
+                {data.pix.key_type ? ` · chave ${data.pix.key_type}` : ''}
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 break-all rounded bg-white border px-2 py-1.5 text-xs">{data.pix.key}</code>
+                <button
+                  type="button"
+                  onClick={() => { void navigator.clipboard.writeText(data.pix!.key); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                  className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-white"
+                  style={{ background: brand }}
+                >
+                  {copied ? 'Copiado!' : 'Copiar'}
+                </button>
+              </div>
+              <p className="text-[11px] text-neutral-500">
+                Após o pagamento, envie o comprovante ao estabelecimento. A confirmação aparece aqui assim que for registrada.
+              </p>
+            </div>
+          )}
         </Section>
+
 
         {order.customer_notes && (
           <Section title="Observações"><div className="text-sm text-neutral-700 whitespace-pre-wrap">{order.customer_notes}</div></Section>
@@ -213,20 +244,30 @@ export default function CardapioPedido() {
   );
 }
 
-function useEtaLabel(acceptedAt: string | null, estimatedMinutes: number | null, status: string | undefined) {
+/** ETA recalculado a partir dos marcos reais do pedido (aceite, pronto, saída). */
+function useEta(order: EtaSource | undefined) {
   const [, tick] = useState(0);
+  const status = order?.status;
   useEffect(() => {
-    if (!acceptedAt || !estimatedMinutes || (status && FINAL_STATUSES.has(status))) return;
+    if (!status || FINAL_STATUSES.has(status)) return;
     const t = setInterval(() => tick((x) => x + 1), 30_000);
     return () => clearInterval(t);
-  }, [acceptedAt, estimatedMinutes, status]);
-  if (!acceptedAt || !estimatedMinutes) return null;
-  const target = new Date(acceptedAt).getTime() + estimatedMinutes * 60_000;
-  const diffMin = Math.round((target - Date.now()) / 60_000);
-  if (diffMin <= 0) return 'a qualquer momento';
-  if (diffMin === 1) return 'cerca de 1 minuto';
-  return `cerca de ${diffMin} minutos`;
+  }, [status]);
+  if (!order) return { label: null as string | null, clock: null as string | null };
+  return { label: etaLabel(order), clock: etaClock(order) };
 }
+
+const PAYMENT_STATUS_META: Record<string, { label: string; tone: string }> = {
+  pendente: { label: 'Pagamento pendente', tone: 'bg-amber-100 text-amber-900 border-amber-200' },
+  pago: { label: 'Pagamento confirmado', tone: 'bg-emerald-100 text-emerald-900 border-emerald-200' },
+  estornado: { label: 'Pagamento estornado', tone: 'bg-red-100 text-red-900 border-red-200' },
+};
+
+function PaymentBadge({ status }: { status?: string | null }) {
+  const meta = PAYMENT_STATUS_META[status ?? 'pendente'] ?? PAYMENT_STATUS_META.pendente;
+  return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${meta.tone}`}>{meta.label}</span>;
+}
+
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

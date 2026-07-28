@@ -123,6 +123,7 @@ export async function fetchPublicOrder(token: string) {
       customer_phone: string;
       delivery_address: Address | null;
       payment_method: string;
+      payment_status?: string | null;
       change_for: number | null;
       customer_notes: string | null;
       subtotal: number;
@@ -135,10 +136,13 @@ export async function fetchPublicOrder(token: string) {
       delivered_at: string | null;
       estimated_minutes: number | null;
       rejection_reason: string | null;
+      driver_name?: string | null;
       items: Array<{ name: string; quantity: number; unit_price: number; total_price: number; notes: string | null; kitchen_status: string }>;
     };
     company?: { name: string; slug: string; logo_url: string | null; primary_color: string | null };
+    pix?: { key: string; key_type: string | null; holder: string | null } | null;
   };
+
 }
 
 export function newClientToken() {

@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
-type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'fiado' | 'historico' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf' | 'cardapio' | 'delivery';
+type NavKey = 'dashboard' | 'mesas' | 'comandas' | 'cozinha' | 'produtos' | 'grupos' | 'usuarios' | 'caixa' | 'fiado' | 'historico' | 'relatorios' | 'config' | 'assinatura' | 'wpp' | 'nf' | 'cardapio' | 'delivery' | 'delivery-metricas';
 interface NavItem { key: NavKey; to: string; label: string; icon: React.ComponentType<{ className?: string }>; admin?: boolean; soon?: boolean; }
 
 const NAV: NavItem[] = [
@@ -30,6 +30,8 @@ const NAV: NavItem[] = [
   { key: 'config', to: '/configuracoes', label: 'Configurações', icon: SettingsIcon, admin: true },
   { key: 'cardapio', to: '/cardapio-digital', label: 'Cardápio Digital', icon: Smartphone, admin: true },
   { key: 'delivery', to: '/pedidos-delivery', label: 'Pedidos Delivery', icon: Bike },
+  { key: 'delivery-metricas', to: '/delivery-metricas', label: 'Métricas Delivery', icon: BarChart3, admin: true },
+
   { key: 'assinatura', to: '/assinatura', label: 'Minha assinatura', icon: CreditCard, admin: true },
   { key: 'wpp', to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
   { key: 'nf', to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
@@ -58,6 +60,8 @@ function AppLayout() {
     if (k === 'fiado') return branding.enableCreditAccounts;
     if (k === 'cardapio') return branding.digitalMenuContracted;
     if (k === 'delivery') return branding.digitalMenuContracted;
+    if (k === 'delivery-metricas') return branding.digitalMenuContracted;
+
     return true;
   };
   const items = NAV.filter((i) => (!i.admin || profile.role === 'admin') && isAllowed(i.key));
