@@ -103,6 +103,8 @@ export default function App() {
                   <Route path="/assinatura" element={<MinhaAssinatura />} />
                   <Route path="/cardapio-digital" element={<CardapioDigital />} />
                   <Route path="/pedidos-delivery" element={<PedidosDelivery />} />
+                  <Route path="/delivery-metricas" element={<DeliveryMetricas />} />
+
                 </Route>
               </Route>
 
