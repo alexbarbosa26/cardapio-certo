@@ -281,12 +281,12 @@ export function ComandaSheet({ tabId, open, onOpenChange }: Props) {
                   title: `Comanda #${tab.tab_number}`,
                   subtitle: tab.customer_name || undefined,
                   brand,
-                  items: items.map((i) => ({
-                    quantity: i.quantity,
-                    product_name: i.item_type === 'peso' && i.weight_grams
-                      ? `${i.product_name} (${(i.weight_grams/1000).toFixed(3)} kg)`
-                      : i.product_name,
-                    total_price: i.total_price, notes: i.notes,
+                  items: groupedItems.map((r) => ({
+                    quantity: r.quantity,
+                    product_name: r.first.item_type === 'peso' && r.first.weight_grams
+                      ? `${r.first.product_name} (${(r.first.weight_grams/1000).toFixed(3)} kg)`
+                      : r.first.product_name,
+                    total_price: r.total_price, notes: r.first.notes,
                   })),
                   totals: [
                     { label: 'Subtotal', value: fmtBRL(tab.subtotal) },
