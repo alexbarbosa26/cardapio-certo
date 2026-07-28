@@ -13,7 +13,7 @@ import { fmtBRL } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { normalizeNotes } from '@/lib/group-items';
+import { normalizeNotes, groupItems } from '@/lib/group-items';
 
 import { CheckoutTabDialog } from './checkout-tab-dialog';
 
