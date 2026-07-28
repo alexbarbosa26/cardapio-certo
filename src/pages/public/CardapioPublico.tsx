@@ -56,7 +56,8 @@ export default function CardapioPublico() {
 
   const addItem = (item: { id: string; name: string; price: number; image_url: string | null }) => {
     setCart((prev) => {
-      const idx = prev.findIndex((p) => p.item_id === item.id);
+      // só agrupa quando é exatamente o mesmo item e sem observação divergente
+      const idx = prev.findIndex((p) => p.item_id === item.id && !(p.notes ?? '').trim());
       if (idx >= 0) {
         const next = [...prev];
         next[idx] = { ...next[idx], quantity: next[idx].quantity + 1 };

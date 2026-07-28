@@ -19,6 +19,8 @@ import { fmtBRL } from '@/lib/format';
 import { printThermal } from '@/lib/print-order';
 import { Plus, Minus, Send, X, Printer, MoreVertical, Pencil, Repeat, Ban, Trash2, Scale, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { optionsSignature, normalizeNotes, groupItems } from '@/lib/group-items';
+
 import { toast } from 'sonner';
 
 interface Props {
@@ -36,6 +38,7 @@ interface OptionGroup { id: string; name: string; required: boolean; selection_t
 
 interface OrderItem {
   id: string;
+  product_id?: string | null;
   product_name: string;
   quantity: number;
   unit_price: number;
@@ -43,8 +46,20 @@ interface OrderItem {
   notes: string | null;
   kitchen_status: string;
   sends_to_kitchen: boolean;
+  item_type?: string | null;
+  weight_grams?: number | null;
   options: { option_group_name: string; option_item_name: string }[];
 }
+
+/** Linha exibida: um ou mais registros idênticos agrupados. */
+interface ItemRow {
+  key: string;
+  ids: string[];
+  quantity: number;
+  total_price: number;
+  it: OrderItem;
+}
+
 
 export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: Props) {
   const { profile } = useAuth();
@@ -55,9 +70,10 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState<Product | null>(null);
   const [swapItemId, setSwapItemId] = useState<string | null>(null);
-  const [editingNotes, setEditingNotes] = useState<OrderItem | null>(null);
+  const [editingNotes, setEditingNotes] = useState<ItemRow | null>(null);
   const [confirmCancelOrder, setConfirmCancelOrder] = useState(false);
-  const [confirmCancelItem, setConfirmCancelItem] = useState<OrderItem | null>(null);
+  const [confirmCancelItem, setConfirmCancelItem] = useState<ItemRow | null>(null);
+
   const [brand, setBrand] = useState<{ name?: string; tradeName?: string; logoUrl?: string }>({});
   const [customerName, setCustomerName] = useState('');
   const [savedCustomerName, setSavedCustomerName] = useState('');
@@ -68,7 +84,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     const [{ data: cats }, { data: prods }, { data: ois }, { data: ord }] = await Promise.all([
       supabase.from('categories').select('id, name').eq('company_id', profile.company_id).eq('status', 'ativo').order('sort_order'),
       supabase.from('products').select('id, name, price, sends_to_kitchen, category_id, is_weighted, price_per_kg').eq('company_id', profile.company_id).eq('status', 'ativo').order('name'),
-      supabase.from('order_items').select('id, product_name, quantity, unit_price, total_price, notes, kitchen_status, sends_to_kitchen, order_item_options(option_group_name, option_item_name)').eq('order_id', orderId).order('created_at'),
+      supabase.from('order_items').select('id, product_id, product_name, quantity, unit_price, total_price, notes, kitchen_status, sends_to_kitchen, item_type, weight_grams, order_item_options(option_group_name, option_item_name)').eq('order_id', orderId).order('created_at'),
       supabase.from('orders').select('customer_name').eq('id', orderId).maybeSingle(),
     ]);
     setCategories(cats ?? []);
@@ -124,23 +140,28 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
 
   const subtotal = items.reduce((s, i) => s + (i.kitchen_status === 'cancelado' ? 0 : i.total_price), 0);
 
+  /** Linhas exibidas: registros idênticos (produto, adicionais, observação, preço) agrupados. */
+  const groupedItems: ItemRow[] = useMemo(
+    () => groupItems(items, (i) => [i.kitchen_status]).map((g) => ({
+      key: g.key, ids: g.ids, quantity: g.quantity, total_price: g.total_price, it: g.first,
+    })),
+    [items],
+  );
+
   const recalcOrder = async () => {
     const { data } = await supabase.from('order_items').select('total_price, kitchen_status').eq('order_id', orderId);
     const sub = (data ?? []).reduce((s, i: any) => s + (i.kitchen_status === 'cancelado' ? 0 : Number(i.total_price)), 0);
     await supabase.from('orders').update({ subtotal: sub, service_fee_amount: 0, total: sub }).eq('id', orderId);
   };
 
-  const cancelItem = async (it: OrderItem) => {
+  const cancelItem = async (row: ItemRow) => {
     // Se ainda não foi enviado para a cozinha, remove. Caso contrário, marca como cancelado.
-    if (it.kitchen_status === 'pendente' || !it.sends_to_kitchen && it.kitchen_status === 'entregue' && !it.id) {
-      // pure pending → delete
-    }
-    if (it.kitchen_status === 'pendente') {
-      await supabase.from('order_items').delete().eq('id', it.id);
+    if (row.it.kitchen_status === 'pendente') {
+      await supabase.from('order_items').delete().in('id', row.ids);
     } else {
       await supabase.from('order_items').update({
         kitchen_status: 'cancelado', canceled_at: new Date().toISOString(),
-      }).eq('id', it.id);
+      }).in('id', row.ids);
     }
     await recalcOrder();
     toast.success('Item cancelado');
@@ -148,22 +169,23 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
     load();
   };
 
-  const swapItem = (it: OrderItem) => {
-    if (it.kitchen_status !== 'pendente') {
+  const swapItem = (row: ItemRow) => {
+    if (row.it.kitchen_status !== 'pendente') {
       toast.error('Só é possível trocar itens ainda não enviados à cozinha.');
       return;
     }
-    setSwapItemId(it.id);
+    setSwapItemId(row.ids[0]);
     toast.info('Selecione o novo produto no cardápio');
   };
 
   const saveNotes = async (newNotes: string) => {
     if (!editingNotes) return;
-    await supabase.from('order_items').update({ notes: newNotes || null }).eq('id', editingNotes.id);
+    await supabase.from('order_items').update({ notes: newNotes || null }).in('id', editingNotes.ids);
     setEditingNotes(null);
     toast.success('Observação atualizada');
     load();
   };
+
 
   const cancelOrder = async () => {
     // Mantém o pedido no histórico: marca como cancelado e libera a mesa.
@@ -270,17 +292,18 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
               {items.length === 0 && (
                 <div className="text-center text-xs text-muted-foreground py-12">Nenhum item ainda.</div>
               )}
-              {items.map((it) => {
+              {groupedItems.map((row) => {
+                const it = row.it;
                 const canceled = it.kitchen_status === 'cancelado';
                 return (
-                  <div key={it.id} className={cn(
+                  <div key={row.key} className={cn(
                     'rounded-lg border border-border bg-card p-3',
                     canceled && 'opacity-60',
                   )}>
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 min-w-0">
-                          <span className="font-mono text-xs text-muted-foreground shrink-0">{it.quantity}×</span>
+                          <span className="font-mono text-xs text-muted-foreground shrink-0">{row.quantity}×</span>
                           <span className={cn('text-sm font-medium break-words min-w-0 flex-1', canceled && 'line-through')}>{it.product_name}</span>
                         </div>
                         {it.options.length > 0 && (
@@ -292,7 +315,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                         <KitchenBadge status={it.kitchen_status} />
                       </div>
                       <div className="text-right flex flex-col items-end gap-1">
-                        <div className={cn('text-sm font-semibold', canceled && 'line-through')}>{fmtBRL(it.total_price)}</div>
+                        <div className={cn('text-sm font-semibold', canceled && 'line-through')}>{fmtBRL(row.total_price)}</div>
                         {!canceled && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -301,15 +324,15 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                               </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-44">
-                              <DropdownMenuItem onClick={() => setEditingNotes(it)}>
+                              <DropdownMenuItem onClick={() => setEditingNotes(row)}>
                                 <Pencil className="h-3.5 w-3.5 mr-2" /> Editar observação
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => swapItem(it)}>
+                              <DropdownMenuItem onClick={() => swapItem(row)}>
                                 <Repeat className="h-3.5 w-3.5 mr-2" /> Trocar produto
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                onClick={() => setConfirmCancelItem(it)}
+                                onClick={() => setConfirmCancelItem(row)}
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="h-3.5 w-3.5 mr-2" /> Cancelar item
@@ -322,6 +345,7 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                   </div>
                 );
               })}
+
             </div>
             <div className="border-t border-border bg-card p-4 space-y-3">
               <div className="flex justify-between text-sm">
@@ -338,9 +362,9 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
                     title: tableName,
                     subtitle: 'Comanda',
                     brand,
-                    items: items.filter((i) => i.kitchen_status !== 'cancelado').map((i) => ({
-                      quantity: i.quantity, product_name: i.product_name,
-                      total_price: i.total_price, notes: i.notes, options: i.options,
+                    items: groupedItems.filter((r) => r.it.kitchen_status !== 'cancelado').map((r) => ({
+                      quantity: r.quantity, product_name: r.it.product_name,
+                      total_price: r.total_price, notes: r.it.notes, options: r.it.options,
                     })),
                   })}
                 >
@@ -372,8 +396,8 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
 
       {editingNotes && (
         <EditNotesDialog
-          initial={editingNotes.notes ?? ''}
-          productName={editingNotes.product_name}
+          initial={editingNotes.it.notes ?? ''}
+          productName={editingNotes.it.product_name}
           onSave={saveNotes}
           onClose={() => setEditingNotes(null)}
         />
@@ -401,9 +425,9 @@ export function OrderSheet({ tableId, orderId, tableName, open, onOpenChange }: 
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar item?</AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmCancelItem?.kitchen_status === 'pendente'
-                ? `O item "${confirmCancelItem?.product_name}" será removido do pedido.`
-                : `O item "${confirmCancelItem?.product_name}" já foi enviado à cozinha. Ele será marcado como cancelado e não será cobrado.`}
+              {confirmCancelItem?.it.kitchen_status === 'pendente'
+                ? `O item "${confirmCancelItem?.it.product_name}" será removido do pedido.`
+                : `O item "${confirmCancelItem?.it.product_name}" já foi enviado à cozinha. Ele será marcado como cancelado e não será cobrado.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -524,11 +548,21 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
     }
     if (weighted && g <= 0) { toast.error('Informe o peso.'); return; }
     const now = new Date().toISOString();
+    const selectedOptions: { option_group_name: string; option_item_name: string; additional_price: number }[] = [];
+    for (const grp of groups) {
+      const set = picks[grp.id]; if (!set) continue;
+      for (const it of grp.items) {
+        if (set.has(it.id)) selectedOptions.push({
+          option_group_name: grp.name, option_item_name: it.name, additional_price: it.additional_price,
+        });
+      }
+    }
+    const kitchenStatus = product.sends_to_kitchen ? 'pendente' : 'entregue';
     const payload: any = {
       order_id: orderId, product_id: product.id, product_name: product.name,
       notes: notes || null,
       sends_to_kitchen: product.sends_to_kitchen,
-      kitchen_status: product.sends_to_kitchen ? 'pendente' : 'entregue',
+      kitchen_status: kitchenStatus,
       delivered_at: product.sends_to_kitchen ? null : now,
     };
     if (weighted) {
@@ -545,21 +579,47 @@ function AddProductDialog({ product, orderId, isSwap, onDone, onClose }: { produ
       payload.unit_price = unit;
       payload.total_price = +(unit * qty).toFixed(2);
     }
-    const { data: oi, error } = await supabase.from('order_items').insert(payload).select('id').single();
-    if (error) { toast.error(error.message); return; }
-    const opts: any[] = [];
-    for (const grp of groups) {
-      const set = picks[grp.id]; if (!set) continue;
-      for (const it of grp.items) {
-        if (set.has(it.id)) opts.push({
-          order_item_id: oi.id, option_group_name: grp.name, option_item_name: it.name, additional_price: it.additional_price,
-        });
+
+    // Agrupa em uma linha existente idêntica (mesmo produto, adicionais,
+    // observação e preço) que ainda não foi enviada/entregue de forma divergente.
+    if (!weighted && !isSwap) {
+      const unit = product.price + extra;
+      const sig = optionsSignature(selectedOptions);
+      const { data: cands } = await supabase
+        .from('order_items')
+        .select('id, quantity, unit_price, notes, order_item_options(option_group_name, option_item_name)')
+        .eq('order_id', orderId)
+        .eq('product_id', product.id)
+        .eq('item_type', 'fixo')
+        .eq('kitchen_status', kitchenStatus);
+      const match = (cands ?? []).find((c: any) =>
+        Math.abs(Number(c.unit_price) - unit) < 0.005 &&
+        normalizeNotes(c.notes) === normalizeNotes(notes) &&
+        optionsSignature(c.order_item_options ?? []) === sig,
+      );
+      if (match) {
+        const newQty = Number(match.quantity) + qty;
+        const { error: upErr } = await supabase.from('order_items').update({
+          quantity: newQty, total_price: +(unit * newQty).toFixed(2),
+        }).eq('id', match.id);
+        if (upErr) { toast.error(upErr.message); return; }
+        toast.success(`${product.name} — agora ${newQty}×`);
+        onDone(match.id);
+        return;
       }
     }
-    if (opts.length) await supabase.from('order_item_options').insert(opts);
+
+    const { data: oi, error } = await supabase.from('order_items').insert(payload).select('id').single();
+    if (error) { toast.error(error.message); return; }
+    if (selectedOptions.length) {
+      await supabase.from('order_item_options').insert(
+        selectedOptions.map((o) => ({ ...o, order_item_id: oi.id })),
+      );
+    }
     toast.success(isSwap ? `${product.name} substituído` : `${product.name} adicionado`);
     onDone(oi.id);
   };
+
 
   return (
     <Dialog open onOpenChange={onClose}>

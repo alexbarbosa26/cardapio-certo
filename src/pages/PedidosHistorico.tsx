@@ -1,3 +1,4 @@
+import { groupItems } from '@/lib/group-items';
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -324,19 +325,21 @@ export default function PedidosHistorico() {
                 <h3 className="font-semibold mb-2">Itens ({items.length})</h3>
                 {loadingDetail ? <div className="text-muted-foreground">Carregando…</div> : (
                   <div className="space-y-2">
-                    {items.map((it) => (
-                      <div key={it.id} className={`rounded-md border p-2 ${it.canceled_at ? 'opacity-60 line-through' : ''}`}>
+                    {groupItems(items as any, (i: any) => [i.canceled_at ? 'cancelado' : 'ativo']).map((row) => {
+                      const it: any = row.first;
+                      return (
+                      <div key={row.key} className={`rounded-md border p-2 ${it.canceled_at ? 'opacity-60 line-through' : ''}`}>
                         <div className="flex justify-between gap-2">
                           <div>
                             <div className="font-medium">
                               {it.item_type === 'weighted' && it.weight_grams
                                 ? `${(it.weight_grams / 1000).toFixed(3)} kg × `
-                                : `${it.quantity}× `}
+                                : `${row.quantity}× `}
                               {it.product_name}
                             </div>
                             {it.options && it.options.length > 0 && (
                               <ul className="text-xs text-muted-foreground ml-3 list-disc">
-                                {it.options.map((o, i) => (
+                                {it.options.map((o: any, i: number) => (
                                   <li key={i}>{o.option_group_name}: {o.option_item_name}{o.additional_price ? ` (+${fmtBRL(o.additional_price)})` : ''}</li>
                                 ))}
                               </ul>
@@ -345,11 +348,13 @@ export default function PedidosHistorico() {
                           </div>
                           <div className="text-right tabular-nums">
                             <div className="text-xs text-muted-foreground">{fmtBRL(it.unit_price)}</div>
-                            <div className="font-semibold">{fmtBRL(it.total_price)}</div>
+                            <div className="font-semibold">{fmtBRL(row.total_price)}</div>
                           </div>
                         </div>
+
                       </div>
-                    ))}
+                      );
+                    })}
                     {items.length === 0 && <div className="text-muted-foreground">Sem itens.</div>}
                     <div className="text-right text-xs text-muted-foreground">Soma dos itens ativos: <span className="tabular-nums">{fmtBRL(itemsTotal)}</span></div>
                   </div>
