@@ -249,8 +249,10 @@ function defaultsFor(companyId: string): Settings {
     address: null, instagram: null, cover_url: null, primary_color: null,
     avg_prep_min: 30, min_order_amount: 0, delivery_enabled: true, pickup_enabled: true,
     accepting_orders: true, delivery_fee: 0, free_delivery_min: null, notes: null,
+    pix_key: null, pix_key_type: null, pix_holder: null,
   };
 }
+
 
 /* ---------------- Hours ---------------- */
 function HoursTab({ companyId }: { companyId: string }) {
