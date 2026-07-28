@@ -231,9 +231,40 @@ function SettingsTab({ companyId, slug, onSlug }: { companyId: string; slug: str
           <SwitchRow label="Aceitando pedidos" checked={s.accepting_orders} onChange={(v) => setS({ ...s, accepting_orders: v })} />
         </div>
 
+        <div className="rounded-lg border p-4 space-y-4">
+          <div>
+            <h4 className="text-sm font-medium">Pix (pagamento manual)</h4>
+            <p className="text-xs text-muted-foreground">
+              Exibido na página de acompanhamento quando o cliente escolhe Pix. A confirmação do pagamento é feita por você na tela de Pedidos Delivery.
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Chave Pix">
+              <Input value={s.pix_key ?? ''} onChange={(e) => setS({ ...s, pix_key: e.target.value })} placeholder="e-mail, CPF/CNPJ, telefone…" />
+            </Field>
+            <Field label="Tipo da chave">
+              <Select value={s.pix_key_type ?? 'none'} onValueChange={(v) => setS({ ...s, pix_key_type: v === 'none' ? null : v })}>
+                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não informar</SelectItem>
+                  <SelectItem value="cpf">CPF</SelectItem>
+                  <SelectItem value="cnpj">CNPJ</SelectItem>
+                  <SelectItem value="email">E-mail</SelectItem>
+                  <SelectItem value="telefone">Telefone</SelectItem>
+                  <SelectItem value="aleatoria">Aleatória</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Titular da chave">
+              <Input value={s.pix_holder ?? ''} onChange={(e) => setS({ ...s, pix_holder: e.target.value })} />
+            </Field>
+          </div>
+        </div>
+
         <Field label="Observações gerais">
           <Textarea rows={2} value={s.notes ?? ''} onChange={(e) => setS({ ...s, notes: e.target.value })} />
         </Field>
+
 
         <div className="flex justify-end">
           <Button onClick={save} disabled={saving}>{saving ? 'Salvando…' : 'Salvar configurações'}</Button>
