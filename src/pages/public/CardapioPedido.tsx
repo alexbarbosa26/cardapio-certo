@@ -5,6 +5,8 @@ import { fetchPublicOrder, PAYMENT_LABELS, type PaymentMethod } from '@/lib/digi
 import { fmtBRL, fmtDateTime } from '@/lib/format';
 import { CheckCircle2, Clock, ChefHat, Bike, PackageCheck, XCircle, ArrowLeft, Circle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { etaClock, etaLabel, type EtaSource } from '@/lib/delivery-notify';
+
 
 const STATUS_LABEL: Record<string, { label: string; tone: string; icon: typeof Clock }> = {
   aguardando_aceite: { label: 'Aguardando o restaurante aceitar', tone: 'bg-amber-100 text-amber-900 border-amber-200', icon: Clock },
