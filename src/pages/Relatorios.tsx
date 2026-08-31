@@ -158,7 +158,7 @@ function RelatoriosPage() {
           category: i.category_name ?? 'Outros',
           quantity: Number(i.quantity),
           total: Number(i.total_price),
-          origin: 'comanda',
+          origin: 'comanda' as const,
         })),
       ];
       setItems(allItems);
