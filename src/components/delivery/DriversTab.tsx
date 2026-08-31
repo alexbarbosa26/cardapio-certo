@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,7 +98,7 @@ export default function DriversTab({ companyId }: Readonly<{ companyId: string }
     await load();
   };
 
-  let driversContent: React.ReactNode;
+  let driversContent: ReactNode;
   if (loading) {
     driversContent = <div className="text-sm text-muted-foreground">Carregando…</div>;
   } else if (rows.length === 0) {
