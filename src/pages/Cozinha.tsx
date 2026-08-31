@@ -82,9 +82,8 @@ function buildTickets(items: KitchenItem[]): Ticket[] {
     const first = g.first;
     const since = g.ids.length === 1
       ? first.sent_to_kitchen_at
-      : items
-          .filter((i) => g.ids.includes(i.id))
-          .reduce((min, i) => (i.sent_to_kitchen_at < min ? i.sent_to_kitchen_at : min), first.sent_to_kitchen_at);
+      : [first.sent_to_kitchen_at, ...items.filter((i) => g.ids.includes(i.id)).map((i) => i.sent_to_kitchen_at)]
+          .sort((a, b) => a.localeCompare(b))[0];
     return {
       key: g.key,
       order_id: first.order_id,
@@ -164,7 +163,7 @@ function CozinhaPage() {
       kitchen_status: r.kitchen_status,
       sent_to_kitchen_at: r.sent_to_kitchen_at,
       item_type: r.item_type ?? null,
-      weight_grams: r.weight_grams != null ? Number(r.weight_grams) : null,
+      weight_grams: r.weight_grams == null ? null : Number(r.weight_grams),
       options: r.order_item_options ?? [],
       order_id: r.orders?.id,
       order_number: r.orders?.order_number ?? 0,
@@ -191,7 +190,8 @@ function CozinhaPage() {
     setItems(mapped);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [profile?.company_id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [profile?.company_id]);
 
   useEffect(() => {
     if (!profile) return;
@@ -199,7 +199,7 @@ function CozinhaPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.company_id]);
 
   useEffect(() => {
