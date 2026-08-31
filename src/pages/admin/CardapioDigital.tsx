@@ -334,10 +334,10 @@ function HoursTab({ companyId }: Readonly<{ companyId: string }>) {
   );
 }
 
-function TimeRange({ label, enabled, start, end, onChange }: {
+function TimeRange({ label, enabled, start, end, onChange }: Readonly<{
   label: string; enabled: boolean; start: string | null; end: string | null;
   onChange: (start: string | null, end: string | null) => void;
-}) {
+}>) {
   return (
     <div>
       <div className="text-[11px] text-muted-foreground">{label}</div>
