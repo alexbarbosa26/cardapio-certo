@@ -158,7 +158,7 @@ function RelatoriosPage() {
           category: i.category_name ?? 'Outros',
           quantity: Number(i.quantity),
           total: Number(i.total_price),
-          origin: 'comanda' as ItemOrigin,
+          origin: 'comanda' as const,
         })),
       ];
       setItems(allItems);
@@ -180,7 +180,7 @@ function RelatoriosPage() {
 
   const payments = useMemo(() => {
     const fromOrders = orderPays.map((p) => ({ ...p, origin: 'mesa' as ItemOrigin }));
-    const fromTabs = tabPays.map((p) => ({ ...p, origin: 'comanda' as ItemOrigin }));
+    const fromTabs = tabPays.map((p) => ({ ...p, origin: 'comanda' as const }));
     const fromDelivery = deliveryPays.map((p) => ({ ...p, origin: 'delivery' as ItemOrigin }));
     let all = [...fromOrders, ...fromTabs, ...fromDelivery];
     if (origin !== 'todas') all = all.filter((p) => p.origin === origin);
@@ -487,7 +487,7 @@ function RelatoriosPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={delivery.byMode} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={45}>
-                      {delivery.byMode.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                      {delivery.byMode.map((entry, i) => <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />)}
                     </Pie>
                     <Tooltip formatter={(v: any) => fmtBRL(v as number)} contentStyle={{ background: 'var(--popover)', border: '1px solid var(--border)', borderRadius: 8 }} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -516,7 +516,7 @@ function RelatoriosPage() {
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function MiniStat({ label, value }: Readonly<{ label: string; value: string }>) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 min-w-0">
       <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>

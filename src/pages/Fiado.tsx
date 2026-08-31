@@ -471,7 +471,7 @@ function CustomerDetailDialog({ customerId, open, onOpenChange }:
                       </div>
                       <div className="text-[10px] text-muted-foreground">
                         {fmtDateTime(h.created_at)}
-                        {h.reversed_at && ` · estornado${h.reversal_reason ? ` — ${h.reversal_reason}` : ''}`}
+                        {h.reversed_at && reversalNote(h.reversal_reason)}
                       </div>
                     </div>
                     {isAdmin && !h.reversed_at && (
@@ -518,8 +518,14 @@ function CustomerDetailDialog({ customerId, open, onOpenChange }:
   );
 }
 
+/** Texto do estorno exibido no histórico. */
+function reversalNote(reason?: string | null): string {
+  const detail = reason ? ` — ${reason}` : '';
+  return ` · estornado${detail}`;
+}
+
 function ReversePaymentDialog({ payment, onClose, onDone }:
-  { payment: PaymentRow; onClose: () => void; onDone: () => void | Promise<void> }) {
+  Readonly<{ payment: PaymentRow; onClose: () => void; onDone: () => void | Promise<void> }>) {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -559,7 +565,7 @@ function ReversePaymentDialog({ payment, onClose, onDone }:
 }
 
 function AdjustPaymentDialog({ payment, onClose, onDone }:
-  { payment: PaymentRow; onClose: () => void; onDone: () => void | Promise<void> }) {
+  Readonly<{ payment: PaymentRow; onClose: () => void; onDone: () => void | Promise<void> }>) {
   const [amount, setAmount] = useState(payment.amount.toFixed(2));
   const [method, setMethod] = useState<Method>(payment.method);
   const [reason, setReason] = useState('');

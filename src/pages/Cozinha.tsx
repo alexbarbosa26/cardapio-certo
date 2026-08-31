@@ -82,9 +82,8 @@ function buildTickets(items: KitchenItem[]): Ticket[] {
     const first = g.first;
     const since = g.ids.length === 1
       ? first.sent_to_kitchen_at
-      : items
-          .filter((i) => g.ids.includes(i.id))
-          .reduce((min, i) => (i.sent_to_kitchen_at < min ? i.sent_to_kitchen_at : min), first.sent_to_kitchen_at);
+      : [first.sent_to_kitchen_at, ...items.filter((i) => g.ids.includes(i.id)).map((i) => i.sent_to_kitchen_at)]
+          .sort((a, b) => a.localeCompare(b))[0];
     return {
       key: g.key,
       order_id: first.order_id,
@@ -164,7 +163,7 @@ function CozinhaPage() {
       kitchen_status: r.kitchen_status,
       sent_to_kitchen_at: r.sent_to_kitchen_at,
       item_type: r.item_type ?? null,
-      weight_grams: r.weight_grams != null ? Number(r.weight_grams) : null,
+      weight_grams: r.weight_grams == null ? null : Number(r.weight_grams),
       options: r.order_item_options ?? [],
       order_id: r.orders?.id,
       order_number: r.orders?.order_number ?? 0,
@@ -191,7 +190,8 @@ function CozinhaPage() {
     setItems(mapped);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [profile?.company_id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, [profile?.company_id]);
 
   useEffect(() => {
     if (!profile) return;
@@ -199,7 +199,7 @@ function CozinhaPage() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.company_id]);
 
   useEffect(() => {
@@ -272,7 +272,7 @@ function CozinhaPage() {
   );
 }
 
-function Column({ title, count, accent, children }: { title: string; count: number; accent: 'warning' | 'accent'; children: React.ReactNode }) {
+function Column({ title, count, accent, children }: Readonly<{ title: string; count: number; accent: 'warning' | 'accent'; children: React.ReactNode }>) {
   return (
     <section className="min-w-0">
       <div className="mb-3 flex items-center gap-2">
@@ -289,7 +289,7 @@ function Column({ title, count, accent, children }: { title: string; count: numb
   );
 }
 
-function EmptyState({ text }: { text: string }) {
+function EmptyState({ text }: Readonly<{ text: string }>) {
   return (
     <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
       {text}
@@ -297,7 +297,7 @@ function EmptyState({ text }: { text: string }) {
   );
 }
 
-function OriginLabel({ ticket }: { ticket: Ticket }) {
+function OriginLabel({ ticket }: Readonly<{ ticket: Ticket }>) {
   if (ticket.origin === 'digital_menu') {
     const delivery = ticket.service_mode === 'delivery';
     return (
@@ -315,13 +315,50 @@ function OriginLabel({ ticket }: { ticket: Ticket }) {
   );
 }
 
-function TicketCard({ ticket, settings, onStatus }: {
+/** Classe do cronômetro conforme o nível de atraso do ticket. */
+function timerClass(danger: boolean, warn: boolean, ready: boolean): string {
+  if (danger) return 'bg-destructive text-destructive-foreground';
+  if (warn) return 'bg-warning text-warning-foreground';
+  if (ready) return 'bg-success text-success-foreground';
+  return 'bg-muted text-muted-foreground';
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  aguardando: 'Aguardando preparo',
+  preparo: 'Em preparo',
+  pronto: 'Pronto',
+};
+
+function TicketActions({ ticket, onStatus }: Readonly<{ ticket: Ticket; onStatus: (t: Ticket, s: string) => Promise<void> }>) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {ticket.status === 'aguardando' && (
+        <BusyButton size="sm" busyText="Iniciando…" onClick={() => onStatus(ticket, 'preparo')} className="bg-primary">
+          <Play className="h-3.5 w-3.5 mr-1" /> Iniciar preparo
+        </BusyButton>
+      )}
+      {ticket.status === 'preparo' && (
+        <BusyButton size="sm" busyText="Salvando…" onClick={() => onStatus(ticket, 'pronto')} className="bg-success text-success-foreground hover:bg-success/90">
+          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Marcar como pronto
+        </BusyButton>
+      )}
+      {ticket.status === 'pronto' && (
+        <BusyButton size="sm" busyText="Salvando…" onClick={() => onStatus(ticket, 'entregue')} variant="outline">
+          <Truck className="h-3.5 w-3.5 mr-1" /> Retirar da cozinha
+        </BusyButton>
+      )}
+    </div>
+  );
+}
+
+function TicketCard({ ticket, settings, onStatus }: Readonly<{
   ticket: Ticket; settings: Settings; onStatus: (t: Ticket, s: string) => Promise<void>;
-}) {
+}>) {
   const mins = minutesSince(ticket.since);
   const ready = ticket.status === 'pronto';
   const danger = !ready && mins >= settings.kitchen_danger_minutes;
   const warn = !ready && !danger && mins >= settings.kitchen_warning_minutes;
+  const neutral = !ready && !warn && !danger;
 
   return (
     <div className={cn(
@@ -329,17 +366,14 @@ function TicketCard({ ticket, settings, onStatus }: {
       ready && 'border-success/60 bg-success/5',
       danger && 'border-destructive/60 bg-destructive/5',
       warn && 'border-warning/60 bg-warning/10',
-      !ready && !warn && !danger && 'border-border',
+      neutral && 'border-border',
       ticket.status === 'preparo' && !warn && !danger && 'border-accent/50',
     )}>
       <div className="flex items-baseline justify-between gap-2">
         <div className="font-display text-lg">#{String(ticket.order_number).padStart(4, '0')}</div>
         <span className={cn(
           'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-mono tabular-nums shrink-0',
-          danger ? 'bg-destructive text-destructive-foreground'
-            : warn ? 'bg-warning text-warning-foreground'
-            : ready ? 'bg-success text-success-foreground'
-            : 'bg-muted text-muted-foreground',
+          timerClass(danger, warn, ready),
         )}>
           <Clock className="h-3 w-3" /> {mins}min
         </span>
@@ -357,7 +391,7 @@ function TicketCard({ ticket, settings, onStatus }: {
         ticket.status === 'preparo' && 'bg-accent/20 text-accent-foreground',
         ready && 'bg-success text-success-foreground',
       )}>
-        {ticket.status === 'aguardando' ? 'Aguardando preparo' : ticket.status === 'preparo' ? 'Em preparo' : 'Pronto'}
+        {STATUS_LABEL[ticket.status] ?? ticket.status}
       </span>
 
       <div className="mt-3 min-w-0">
@@ -367,7 +401,9 @@ function TicketCard({ ticket, settings, onStatus }: {
         </div>
         {ticket.options.length > 0 && (
           <ul className="mt-1 text-[11px] text-muted-foreground space-y-0.5">
-            {ticket.options.map((o, i) => <li key={i}>• {o.option_group_name}: {o.option_item_name}</li>)}
+            {ticket.options.map((o) => (
+              <li key={`${o.option_group_name}-${o.option_item_name}`}>• {o.option_group_name}: {o.option_item_name}</li>
+            ))}
           </ul>
         )}
         {ticket.notes && (
@@ -375,24 +411,7 @@ function TicketCard({ ticket, settings, onStatus }: {
         )}
       </div>
 
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {ticket.status === 'aguardando' && (
-          <BusyButton size="sm" busyText="Iniciando…" onClick={() => onStatus(ticket, 'preparo')} className="bg-primary">
-            <Play className="h-3.5 w-3.5 mr-1" /> Iniciar preparo
-          </BusyButton>
-        )}
-        {ticket.status === 'preparo' && (
-          <BusyButton size="sm" busyText="Salvando…" onClick={() => onStatus(ticket, 'pronto')} className="bg-success text-success-foreground hover:bg-success/90">
-            <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Marcar como pronto
-          </BusyButton>
-        )}
-        {ready && (
-          <BusyButton size="sm" busyText="Salvando…" onClick={() => onStatus(ticket, 'entregue')} variant="outline">
-            <Truck className="h-3.5 w-3.5 mr-1" /> Retirar da cozinha
-          </BusyButton>
-        )}
-      </div>
+      <TicketActions ticket={ticket} onStatus={onStatus} />
     </div>
   );
 }

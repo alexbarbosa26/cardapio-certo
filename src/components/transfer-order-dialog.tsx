@@ -28,7 +28,7 @@ interface TableOption {
   has_open_order: boolean;
 }
 
-export function TransferOrderDialog({ open, onOpenChange, orderId, fromTableId, fromTableName, onTransferred }: Props) {
+export function TransferOrderDialog({ open, onOpenChange, orderId, fromTableId, fromTableName, onTransferred }: Readonly<Props>) {
   const { profile } = useAuth();
   const [tables, setTables] = useState<TableOption[]>([]);
   const [destId, setDestId] = useState<string>('');
@@ -131,6 +131,9 @@ export function TransferOrderDialog({ open, onOpenChange, orderId, fromTableId, 
                 {tables.map((t) => {
                   const disabled = t.has_open_order;
                   const active = destId === t.id;
+                  let stateClass = 'border-border bg-card hover:border-foreground/30';
+                  if (active) stateClass = 'border-accent bg-accent/10';
+                  else if (disabled) stateClass = 'border-border/60 bg-muted/40 text-muted-foreground opacity-60 cursor-not-allowed';
                   return (
                     <button
                       type="button" key={t.id}
@@ -139,9 +142,7 @@ export function TransferOrderDialog({ open, onOpenChange, orderId, fromTableId, 
                       title={disabled ? 'Já possui pedido aberto' : t.name}
                       className={[
                         'rounded-lg border p-2 text-center text-sm transition',
-                        active ? 'border-accent bg-accent/10' :
-                          disabled ? 'border-border/60 bg-muted/40 text-muted-foreground opacity-60 cursor-not-allowed'
-                                   : 'border-border bg-card hover:border-foreground/30',
+                        stateClass,
                       ].join(' ')}
                     >
                       <div className="font-display text-lg leading-none">{String(t.number).padStart(2, '0')}</div>

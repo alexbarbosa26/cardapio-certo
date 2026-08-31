@@ -24,7 +24,7 @@ export function MetaDialog({ open, onOpenChange, companyId, year, month, initial
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (open) setValue(initialValue > 0 ? initialValue : 0);
+    if (open) setValue(Math.max(initialValue, 0));
   }, [open, initialValue]);
 
   const save = async () => {

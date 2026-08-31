@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,10 +30,10 @@ export async function fetchDrivers(companyId: string): Promise<Driver[]> {
     .order('active', { ascending: false })
     .order('name');
   if (error) throw error;
-  return (data ?? []) as Driver[];
+  return data ?? [];
 }
 
-export default function DriversTab({ companyId }: { companyId: string }) {
+export default function DriversTab({ companyId }: Readonly<{ companyId: string }>) {
   const [rows, setRows] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -98,6 +98,41 @@ export default function DriversTab({ companyId }: { companyId: string }) {
     await load();
   };
 
+  let driversContent: ReactNode;
+  if (loading) {
+    driversContent = <div className="text-sm text-muted-foreground">Carregando…</div>;
+  } else if (rows.length === 0) {
+    driversContent = (
+      <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+        Nenhum entregador cadastrado.
+      </div>
+    );
+  } else {
+    driversContent = (
+      <ul className="divide-y rounded-lg border">
+        {rows.map((d) => (
+          <li key={d.id} className="flex flex-wrap items-center gap-3 p-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted"><Bike className="h-4 w-4" /></div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium break-words">{d.name}</div>
+              <div className="text-xs text-muted-foreground break-words">
+                {[d.phone, d.vehicle, d.plate].filter(Boolean).join(' · ') || 'Sem dados adicionais'}
+              </div>
+            </div>
+            <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <Switch checked={d.active} onCheckedChange={() => void toggleActive(d)} />
+              {d.active ? 'Ativo' : 'Inativo'}
+            </label>
+            <div className="flex gap-1">
+              <Button size="icon" variant="ghost" onClick={() => openEdit(d)}><Edit2 className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" onClick={() => void remove(d)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
@@ -109,35 +144,7 @@ export default function DriversTab({ companyId }: { companyId: string }) {
           <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" /> Novo entregador</Button>
         </div>
 
-        {loading ? (
-          <div className="text-sm text-muted-foreground">Carregando…</div>
-        ) : rows.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
-            Nenhum entregador cadastrado.
-          </div>
-        ) : (
-          <ul className="divide-y rounded-lg border">
-            {rows.map((d) => (
-              <li key={d.id} className="flex flex-wrap items-center gap-3 p-3">
-                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted"><Bike className="h-4 w-4" /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium break-words">{d.name}</div>
-                  <div className="text-xs text-muted-foreground break-words">
-                    {[d.phone, d.vehicle, d.plate].filter(Boolean).join(' · ') || 'Sem dados adicionais'}
-                  </div>
-                </div>
-                <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-                  <Switch checked={d.active} onCheckedChange={() => void toggleActive(d)} />
-                  {d.active ? 'Ativo' : 'Inativo'}
-                </label>
-                <div className="flex gap-1">
-                  <Button size="icon" variant="ghost" onClick={() => openEdit(d)}><Edit2 className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => void remove(d)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+        {driversContent}
       </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>

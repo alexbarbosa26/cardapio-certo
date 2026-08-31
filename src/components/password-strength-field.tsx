@@ -19,16 +19,23 @@ interface Props {
 
 interface Req { key: string; label: string; test: (s: string) => boolean; }
 
-const REQS: Req[] = [
-  { key: "len", label: "Pelo menos 8 caracteres", test: (s) => s.length >= 8 },
-  { key: "upper", label: "Uma letra maiúscula (A-Z)", test: (s) => /[A-Z]/.test(s) },
-  { key: "lower", label: "Uma letra minúscula (a-z)", test: (s) => /[a-z]/.test(s) },
-  { key: "num", label: "Um número (0-9)", test: (s) => /\d/.test(s) },
-  { key: "sym", label: "Um caractere especial (!@#$…)", test: (s) => /[^A-Za-z0-9]/.test(s) },
-];
+export const DEFAULT_MIN_LENGTH = 8;
 
-export function scorePassword(pw: string): { score: number; label: string; color: string } {
-  const passed = REQS.filter((r) => r.test(pw)).length;
+function buildReqs(minLength: number): Req[] {
+  return [
+    { key: "len", label: `Pelo menos ${minLength} caracteres`, test: (s) => s.length >= minLength },
+    { key: "upper", label: "Uma letra maiúscula (A-Z)", test: (s) => /[A-Z]/.test(s) },
+    { key: "lower", label: "Uma letra minúscula (a-z)", test: (s) => /[a-z]/.test(s) },
+    { key: "num", label: "Um número (0-9)", test: (s) => /\d/.test(s) },
+    { key: "sym", label: "Um caractere especial (!@#$…)", test: (s) => /[^A-Za-z0-9]/.test(s) },
+  ];
+}
+
+const REQS: Req[] = buildReqs(DEFAULT_MIN_LENGTH);
+
+export function scorePassword(pw: string, minLength = DEFAULT_MIN_LENGTH): { score: number; label: string; color: string } {
+  const reqs = minLength === DEFAULT_MIN_LENGTH ? REQS : buildReqs(minLength);
+  const passed = reqs.filter((r) => r.test(pw)).length;
   if (!pw) return { score: 0, label: "", color: "bg-muted" };
   if (passed <= 2) return { score: 1, label: "Fraca", color: "bg-destructive" };
   if (passed === 3) return { score: 2, label: "Razoável", color: "bg-amber-500" };
@@ -39,10 +46,12 @@ export function scorePassword(pw: string): { score: number; label: string; color
 export function PasswordStrengthField({
   id = "password", label = "Senha", value, onChange,
   confirmValue, onConfirmChange, showConfirm = true, autoComplete = "new-password",
-}: Props) {
+  minLength = DEFAULT_MIN_LENGTH,
+}: Readonly<Props>) {
   const [show, setShow] = useState(false);
   const [showC, setShowC] = useState(false);
-  const strength = useMemo(() => scorePassword(value), [value]);
+  const reqs = useMemo(() => buildReqs(minLength), [minLength]);
+  const strength = useMemo(() => scorePassword(value, minLength), [value, minLength]);
   const mismatch = showConfirm && confirmValue !== undefined && confirmValue.length > 0 && confirmValue !== value;
 
   return (
@@ -76,7 +85,7 @@ export function PasswordStrengthField({
             <span className="text-xs text-muted-foreground w-16 text-right">{strength.label}</span>
           </div>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-xs">
-            {REQS.map((r) => {
+            {reqs.map((r) => {
               const ok = r.test(value);
               return (
                 <li key={r.key} className={cn("flex items-center gap-1.5",
@@ -115,6 +124,6 @@ export function PasswordStrengthField({
   );
 }
 
-export function isPasswordValid(pw: string): boolean {
-  return REQS.every((r) => r.test(pw));
+export function isPasswordValid(pw: string, minLength = DEFAULT_MIN_LENGTH): boolean {
+  return buildReqs(minLength).every((r) => r.test(pw));
 }
