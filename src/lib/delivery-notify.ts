@@ -33,6 +33,9 @@ export function buildStatusMessage(ctx: NotifyContext): string {
   const track = ctx.track_url ? `\n\nAcompanhe em tempo real: ${ctx.track_url}` : '';
 
   let body: string;
+  const withDriver = ctx.driver_name ? ` com ${ctx.driver_name}` : '';
+  const reason = ctx.reason ? ` Motivo: ${ctx.reason}.` : '';
+
   switch (ctx.status) {
     case 'em_preparo':
       body = `${hi} Seu ${ref} foi aceito e já está em preparo.${eta}`;
@@ -44,7 +47,7 @@ export function buildStatusMessage(ctx: NotifyContext): string {
           : `${hi} Seu ${ref} está pronto para retirada. Estamos te esperando!`;
       break;
     case 'em_entrega':
-      body = `${hi} Seu ${ref} saiu para entrega${ctx.driver_name ? ` com ${ctx.driver_name}` : ''}. Já está a caminho!`;
+      body = `${hi} Seu ${ref} saiu para entrega${withDriver}. Já está a caminho!`;
       break;
     case 'entregue':
       body =
@@ -53,10 +56,10 @@ export function buildStatusMessage(ctx: NotifyContext): string {
           : `${hi} Seu ${ref} foi retirado. Bom apetite e obrigado pela preferência!`;
       break;
     case 'recusado':
-      body = `${hi} Infelizmente não conseguimos aceitar o seu ${ref}.${ctx.reason ? ` Motivo: ${ctx.reason}.` : ''} Pedimos desculpas pelo transtorno.`;
+      body = `${hi} Infelizmente não conseguimos aceitar o seu ${ref}.${reason} Pedimos desculpas pelo transtorno.`;
       break;
     case 'cancelado':
-      body = `${hi} Seu ${ref} foi cancelado.${ctx.reason ? ` Motivo: ${ctx.reason}.` : ''} Qualquer dúvida, estamos à disposição.`;
+      body = `${hi} Seu ${ref} foi cancelado.${reason} Qualquer dúvida, estamos à disposição.`;
       break;
     default:
       body = `${hi} Recebemos o seu ${ref} e ele já está na fila de confirmação.`;
