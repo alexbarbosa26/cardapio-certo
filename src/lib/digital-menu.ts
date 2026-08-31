@@ -91,18 +91,24 @@ export async function fetchPublicMenu(slug: string): Promise<PublicMenuResponse>
   return (data as unknown as PublicMenuResponse) ?? { found: false };
 }
 
-/** Determine open status right now using cached hours (client-side). */
-export function computeOpenStatus(hours: DigitalMenuHour[] | undefined, now = new Date()) {
-  if (!hours || hours.length === 0) return { open: false, next: null as string | null };
-  const wd = now.getDay(); // 0=sun
-  const today = hours.find((h) => h.weekday === wd);
-  const hhmm = now.toTimeString().slice(0, 5);
-  const inRange = (start?: string | null, end?: string | null) =>
-    !!start && !!end && hhmm >= start.slice(0, 5) && hhmm <= end.slice(0, 5);
-  if (today?.is_open && (inRange(today.period1_start, today.period1_end) || inRange(today.period2_start, today.period2_end))) {
-    return { open: true, next: null };
-  }
-  // find next opening in next 7 days
+/** Rótulo amigável para o dia da próxima abertura. */
+function nextDayLabel(offset: number, weekday: number): string {
+  if (offset === 0) return 'hoje';
+  if (offset === 1) return 'amanhã';
+  return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][weekday];
+}
+
+function isWithin(hhmm: string, start?: string | null, end?: string | null): boolean {
+  if (!start || !end) return false;
+  return hhmm >= start.slice(0, 5) && hhmm <= end.slice(0, 5);
+}
+
+function isOpenNow(today: DigitalMenuHour | undefined, hhmm: string): boolean {
+  if (!today?.is_open) return false;
+  return isWithin(hhmm, today.period1_start, today.period1_end) || isWithin(hhmm, today.period2_start, today.period2_end);
+}
+
+function findNextOpening(hours: DigitalMenuHour[], wd: number, hhmm: string): string | null {
   for (let i = 0; i < 8; i++) {
     const d = (wd + i) % 7;
     const h = hours.find((x) => x.weekday === d);
@@ -110,10 +116,20 @@ export function computeOpenStatus(hours: DigitalMenuHour[] | undefined, now = ne
     const start = h.period1_start ?? h.period2_start;
     if (!start) continue;
     if (i === 0 && start.slice(0, 5) <= hhmm) continue;
-    const label = i === 0 ? 'hoje' : i === 1 ? 'amanhã' : ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d];
-    return { open: false, next: `${label} às ${start.slice(0, 5)}` };
+    return `${nextDayLabel(i, d)} às ${start.slice(0, 5)}`;
   }
-  return { open: false, next: null };
+  return null;
+}
+
+/** Determine open status right now using cached hours (client-side). */
+export function computeOpenStatus(hours: DigitalMenuHour[] | undefined, now = new Date()) {
+  if (!hours || hours.length === 0) return { open: false, next: null as string | null };
+  const wd = now.getDay(); // 0=sun
+  const hhmm = now.toTimeString().slice(0, 5);
+  if (isOpenNow(hours.find((h) => h.weekday === wd), hhmm)) {
+    return { open: true, next: null };
+  }
+  return { open: false, next: findNextOpening(hours, wd, hhmm) };
 }
 
 export const WEEKDAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
