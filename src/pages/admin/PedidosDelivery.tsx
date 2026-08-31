@@ -63,7 +63,7 @@ const PAYMENT_STATUS_META: Record<string, { label: string; tone: string }> = {
   estornado: { label: 'Estornado', tone: 'bg-red-100 text-red-900' },
 };
 
-const ACTIVE_STATUSES = ['aguardando_aceite', 'em_preparo', 'pronto', 'em_entrega'];
+const ACTIVE_STATUSES = new Set(['aguardando_aceite', 'em_preparo', 'pronto', 'em_entrega']);
 const SELECT_COLS =
   'id, order_number, status, service_mode, customer_name, customer_phone, delivery_address, payment_method, payment_status, change_for, customer_notes, subtotal, delivery_fee, total, opened_at, accepted_at, ready_at, dispatched_at, delivered_at, estimated_minutes, rejection_reason, cancellation_reason, driver_id, public_token';
 
@@ -91,7 +91,7 @@ async function fetchOrderItems(orderId: string) {
 
 function playBell() {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = new (globalThis.AudioContext || (globalThis as any).webkitAudioContext)();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
     o.type = 'sine'; o.frequency.value = 880;
@@ -161,7 +161,7 @@ export default function PedidosDelivery() {
   }, [pending, soundOn]);
 
   const filtered = useMemo(() => {
-    if (tab === 'ativos') return orders.filter((o) => ACTIVE_STATUSES.includes(o.status));
+    if (tab === 'ativos') return orders.filter((o) => ACTIVE_STATUSES.has(o.status));
     if (tab === 'finalizados') return orders.filter((o) => ['entregue', 'recusado', 'cancelado', 'fechado'].includes(o.status));
     return orders.filter((o) => o.status === tab);
   }, [orders, tab]);
@@ -251,11 +251,11 @@ export default function PedidosDelivery() {
           <TabsTrigger value="finalizados">Finalizados</TabsTrigger>
         </TabsList>
         <TabsContent value={tab} className="mt-4">
-          {isLoading ? (
-            <div className="text-sm text-muted-foreground">Carregando…</div>
-          ) : filtered.length === 0 ? (
+          {isLoading && <div className="text-sm text-muted-foreground">Carregando…</div>}
+          {!isLoading && filtered.length === 0 && (
             <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">Nenhum pedido nesta categoria.</div>
-          ) : (
+          )}
+          {!isLoading && filtered.length > 0 && (
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {filtered.map((o) => (
                 <OrderCard
@@ -317,7 +317,7 @@ export default function PedidosDelivery() {
   );
 }
 
-function OrderCard({ order, driverName, onOpen, onAccept, onReject, onCancel, onAdvance, onNotify }: {
+function OrderCard({ order, driverName, onOpen, onAccept, onReject, onCancel, onAdvance, onNotify }: Readonly<{
   order: OrderRow;
   driverName: string | null;
   onOpen: () => void;
@@ -330,7 +330,7 @@ function OrderCard({ order, driverName, onOpen, onAccept, onReject, onCancel, on
   const meta = STATUS_META[order.status] ?? { label: order.status, tone: 'bg-neutral-100 text-neutral-800' };
   const pay = PAYMENT_STATUS_META[order.payment_status ?? 'pendente'] ?? PAYMENT_STATUS_META.pendente;
   const minutesOpen = Math.floor((Date.now() - new Date(order.opened_at).getTime()) / 60000);
-  const eta = ACTIVE_STATUSES.includes(order.status) ? etaLabel(order) : null;
+  const eta = ACTIVE_STATUSES.has(order.status) ? etaLabel(order) : null;
   return (
     <div className="rounded-xl border bg-card p-4 space-y-3 shadow-sm">
       <div className="flex items-start justify-between gap-2">
@@ -384,7 +384,7 @@ function OrderCard({ order, driverName, onOpen, onAccept, onReject, onCancel, on
   );
 }
 
-function OrderDetailsDialog({ order, drivers, onClose, onUpdate, onAssignDriver, onPaymentStatus, onNotify, onCancel, estimateDefault, onEstimateChange }: {
+function OrderDetailsDialog({ order, drivers, onClose, onUpdate, onAssignDriver, onPaymentStatus, onNotify, onCancel, estimateDefault, onEstimateChange }: Readonly<{
   order: OrderRow | null;
   drivers: Driver[];
   onClose: () => void;
