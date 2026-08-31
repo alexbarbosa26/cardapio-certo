@@ -146,7 +146,7 @@ export async function fetchPublicOrder(token: string) {
 }
 
 export function newClientToken() {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${Date.now().toString(36)}-${globalThis.crypto.randomUUID()}`;
 }
 
 export const PAYMENT_LABELS: Record<PaymentMethod, string> = {

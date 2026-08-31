@@ -1,3 +1,7 @@
+function randomId(): string {
+  return globalThis.crypto.randomUUID();
+}
+
 /**
  * Agrupamento de itens idênticos.
  *
@@ -50,7 +54,7 @@ export function groupKey(item: GroupableItem, extra: Array<string | number | nul
     ...extra.map((e) => String(e ?? '')),
   ].join('§');
   // Itens por peso jamais agrupam: chave única por linha.
-  return weighted ? `${base}§weighted§${String(item.id ?? Math.random())}` : base;
+  return weighted ? `${base}§weighted§${String(item.id ?? randomId())}` : base;
 }
 
 export interface Grouped<T> {
