@@ -326,7 +326,7 @@ function OrderCard({ order, driverName, onOpen, onAccept, onReject, onCancel, on
   onCancel?: () => void;
   onAdvance: (next: string) => void;
   onNotify: () => void;
-}) {
+}>) {
   const meta = STATUS_META[order.status] ?? { label: order.status, tone: 'bg-neutral-100 text-neutral-800' };
   const pay = PAYMENT_STATUS_META[order.payment_status ?? 'pendente'] ?? PAYMENT_STATUS_META.pendente;
   const minutesOpen = Math.floor((Date.now() - new Date(order.opened_at).getTime()) / 60000);
@@ -395,7 +395,7 @@ function OrderDetailsDialog({ order, drivers, onClose, onUpdate, onAssignDriver,
   onCancel: () => void;
   estimateDefault: string;
   onEstimateChange: (v: string) => void;
-}) {
+}>) {
   const { data: items = [] } = useQuery({
     queryKey: ['order-items', order?.id],
     queryFn: () => fetchOrderItems(order!.id),
