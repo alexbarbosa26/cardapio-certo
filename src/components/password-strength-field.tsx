@@ -85,7 +85,7 @@ export function PasswordStrengthField({
             <span className="text-xs text-muted-foreground w-16 text-right">{strength.label}</span>
           </div>
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-1 text-xs">
-            {REQS.map((r) => {
+            {reqs.map((r) => {
               const ok = r.test(value);
               return (
                 <li key={r.key} className={cn("flex items-center gap-1.5",
@@ -124,6 +124,6 @@ export function PasswordStrengthField({
   );
 }
 
-export function isPasswordValid(pw: string): boolean {
-  return REQS.every((r) => r.test(pw));
+export function isPasswordValid(pw: string, minLength = DEFAULT_MIN_LENGTH): boolean {
+  return buildReqs(minLength).every((r) => r.test(pw));
 }
