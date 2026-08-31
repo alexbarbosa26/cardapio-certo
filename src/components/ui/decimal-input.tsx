@@ -7,7 +7,7 @@ type BaseProps = Omit<React.ComponentProps<typeof Input>, 'value' | 'onChange' |
 export interface DecimalInputProps extends BaseProps {
   /** Valor numérico controlado. Use `null`/`undefined` para começar vazio. */
   value: number | null | undefined;
-  /** Callback com o número já normalizado (NaN quando o texto está vazio). */
+  /** Callback com o número já normalizado (Number.NaN quando o texto está vazio). */
   onChange: (value: number) => void;
   /** Casas decimais usadas ao formatar valor externo. Padrão 2. */
   fractionDigits?: number;
@@ -34,9 +34,9 @@ export const DecimalInput = forwardRef<HTMLInputElement, DecimalInputProps>(
     // Sincroniza quando o valor externo muda (ex.: reset de formulário)
     useEffect(() => {
       const parsed = parseDecimal(text);
-      const external = value ?? NaN;
+      const external = value ?? Number.NaN;
       const same = Number.isFinite(parsed) && Number.isFinite(external)
-        ? Math.abs(parsed - (external as number)) < 1e-9
+        ? Math.abs(parsed - external) < 1e-9
         : !Number.isFinite(parsed) && !Number.isFinite(external);
       if (!same) setText(toText(value));
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,7 +54,7 @@ export const DecimalInput = forwardRef<HTMLInputElement, DecimalInputProps>(
           const clean = sanitizeDecimalKeystroke(e.target.value, { allowNegative });
           setText(clean);
           const n = parseDecimal(clean);
-          onChange(Number.isFinite(n) ? n : NaN);
+          onChange(Number.isFinite(n) ? n : Number.NaN);
         }}
         onBlur={(e) => {
           const n = parseDecimal(text);
