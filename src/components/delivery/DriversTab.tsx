@@ -30,10 +30,10 @@ export async function fetchDrivers(companyId: string): Promise<Driver[]> {
     .order('active', { ascending: false })
     .order('name');
   if (error) throw error;
-  return (data ?? []) as Driver[];
+  return data ?? [];
 }
 
-export default function DriversTab({ companyId }: { companyId: string }) {
+export default function DriversTab({ companyId }: Readonly<{ companyId: string }>) {
   const [rows, setRows] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
