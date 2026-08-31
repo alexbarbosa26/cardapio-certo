@@ -7,7 +7,7 @@ type BaseProps = Omit<React.ComponentProps<typeof Input>, 'value' | 'onChange' |
 export interface DecimalInputProps extends BaseProps {
   /** Valor numérico controlado. Use `null`/`undefined` para começar vazio. */
   value: number | null | undefined;
-  /** Callback com o número já normalizado (Number.NaN quando o texto está vazio). */
+  /** Callback com o número já normalizado (NaN quando o texto está vazio). */
   onChange: (value: number) => void;
   /** Casas decimais usadas ao formatar valor externo. Padrão 2. */
   fractionDigits?: number;
