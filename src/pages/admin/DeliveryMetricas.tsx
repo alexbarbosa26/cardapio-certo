@@ -77,8 +77,8 @@ export default function DeliveryMetricas() {
 
   useEffect(() => { document.title = 'Métricas do Delivery'; }, []);
 
-  const since = useMemo(() => new Date(Date.now() - days * 86400_000), [days]);
-  const prevSince = useMemo(() => new Date(Date.now() - days * 2 * 86400_000), [days]);
+  const since = useMemo(() => new Date(Date.now() - days * 86_400_000), [days]);
+  const prevSince = useMemo(() => new Date(Date.now() - days * 2 * 86_400_000), [days]);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['delivery-metrics', companyId, days],
@@ -96,7 +96,7 @@ export default function DeliveryMetricas() {
     queryKey: ['drivers-metrics', companyId],
     queryFn: async () => {
       const { data } = await supabase.from('delivery_drivers').select('id, name').eq('company_id', companyId!);
-      return (data ?? []) as { id: string; name: string }[];
+      return data ?? [];
     },
     enabled: !!companyId,
   });
@@ -216,7 +216,7 @@ function delta(cur: number, prev: number): number | null {
   return ((cur - prev) / prev) * 100;
 }
 
-function Metric({ icon: Icon, label, value, delta: d }: { icon: typeof Clock; label: string; value: string; delta: number | null }) {
+function Metric({ icon: Icon, label, value, delta: d }: Readonly<{ icon: typeof Clock; label: string; value: string; delta: number | null }>) {
   const up = (d ?? 0) >= 0;
   return (
     <Card className="min-w-0">
@@ -236,7 +236,7 @@ function Metric({ icon: Icon, label, value, delta: d }: { icon: typeof Clock; la
   );
 }
 
-function Stage({ label, cur, prev, bold }: { label: string; cur: number; prev: number; bold?: boolean }) {
+function Stage({ label, cur, prev, bold }: Readonly<{ label: string; cur: number; prev: number; bold?: boolean }>) {
   const diff = cur - prev;
   return (
     <div className={`flex flex-wrap items-center justify-between gap-2 ${bold ? 'border-t pt-2 font-semibold' : ''}`}>
@@ -253,6 +253,6 @@ function Stage({ label, cur, prev, bold }: { label: string; cur: number; prev: n
   );
 }
 
-function Empty({ text = 'Sem dados no período.' }: { text?: string }) {
+function Empty({ text = 'Sem dados no período.' }: Readonly<{ text?: string }>) {
   return <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">{text}</div>;
 }
