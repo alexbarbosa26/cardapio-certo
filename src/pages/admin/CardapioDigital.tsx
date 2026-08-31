@@ -134,7 +134,7 @@ export default function CardapioDigital() {
   );
 }
 
-function EnableToggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
+function EnableToggle({ enabled, onChange }: Readonly<{ enabled: boolean; onChange: (v: boolean) => void }>) {
   return (
     <label className="inline-flex items-center gap-2 text-sm">
       <Switch checked={enabled} onCheckedChange={onChange} />
@@ -144,7 +144,7 @@ function EnableToggle({ enabled, onChange }: { enabled: boolean; onChange: (v: b
 }
 
 /* ---------------- Settings ---------------- */
-function SettingsTab({ companyId, slug, onSlug }: { companyId: string; slug: string | null; onSlug: (s: string | null) => void }) {
+function SettingsTab({ companyId, slug, onSlug }: Readonly<{ companyId: string; slug: string | null; onSlug: (s: string | null) => void }>) {
   const [s, setS] = useState<Settings | null>(null);
   const [slugInput, setSlugInput] = useState(slug ?? '');
   const [saving, setSaving] = useState(false);
@@ -291,7 +291,7 @@ function defaultsFor(companyId: string): Settings {
 
 
 /* ---------------- Hours ---------------- */
-function HoursTab({ companyId }: { companyId: string }) {
+function HoursTab({ companyId }: Readonly<{ companyId: string }>) {
   const [rows, setRows] = useState<Hours[]>([]);
   useEffect(() => {
     (async () => {
@@ -351,7 +351,7 @@ function TimeRange({ label, enabled, start, end, onChange }: {
 }
 
 /* ---------------- Categories ---------------- */
-function CategoriesTab({ companyId }: { companyId: string }) {
+function CategoriesTab({ companyId }: Readonly<{ companyId: string }>) {
   const [cats, setCats] = useState<Category[]>([]);
   const [editing, setEditing] = useState<Partial<Category> | null>(null);
 
@@ -442,7 +442,7 @@ function CategoriesTab({ companyId }: { companyId: string }) {
 }
 
 /* ---------------- Items ---------------- */
-function ItemsTab({ companyId }: { companyId: string }) {
+function ItemsTab({ companyId }: Readonly<{ companyId: string }>) {
   const [items, setItems] = useState<Item[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -582,9 +582,9 @@ function ItemsTab({ companyId }: { companyId: string }) {
 }
 
 /* ---------------- Link & QR ---------------- */
-function LinkTab({ slug, enabled }: { slug: string | null; enabled: boolean }) {
+function LinkTab({ slug, enabled }: Readonly<{ slug: string | null; enabled: boolean }>) {
   const [qr, setQr] = useState<string | null>(null);
-  const url = slug ? `${window.location.origin}/cardapio/${slug}` : null;
+  const url = slug ? `${globalThis.location.origin}/cardapio/${slug}` : null;
 
   useEffect(() => {
     if (!url) { setQr(null); return; }
@@ -622,7 +622,7 @@ function LinkTab({ slug, enabled }: { slug: string | null; enabled: boolean }) {
 }
 
 /* ---------------- helpers ---------------- */
-function Field({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({ label, children, className }: Readonly<{ label: string; children: React.ReactNode; className?: string }>) {
   return (
     <div className={className}>
       <Label className="text-xs text-muted-foreground">{label}</Label>
@@ -630,6 +630,6 @@ function Field({ label, children, className }: { label: string; children: React.
     </div>
   );
 }
-function SwitchRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function SwitchRow({ label, checked, onChange }: Readonly<{ label: string; checked: boolean; onChange: (v: boolean) => void }>) {
   return <label className="flex items-center gap-2 text-sm"><Switch checked={checked} onCheckedChange={onChange} />{label}</label>;
 }

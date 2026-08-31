@@ -6,10 +6,10 @@ import {
   Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
 import {
-  UtensilsCrossed, Coffee, IceCream, Beer, Cake, ChefHat, Pizza,
-  Smartphone, BarChart3, ReceiptText, Wallet, Users2, ClipboardList,
-  Check, ArrowRight, Menu, ShieldCheck, MessageCircle, Play, X,
-  CircleAlert, ClipboardX, Search, LineChart, PlayCircle,
+  UtensilsCrossed, Coffee, IceCream, ChefHat, Pizza,
+  ReceiptText, Wallet,
+  Check, Menu, ShieldCheck, MessageCircle, Play, X,
+  ClipboardX, Search, LineChart, PlayCircle,
 } from 'lucide-react';
 
 /* ---------- Configuração fácil de editar ---------- */
@@ -169,7 +169,7 @@ const faqs = [
 ];
 
 /* ---------- Componentes auxiliares ---------- */
-function Logo({ className = '' }: { className?: string }) {
+function Logo({ className = '' }: Readonly<{ className?: string }>) {
   return (
     <span className={`flex items-center gap-2 font-display text-xl font-semibold ${className}`}>
       <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground">
@@ -182,7 +182,7 @@ function Logo({ className = '' }: { className?: string }) {
 
 function ScreenshotFrame({
   src, alt, caption, priority = false,
-}: { src: string; alt: string; caption: string; priority?: boolean }) {
+}: Readonly<{ src: string; alt: string; caption: string; priority?: boolean }>) {
   const [errored, setErrored] = useState(false);
   return (
     <figure className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[var(--shadow-elevated)]">
@@ -193,16 +193,7 @@ function ScreenshotFrame({
         <span className="ml-3 truncate text-xs text-muted-foreground">{caption}</span>
       </div>
       <div className="relative aspect-[16/10] bg-muted/30">
-        {!errored ? (
-          <img
-            src={src}
-            alt={alt}
-            loading={priority ? 'eager' : 'lazy'}
-            decoding="async"
-            onError={() => setErrored(true)}
-            className="h-full w-full object-contain object-top"
-          />
-        ) : (
+        {errored ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
             <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
               Demonstração
@@ -211,13 +202,22 @@ function ScreenshotFrame({
               Screenshot real do MesaChef será exibido aqui.
             </p>
           </div>
+        ) : (
+          <img
+            src={src}
+            alt={alt}
+            loading={priority ? 'eager' : 'lazy'}
+            decoding="async"
+            onError={() => setErrored(true)}
+            className="h-full w-full object-contain object-top"
+          />
         )}
       </div>
     </figure>
   );
 }
 
-function VideoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function VideoModal({ open, onClose }: Readonly<{ open: boolean; onClose: () => void }>) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -231,12 +231,14 @@ function VideoModal({ open, onClose }: { open: boolean; onClose: () => void }) {
       aria-modal="true"
       aria-label="Demonstração do MesaChef"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onClose}
     >
-      <div
-        className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-card"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <button
+        type="button"
+        aria-label="Fechar demonstração"
+        className="absolute inset-0 h-full w-full cursor-default"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-card">
         <button
           onClick={onClose}
           aria-label="Fechar demonstração"
