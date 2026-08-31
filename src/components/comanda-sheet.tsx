@@ -359,6 +359,29 @@ function AddProductDialog({
   const g = Number(grams.replace(',', '.')) || 0;
   const total = weighted ? (g / 1000) * product.price_per_kg : qty * product.price;
 
+  /** Soma a quantidade em um item idêntico já existente na comanda. */
+  const mergeIdenticalItem = async (): Promise<'merged' | 'error' | null> => {
+    const { data: cands } = await supabase
+      .from('tab_items')
+      .select('id, quantity, unit_price, notes')
+      .eq('tab_id', tabId)
+      .eq('product_id', product.id)
+      .eq('item_type', 'fixo')
+      .is('canceled_at', null);
+    const match = (cands ?? []).find((c: any) =>
+      Math.abs(Number(c.unit_price) - product.price) < 0.005 &&
+      normalizeNotes(c.notes) === normalizeNotes(notes),
+    );
+    if (!match) return null;
+    const newQty = Number(match.quantity) + qty;
+    const { error: upErr } = await supabase.from('tab_items').update({
+      quantity: newQty, total_price: +(product.price * newQty).toFixed(2),
+    }).eq('id', match.id);
+    if (upErr) { toast.error(upErr.message); return 'error'; }
+    toast.success(`${product.name} — agora ${newQty}×`);
+    return 'merged';
+  };
+
   const save = async () => {
     if (weighted && g <= 0) { toast.error('Informe o peso.'); return; }
     if (!weighted && qty <= 0) { toast.error('Quantidade inválida.'); return; }
