@@ -98,6 +98,41 @@ export default function DriversTab({ companyId }: { companyId: string }) {
     await load();
   };
 
+  let driversContent: React.ReactNode;
+  if (loading) {
+    driversContent = <div className="text-sm text-muted-foreground">Carregando…</div>;
+  } else if (rows.length === 0) {
+    driversContent = (
+      <div className="rounded-lg border border-dashed p-10 text-center text-sm text-muted-foreground">
+        Nenhum entregador cadastrado.
+      </div>
+    );
+  } else {
+    driversContent = (
+      <ul className="divide-y rounded-lg border">
+        {rows.map((d) => (
+          <li key={d.id} className="flex flex-wrap items-center gap-3 p-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted"><Bike className="h-4 w-4" /></div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium break-words">{d.name}</div>
+              <div className="text-xs text-muted-foreground break-words">
+                {[d.phone, d.vehicle, d.plate].filter(Boolean).join(' · ') || 'Sem dados adicionais'}
+              </div>
+            </div>
+            <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+              <Switch checked={d.active} onCheckedChange={() => void toggleActive(d)} />
+              {d.active ? 'Ativo' : 'Inativo'}
+            </label>
+            <div className="flex gap-1">
+              <Button size="icon" variant="ghost" onClick={() => openEdit(d)}><Edit2 className="h-4 w-4" /></Button>
+              <Button size="icon" variant="ghost" onClick={() => void remove(d)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   return (
     <Card>
       <CardContent className="pt-6 space-y-4">
