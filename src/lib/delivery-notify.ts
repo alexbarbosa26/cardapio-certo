@@ -85,14 +85,14 @@ export function whatsappLink(phone: string | null | undefined, message: string):
 
 export function publicTrackUrl(slug?: string | null, token?: string | null): string | null {
   if (!slug || !token) return null;
-  return `${window.location.origin}/cardapio/${slug}/pedido/${token}`;
+  return `${globalThis.location.origin}/cardapio/${slug}/pedido/${token}`;
 }
 
 /** Abre o WhatsApp em nova aba. Retorna false quando o telefone é inválido. */
 export function openWhatsapp(phone: string | null | undefined, message: string): boolean {
   const url = whatsappLink(phone, message);
   if (!url) return false;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  globalThis.open(url, '_blank', 'noopener,noreferrer');
   return true;
 }
 
