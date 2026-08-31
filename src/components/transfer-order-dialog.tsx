@@ -28,7 +28,7 @@ interface TableOption {
   has_open_order: boolean;
 }
 
-export function TransferOrderDialog({ open, onOpenChange, orderId, fromTableId, fromTableName, onTransferred }: Props) {
+export function TransferOrderDialog({ open, onOpenChange, orderId, fromTableId, fromTableName, onTransferred }: Readonly<Props>) {
   const { profile } = useAuth();
   const [tables, setTables] = useState<TableOption[]>([]);
   const [destId, setDestId] = useState<string>('');
