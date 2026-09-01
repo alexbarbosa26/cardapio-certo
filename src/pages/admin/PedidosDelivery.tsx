@@ -27,7 +27,7 @@ type OrderRow = {
   service_mode: string;
   customer_name: string | null;
   customer_phone: string | null;
-  delivery_address: any;
+  delivery_address: DeliveryAddress | null;
   payment_method: string | null;
   payment_status: string | null;
   change_for: number | null;
