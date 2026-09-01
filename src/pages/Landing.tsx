@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   UtensilsCrossed, Coffee, IceCream, ChefHat, Pizza,
   ReceiptText, Wallet,
-  Check, Menu, ShieldCheck, MessageCircle, Play, X,
+  Check, Menu, ShieldCheck, MessageCircle, Play,
   ClipboardX, Search, LineChart, PlayCircle,
 } from 'lucide-react';
 
