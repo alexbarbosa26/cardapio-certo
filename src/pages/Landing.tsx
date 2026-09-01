@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import {
   Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   UtensilsCrossed, Coffee, IceCream, ChefHat, Pizza,
   ReceiptText, Wallet,
