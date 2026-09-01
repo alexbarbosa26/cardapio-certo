@@ -29,7 +29,9 @@ export function brokeredPreviewStorage() {
     : (dev ? ['https://lovable.dev', 'http://localhost:3000'] : ['https://lovable.dev']);
   const RESULT = 'lovable-preview-auth:result';
   const TIMEOUT = 2000;
-  const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+  // Correlation id for postMessage request/response matching: CSPRNG UUID so a
+  // forged editor message can't guess an in-flight requestId (typescript:S2245).
+  const newId = () => globalThis.crypto.randomUUID();
 
   const request = (type: string, key: string, value?: string): Promise<{ ok: boolean; value?: string | null } | null> =>
     new Promise((resolve) => {
