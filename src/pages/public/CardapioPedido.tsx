@@ -24,6 +24,38 @@ const FINAL_STATUSES = new Set(['entregue', 'fechado', 'cancelado', 'recusado'])
 
 type Step = { key: string; label: string; at: string | null; icon: typeof Clock };
 
+type StepState = 'done' | 'current' | 'pending';
+
+function stepState(steps: Step[], idx: number): StepState {
+  if (steps[idx].at) return 'done';
+  const allPreviousDone = steps.slice(0, idx).every((p) => !!p.at);
+  return allPreviousDone ? 'current' : 'pending';
+}
+
+const STEP_CIRCLE_CLASS: Record<StepState, string> = {
+  done: 'bg-emerald-500 border-emerald-500 text-white',
+  current: 'bg-white border-blue-500 text-blue-600 animate-pulse',
+  pending: 'bg-white border-neutral-300 text-neutral-400',
+};
+
+const STEP_LABEL_CLASS: Record<StepState, string> = {
+  done: 'text-neutral-900',
+  current: 'text-neutral-900',
+  pending: 'text-neutral-500',
+};
+
+const STEP_TIME_TEXT: Record<StepState, string> = {
+  done: '',
+  current: 'Em andamento…',
+  pending: 'Pendente',
+};
+
+function StepStateIcon({ state, StepIcon }: Readonly<{ state: StepState; StepIcon: typeof Clock }>) {
+  if (state === 'done') return <CheckCircle2 className="h-4 w-4" />;
+  if (state === 'current') return <StepIcon className="h-4 w-4" />;
+  return <Circle className="h-3 w-3" />;
+}
+
 function buildSteps(order: NonNullable<Awaited<ReturnType<typeof fetchPublicOrder>>['order']>): Step[] {
   const steps: Step[] = [
     { key: 'opened', label: 'Pedido recebido', at: order.opened_at, icon: CheckCircle2 },
@@ -31,8 +63,10 @@ function buildSteps(order: NonNullable<Awaited<ReturnType<typeof fetchPublicOrde
     { key: 'ready', label: order.service_mode === 'delivery' ? 'Pronto para sair' : 'Pronto para retirada', at: order.ready_at, icon: PackageCheck },
   ];
   if (order.service_mode === 'delivery') {
-    steps.push({ key: 'dispatched', label: 'Saiu para entrega', at: order.dispatched_at, icon: Bike });
-    steps.push({ key: 'delivered', label: 'Entregue', at: order.delivered_at, icon: CheckCircle2 });
+    steps.push(
+      { key: 'dispatched', label: 'Saiu para entrega', at: order.dispatched_at, icon: Bike },
+      { key: 'delivered', label: 'Entregue', at: order.delivered_at, icon: CheckCircle2 },
+    );
   } else {
     steps.push({ key: 'delivered', label: 'Retirado', at: order.delivered_at, icon: CheckCircle2 });
   }
@@ -125,8 +159,7 @@ export default function CardapioPedido() {
           <Section title="Acompanhamento">
             <ol className="relative">
               {steps.map((s, idx) => {
-                const done = !!s.at;
-                const isCurrent = !done && steps.slice(0, idx).every((p) => !!p.at);
+                const state = stepState(steps, idx);
                 const StepIcon = s.icon;
                 return (
                   <li key={s.key} className="flex gap-3 pb-4 last:pb-0 relative">
@@ -134,28 +167,24 @@ export default function CardapioPedido() {
                       <span
                         className={cn(
                           'absolute left-[15px] top-8 bottom-0 w-px',
-                          done ? 'bg-emerald-400' : 'bg-neutral-200',
+                          state === 'done' ? 'bg-emerald-400' : 'bg-neutral-200',
                         )}
                       />
                     )}
                     <div
                       className={cn(
                         'relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border-2',
-                        done
-                          ? 'bg-emerald-500 border-emerald-500 text-white'
-                          : isCurrent
-                            ? 'bg-white border-blue-500 text-blue-600 animate-pulse'
-                            : 'bg-white border-neutral-300 text-neutral-400',
+                        STEP_CIRCLE_CLASS[state],
                       )}
                     >
-                      {done ? <CheckCircle2 className="h-4 w-4" /> : isCurrent ? <StepIcon className="h-4 w-4" /> : <Circle className="h-3 w-3" />}
+                      <StepStateIcon state={state} StepIcon={StepIcon} />
                     </div>
                     <div className="min-w-0 pt-1">
-                      <div className={cn('text-sm font-medium', done ? 'text-neutral-900' : isCurrent ? 'text-neutral-900' : 'text-neutral-500')}>
+                      <div className={cn('text-sm font-medium', STEP_LABEL_CLASS[state])}>
                         {s.label}
                       </div>
                       <div className="text-xs text-neutral-500">
-                        {done ? fmtDateTime(s.at!) : isCurrent ? 'Em andamento…' : 'Pendente'}
+                        {state === 'done' ? fmtDateTime(s.at!) : STEP_TIME_TEXT[state]}
                       </div>
                     </div>
                   </li>
@@ -167,8 +196,8 @@ export default function CardapioPedido() {
 
         <Section title="Itens">
           <ul className="divide-y">
-            {order.items.map((it, idx) => (
-              <li key={idx} className="py-2 flex justify-between gap-3 text-sm">
+            {order.items.map((it) => (
+              <li key={`${it.name}|${it.notes ?? ''}|${it.unit_price}|${it.quantity}`} className="py-2 flex justify-between gap-3 text-sm">
                 <div className="min-w-0">
                   <div className="font-medium">{it.quantity}× {it.name}</div>
                   {it.notes && <div className="text-xs text-neutral-500">{it.notes}</div>}
@@ -246,11 +275,11 @@ export default function CardapioPedido() {
 
 /** ETA recalculado a partir dos marcos reais do pedido (aceite, pronto, saída). */
 function useEta(order: EtaSource | undefined) {
-  const [, tick] = useState(0);
+  const [, setTick] = useState(0);
   const status = order?.status;
   useEffect(() => {
     if (!status || FINAL_STATUSES.has(status)) return;
-    const t = setInterval(() => tick((x) => x + 1), 30_000);
+    const t = setInterval(() => setTick((x) => x + 1), 30_000);
     return () => clearInterval(t);
   }, [status]);
   if (!order) return { label: null as string | null, clock: null as string | null };
@@ -263,13 +292,13 @@ const PAYMENT_STATUS_META: Record<string, { label: string; tone: string }> = {
   estornado: { label: 'Pagamento estornado', tone: 'bg-red-100 text-red-900 border-red-200' },
 };
 
-function PaymentBadge({ status }: { status?: string | null }) {
+function PaymentBadge({ status }: Readonly<{ status?: string | null }>) {
   const meta = PAYMENT_STATUS_META[status ?? 'pendente'] ?? PAYMENT_STATUS_META.pendente;
   return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${meta.tone}`}>{meta.label}</span>;
 }
 
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: Readonly<{ title: string; children: React.ReactNode }>) {
   return (
     <section className="rounded-xl bg-white border p-4">
       <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">{title}</h2>
@@ -278,7 +307,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Row({ label, value, bold }: { label: string; value: React.ReactNode; bold?: boolean }) {
+function Row({ label, value, bold }: Readonly<{ label: string; value: React.ReactNode; bold?: boolean }>) {
   return (
     <div className={`flex justify-between gap-3 ${bold ? 'font-semibold text-base pt-1' : 'text-neutral-600'}`}>
       <span>{label}</span><span>{value}</span>

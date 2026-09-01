@@ -20,6 +20,15 @@ import {
   Bike, ChefHat, CheckCircle2, MessageCircle, PackageCheck, Phone, Truck, XCircle, Volume2, VolumeX, Ban,
 } from 'lucide-react';
 
+type DeliveryAddress = {
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  reference?: string | null;
+};
+
 type OrderRow = {
   id: string;
   order_number: number;
@@ -27,7 +36,7 @@ type OrderRow = {
   service_mode: string;
   customer_name: string | null;
   customer_phone: string | null;
-  delivery_address: any;
+  delivery_address: DeliveryAddress | null;
   payment_method: string | null;
   payment_status: string | null;
   change_for: number | null;
@@ -402,7 +411,7 @@ function OrderDetailsDialog({ order, drivers, onClose, onUpdate, onAssignDriver,
     enabled: !!order?.id,
   });
   if (!order) return null;
-  const addr = order.delivery_address as any;
+  const addr = order.delivery_address;
   const activeDrivers = drivers.filter((d) => d.active || d.id === order.driver_id);
   const canCancel = ['em_preparo', 'pronto', 'em_entrega'].includes(order.status);
   return (
@@ -520,7 +529,7 @@ function OrderDetailsDialog({ order, drivers, onClose, onUpdate, onAssignDriver,
   );
 }
 
-function Info({ label, value }: { label: string; value: React.ReactNode }) {
+function Info({ label, value }: Readonly<{ label: string; value: React.ReactNode }>) {
   return (
     <div>
       <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</div>
@@ -528,6 +537,6 @@ function Info({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
-function Row({ label, value, bold }: { label: string; value: React.ReactNode; bold?: boolean }) {
+function Row({ label, value, bold }: Readonly<{ label: string; value: React.ReactNode; bold?: boolean }>) {
   return <div className={`flex justify-between ${bold ? 'font-semibold pt-1 border-t' : 'text-muted-foreground'}`}><span>{label}</span><span>{value}</span></div>;
 }

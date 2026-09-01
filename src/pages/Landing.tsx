@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/button';
 import {
   Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle,
 } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   UtensilsCrossed, Coffee, IceCream, ChefHat, Pizza,
   ReceiptText, Wallet,
-  Check, Menu, ShieldCheck, MessageCircle, Play, X,
+  Check, Menu, ShieldCheck, MessageCircle, Play,
   ClipboardX, Search, LineChart, PlayCircle,
 } from 'lucide-react';
 
@@ -218,34 +219,10 @@ function ScreenshotFrame({
 }
 
 function VideoModal({ open, onClose }: Readonly<{ open: boolean; onClose: () => void }>) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
-  if (!open) return null;
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Demonstração do MesaChef"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-    >
-      <button
-        type="button"
-        aria-label="Fechar demonstração"
-        className="absolute inset-0 h-full w-full cursor-default"
-        onClick={onClose}
-      />
-      <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl bg-card">
-        <button
-          onClick={onClose}
-          aria-label="Fechar demonstração"
-          className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-background/90 text-foreground hover:bg-background"
-        >
-          <X className="h-4 w-4" />
-        </button>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-4xl overflow-hidden p-0">
+        <DialogTitle className="sr-only">Demonstração do MesaChef</DialogTitle>
         <div className="relative aspect-video bg-muted">
           {DEMO_VIDEO_URL ? (
             <iframe
@@ -264,8 +241,8 @@ function VideoModal({ open, onClose }: Readonly<{ open: boolean; onClose: () => 
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

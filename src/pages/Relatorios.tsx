@@ -181,7 +181,7 @@ function RelatoriosPage() {
   const payments = useMemo(() => {
     const fromOrders = orderPays.map((p) => ({ ...p, origin: 'mesa' as ItemOrigin }));
     const fromTabs = tabPays.map((p) => ({ ...p, origin: 'comanda' as const }));
-    const fromDelivery = deliveryPays.map((p) => ({ ...p, origin: 'delivery' as ItemOrigin }));
+    const fromDelivery = deliveryPays.map((p) => ({ ...p, origin: 'delivery' as const }));
     let all = [...fromOrders, ...fromTabs, ...fromDelivery];
     if (origin !== 'todas') all = all.filter((p) => p.origin === origin);
     if (methodFilter !== 'todos') all = all.filter((p) => p.method === methodFilter);

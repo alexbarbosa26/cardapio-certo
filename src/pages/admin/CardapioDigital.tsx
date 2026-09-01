@@ -152,7 +152,7 @@ function SettingsTab({ companyId, slug, onSlug }: Readonly<{ companyId: string; 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('digital_menu_settings').select('*').eq('company_id', companyId).maybeSingle();
-      if (data) setS(data as Settings);
+      if (data) setS(data);
       else setS(defaultsFor(companyId));
     })();
   }, [companyId]);
@@ -297,7 +297,7 @@ function HoursTab({ companyId }: Readonly<{ companyId: string }>) {
     (async () => {
       const { data } = await supabase.from('digital_menu_hours').select('weekday,is_open,period1_start,period1_end,period2_start,period2_end').eq('company_id', companyId);
       const byDay = new Map<number, Hours>();
-      (data as Hours[] | null)?.forEach((r) => byDay.set(r.weekday, r));
+      data?.forEach((r) => byDay.set(r.weekday, r));
       const all: Hours[] = Array.from({ length: 7 }, (_, i) => byDay.get(i) ?? { weekday: i, is_open: false, period1_start: '18:00', period1_end: '23:00', period2_start: null, period2_end: null });
       setRows(all);
     })();
@@ -455,9 +455,9 @@ function ItemsTab({ companyId }: Readonly<{ companyId: string }>) {
       supabase.from('digital_menu_categories').select('id,name,description,sort_order,active').eq('company_id', companyId).order('sort_order'),
       supabase.from('products').select('id,name,price').eq('company_id', companyId).order('name'),
     ]);
-    setItems((i.data as Item[] | null) ?? []);
-    setCats((c.data as Category[] | null) ?? []);
-    setProducts((p.data as Product[] | null) ?? []);
+    setItems(i.data ?? []);
+    setCats(c.data ?? []);
+    setProducts(p.data ?? []);
   };
   useEffect(() => { void load(); }, [companyId]);
 
