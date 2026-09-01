@@ -60,7 +60,7 @@ export default function GlobalUsuarios() {
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [fRole, setFRole] = useState<'all' | GlobalRole>('all');
-  const [fCompany, setFCompany] = useState<'all' | string>('all');
+  const [fCompany, setFCompany] = useState<string>('all');
   const [fStatus, setFStatus] = useState<'all' | 'ativo' | 'inativo'>('all');
 
   const [editing, setEditing] = useState<EditState | null>(null);
@@ -110,39 +110,36 @@ export default function GlobalUsuarios() {
   const openCreate = () => setEditing({ ...EMPTY });
   const openEdit = (r: GlobalUserRow) => setEditing({
     id: r.id, name: r.name, email: r.email, company_id: r.company_id,
-    role: (r.role ?? 'staff') as GlobalRole,
+    role: r.role ?? 'staff',
     status: r.status === 'inativo' ? 'inativo' : 'ativo',
     password: '', confirm: '',
   });
 
+  const persist = async (state: EditState) => {
+    const companyId = state.role === 'super_admin' ? null : state.company_id;
+    if (state.id) {
+      await adminUpdateGlobalUser({
+        user_id: state.id, name: state.name.trim(),
+        company_id: companyId,
+        role: state.role, status: state.status,
+      });
+      return;
+    }
+    await adminCreateGlobalUser({
+      name: state.name.trim(), email: state.email.trim(),
+      password: state.password,
+      company_id: companyId,
+      role: state.role,
+    });
+  };
+
   const save = async () => {
     if (!editing) return;
-    if (!editing.name.trim() || !editing.email.trim())
-      return toast.error('Nome e e-mail são obrigatórios.');
-    if (editing.role !== 'super_admin' && !editing.company_id)
-      return toast.error('Selecione uma empresa para admin/atendente.');
-    if (!editing.id) {
-      if (!isPasswordValid(editing.password))
-        return toast.error('Senha não atende aos requisitos mínimos.');
-      if (editing.password !== editing.confirm)
-        return toast.error('As senhas não conferem.');
-    }
+    const invalid = validateEditing(editing);
+    if (invalid) return toast.error(invalid);
     setSavingEdit(true);
     try {
-      if (editing.id) {
-        await adminUpdateGlobalUser({
-          user_id: editing.id, name: editing.name.trim(),
-          company_id: editing.role === 'super_admin' ? null : editing.company_id,
-          role: editing.role, status: editing.status,
-        });
-      } else {
-        await adminCreateGlobalUser({
-          name: editing.name.trim(), email: editing.email.trim(),
-          password: editing.password,
-          company_id: editing.role === 'super_admin' ? null : editing.company_id,
-          role: editing.role,
-        });
-      }
+      await persist(editing);
       toast.success('Usuário salvo.');
       setEditing(null);
       await load();
@@ -375,4 +372,14 @@ export default function GlobalUsuarios() {
       </Dialog>
     </div>
   );
+}
+
+/** Regras de validação do formulário de usuário; retorna a mensagem de erro ou null. */
+function validateEditing(state: EditState): string | null {
+  if (!state.name.trim() || !state.email.trim()) return 'Nome e e-mail são obrigatórios.';
+  if (state.role !== 'super_admin' && !state.company_id) return 'Selecione uma empresa para admin/atendente.';
+  if (state.id) return null;
+  if (!isPasswordValid(state.password)) return 'Senha não atende aos requisitos mínimos.';
+  if (state.password !== state.confirm) return 'As senhas não conferem.';
+  return null;
 }
