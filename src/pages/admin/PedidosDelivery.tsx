@@ -20,6 +20,15 @@ import {
   Bike, ChefHat, CheckCircle2, MessageCircle, PackageCheck, Phone, Truck, XCircle, Volume2, VolumeX, Ban,
 } from 'lucide-react';
 
+type DeliveryAddress = {
+  street?: string | null;
+  number?: string | null;
+  complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  reference?: string | null;
+};
+
 type OrderRow = {
   id: string;
   order_number: number;
