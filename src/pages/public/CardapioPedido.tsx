@@ -275,7 +275,9 @@ export default function CardapioPedido() {
 
 /** ETA recalculado a partir dos marcos reais do pedido (aceite, pronto, saída). */
 function useEta(order: EtaSource | undefined) {
-  const [, setTick] = useState(0);
+  // `tick` só existe para reprocessar o ETA a cada 30s; o valor não é exibido.
+  const [tick, setTick] = useState(0);
+  void tick;
   const status = order?.status;
   useEffect(() => {
     if (!status || FINAL_STATUSES.has(status)) return;
