@@ -16,8 +16,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import {
-  Search, Clock, MapPin, Phone, Instagram, Plus, Minus, ShoppingBag, Trash2, ArrowLeft, Loader2,
+  Search, Clock, MapPin, Phone, Plus, Minus, ShoppingBag, Trash2, ArrowLeft, Loader2,
 } from 'lucide-react';
+import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { toast } from 'sonner';
 
 export default function CardapioPublico() {
