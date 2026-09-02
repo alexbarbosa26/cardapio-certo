@@ -29,9 +29,9 @@ describe("computeOpenStatus", () => {
     expect(computeOpenStatus(hours, at("19:30")).open).toBe(true);
   });
 
-  it("fecha entre os períodos e anuncia a próxima abertura de hoje", () => {
+  it("fecha entre os períodos e aponta a próxima abertura da semana seguinte", () => {
     const hours = [day(3, { period2_start: "18:00:00", period2_end: "23:00:00" })];
-    expect(computeOpenStatus(hours, at("16:00"))).toEqual({ open: false, next: null });
+    expect(computeOpenStatus(hours, at("16:00"))).toEqual({ open: false, next: "qua às 09:00" });
   });
 
   it("anuncia a abertura de hoje quando ainda não começou", () => {
