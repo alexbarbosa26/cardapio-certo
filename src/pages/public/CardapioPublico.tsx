@@ -525,7 +525,7 @@ function MenuHeader({ data, status, brand }: {
   );
 }
 
-function FullMessage({ title, msg, logo }: { title: string; msg: string; logo?: string | null }) {
+function FullMessage({ title, msg, logo }: Readonly<{ title: string; msg: string; logo?: string | null }>) {
   return (
     <div className="min-h-screen bg-neutral-50 grid place-items-center px-6">
       <div className="text-center max-w-sm">
