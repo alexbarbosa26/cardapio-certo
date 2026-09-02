@@ -16,8 +16,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import {
-  Search, Clock, MapPin, Phone, Instagram, Plus, Minus, ShoppingBag, Trash2, ArrowLeft, Loader2,
+  Search, Clock, MapPin, Phone, Plus, Minus, ShoppingBag, Trash2, ArrowLeft, Loader2,
 } from 'lucide-react';
+import { InstagramIcon } from '@/components/icons/instagram-icon';
 import { toast } from 'sonner';
 
 export default function CardapioPublico() {
@@ -116,9 +117,7 @@ export default function CardapioPublico() {
 
         {!canOrder && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {status.open
-              ? 'No momento este estabelecimento não está aceitando pedidos.'
-              : `Fechado agora. ${status.next ? `Abrimos ${status.next}.` : 'Sem horário previsto de abertura.'}`}
+            {unavailableNotice(status)}
           </div>
         )}
 
@@ -184,25 +183,14 @@ export default function CardapioPublico() {
                         {it.description && <p className="mt-1 text-sm text-neutral-600 line-clamp-2">{it.description}</p>}
                         <div className="mt-2 flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold" style={{ color: brand }}>{fmtBRL(it.price)}</span>
-                          {it.sold_out ? (
-                            <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Esgotado</span>
-                          ) : inCart > 0 ? (
-                            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-1 py-0.5">
-                              <button aria-label="Diminuir" onClick={() => changeQty(it.id, -1)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-neutral-100"><Minus className="h-3.5 w-3.5" /></button>
-                              <span className="min-w-4 text-center text-sm font-medium tabular-nums">{inCart}</span>
-                              <button aria-label="Aumentar" onClick={() => changeQty(it.id, 1)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-neutral-100"><Plus className="h-3.5 w-3.5" /></button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={disabled}
-                              onClick={() => addItem(it)}
-                              className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-40"
-                              style={{ background: brand }}
-                            >
-                              <Plus className="h-3.5 w-3.5" /> Adicionar
-                            </button>
-                          )}
+                          <ItemAction
+                            soldOut={!!it.sold_out}
+                            inCart={inCart}
+                            disabled={disabled}
+                            brand={brand}
+                            onChangeQty={(delta) => changeQty(it.id, delta)}
+                            onAdd={() => addItem(it)}
+                          />
                         </div>
                       </div>
                       {it.image_url && (
@@ -262,10 +250,10 @@ export default function CardapioPublico() {
 
 function CartView({
   cart, brand, subtotal, deliveryFee, minOrder, onChangeQty, onRemove, onCheckout,
-}: {
+}: Readonly<{
   cart: CartItem[]; brand: string; subtotal: number; deliveryFee: number; minOrder: number;
   onChangeQty: (id: string, delta: number) => void; onRemove: (id: string) => void; onCheckout: () => void;
-}) {
+}>) {
   const belowMin = minOrder > 0 && subtotal < minOrder;
   return (
     <>
@@ -323,11 +311,11 @@ function CartView({
 
 function CheckoutView({
   slug, cart, subtotal, brand, settings, onBack, onDone,
-}: {
+}: Readonly<{
   slug: string; cart: CartItem[]; subtotal: number; brand: string;
   settings: Partial<{ delivery_fee: number; delivery_enabled: boolean; pickup_enabled: boolean; min_order_amount: number }>;
   onBack: () => void; onDone: (token: string) => void;
-}) {
+}>) {
   const canDelivery = settings.delivery_enabled !== false;
   const canPickup = settings.pickup_enabled !== false;
   const [mode, setMode] = useState<ServiceMode>(canDelivery ? 'delivery' : 'pickup');
@@ -483,9 +471,9 @@ function CheckoutView({
   );
 }
 
-function MenuHeader({ data, status, brand }: {
+function MenuHeader({ data, status, brand }: Readonly<{
   data: PublicMenuResponse; status: { open: boolean; next: string | null }; brand: string;
-}) {
+}>) {
   const s = data.settings ?? {};
   const c = data.company!;
   return (
@@ -517,14 +505,14 @@ function MenuHeader({ data, status, brand }: {
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600">
           {s.address && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{s.address}</span>}
           {s.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{s.phone}</span>}
-          {s.instagram && <a className="inline-flex items-center gap-1 hover:underline" href={`https://instagram.com/${s.instagram.replace('@', '')}`} target="_blank" rel="noreferrer"><Instagram className="h-3 w-3" />@{s.instagram.replace('@', '')}</a>}
+          {s.instagram && <a className="inline-flex items-center gap-1 hover:underline" href={`https://instagram.com/${s.instagram.replace('@', '')}`} target="_blank" rel="noreferrer"><InstagramIcon className="h-3 w-3" />@{s.instagram.replace('@', '')}</a>}
         </div>
       </div>
     </header>
   );
 }
 
-function FullMessage({ title, msg, logo }: { title: string; msg: string; logo?: string | null }) {
+function FullMessage({ title, msg, logo }: Readonly<{ title: string; msg: string; logo?: string | null }>) {
   return (
     <div className="min-h-screen bg-neutral-50 grid place-items-center px-6">
       <div className="text-center max-w-sm">
@@ -551,4 +539,43 @@ function featuredItems(data: PublicMenuResponse) {
     .flatMap((c) => c.items)
     .filter((i) => i.featured && !i.sold_out)
     .slice(0, 12);
+}
+
+/** Ação do item na lista: esgotado, controle de quantidade ou botão adicionar. */
+function ItemAction({
+  soldOut, inCart, disabled, brand, onChangeQty, onAdd,
+}: Readonly<{
+  soldOut: boolean; inCart: number; disabled: boolean; brand: string;
+  onChangeQty: (delta: number) => void; onAdd: () => void;
+}>) {
+  if (soldOut) {
+    return <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Esgotado</span>;
+  }
+  if (inCart > 0) {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-1 py-0.5">
+        <button aria-label="Diminuir" onClick={() => onChangeQty(-1)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-neutral-100"><Minus className="h-3.5 w-3.5" /></button>
+        <span className="min-w-4 text-center text-sm font-medium tabular-nums">{inCart}</span>
+        <button aria-label="Aumentar" onClick={() => onChangeQty(1)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-neutral-100"><Plus className="h-3.5 w-3.5" /></button>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onAdd}
+      className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-40"
+      style={{ background: brand }}
+    >
+      <Plus className="h-3.5 w-3.5" /> Adicionar
+    </button>
+  );
+}
+
+/** Mensagem exibida quando o estabelecimento não aceita pedidos no momento. */
+export function unavailableNotice(status: Readonly<{ open: boolean; next: string | null }>): string {
+  if (status.open) return 'No momento este estabelecimento não está aceitando pedidos.';
+  const reopen = status.next ? `Abrimos ${status.next}.` : 'Sem horário previsto de abertura.';
+  return `Fechado agora. ${reopen}`;
 }
