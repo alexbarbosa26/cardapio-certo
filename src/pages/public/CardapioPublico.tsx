@@ -484,9 +484,9 @@ function CheckoutView({
   );
 }
 
-function MenuHeader({ data, status, brand }: {
+function MenuHeader({ data, status, brand }: Readonly<{
   data: PublicMenuResponse; status: { open: boolean; next: string | null }; brand: string;
-}) {
+}>) {
   const s = data.settings ?? {};
   const c = data.company!;
   return (
