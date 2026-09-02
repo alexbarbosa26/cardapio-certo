@@ -324,11 +324,11 @@ function CartView({
 
 function CheckoutView({
   slug, cart, subtotal, brand, settings, onBack, onDone,
-}: {
+}: Readonly<{
   slug: string; cart: CartItem[]; subtotal: number; brand: string;
   settings: Partial<{ delivery_fee: number; delivery_enabled: boolean; pickup_enabled: boolean; min_order_amount: number }>;
   onBack: () => void; onDone: (token: string) => void;
-}) {
+}>) {
   const canDelivery = settings.delivery_enabled !== false;
   const canPickup = settings.pickup_enabled !== false;
   const [mode, setMode] = useState<ServiceMode>(canDelivery ? 'delivery' : 'pickup');
