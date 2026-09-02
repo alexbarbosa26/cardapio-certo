@@ -574,7 +574,7 @@ function ItemAction({
 }
 
 /** Mensagem exibida quando o estabelecimento não aceita pedidos no momento. */
-export function unavailableNotice(status: Readonly<{ open: boolean; next: string | null }>): string {
+function unavailableNotice(status: Readonly<{ open: boolean; next: string | null }>): string {
   if (status.open) return 'No momento este estabelecimento não está aceitando pedidos.';
   const reopen = status.next ? `Abrimos ${status.next}.` : 'Sem horário previsto de abertura.';
   return `Fechado agora. ${reopen}`;
