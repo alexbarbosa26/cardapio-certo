@@ -263,10 +263,10 @@ export default function CardapioPublico() {
 
 function CartView({
   cart, brand, subtotal, deliveryFee, minOrder, onChangeQty, onRemove, onCheckout,
-}: {
+}: Readonly<{
   cart: CartItem[]; brand: string; subtotal: number; deliveryFee: number; minOrder: number;
   onChangeQty: (id: string, delta: number) => void; onRemove: (id: string) => void; onCheckout: () => void;
-}) {
+}>) {
   const belowMin = minOrder > 0 && subtotal < minOrder;
   return (
     <>
