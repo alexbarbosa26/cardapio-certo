@@ -185,25 +185,14 @@ export default function CardapioPublico() {
                         {it.description && <p className="mt-1 text-sm text-neutral-600 line-clamp-2">{it.description}</p>}
                         <div className="mt-2 flex items-center justify-between gap-2">
                           <span className="text-sm font-semibold" style={{ color: brand }}>{fmtBRL(it.price)}</span>
-                          {it.sold_out ? (
-                            <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Esgotado</span>
-                          ) : inCart > 0 ? (
-                            <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-1 py-0.5">
-                              <button aria-label="Diminuir" onClick={() => changeQty(it.id, -1)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-neutral-100"><Minus className="h-3.5 w-3.5" /></button>
-                              <span className="min-w-4 text-center text-sm font-medium tabular-nums">{inCart}</span>
-                              <button aria-label="Aumentar" onClick={() => changeQty(it.id, 1)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-neutral-100"><Plus className="h-3.5 w-3.5" /></button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={disabled}
-                              onClick={() => addItem(it)}
-                              className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-40"
-                              style={{ background: brand }}
-                            >
-                              <Plus className="h-3.5 w-3.5" /> Adicionar
-                            </button>
-                          )}
+                          <ItemAction
+                            soldOut={!!it.sold_out}
+                            inCart={inCart}
+                            disabled={disabled}
+                            brand={brand}
+                            onChangeQty={(delta) => changeQty(it.id, delta)}
+                            onAdd={() => addItem(it)}
+                          />
                         </div>
                       </div>
                       {it.image_url && (
