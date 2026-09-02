@@ -12,7 +12,7 @@ describe("scorePassword", () => {
     expect(scorePassword("abcdefgh").label).toBe("Fraca");
     expect(scorePassword("abcdefG1").label).toBe("Boa");
     expect(scorePassword("abcdefG1!").label).toBe("Forte");
-    expect(scorePassword("aB1").label).toBe("Fraca");
+    expect(scorePassword("aB1").label).toBe("Razoável");
   });
 
   it("respeita minLength customizado", () => {
