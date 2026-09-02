@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { brokeredPreviewStorage } from "./previewAuthStorage";
 
-const SOURCE = readFileSync(new URL("./previewAuthStorage.ts", import.meta.url), "utf8");
+const SOURCE = readFileSync(path.resolve(process.cwd(), "src/integrations/supabase/previewAuthStorage.ts"), "utf8");
 const PROJECT_ID = "17642ff0-afb6-4676-91b0-fed573b34d22";
 
 describe("previewAuthStorage — proteção antirregressão de PRNG", () => {
