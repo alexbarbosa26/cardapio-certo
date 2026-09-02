@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - main
-      - master
   pull_request:
+    branches:
+      - main
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -26,40 +27,40 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Configurar Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Configurar Bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          node-version: 24
-          cache: npm
+          bun-version: 1.3.14
 
-      - name: Exibir versões
-        run: |
-          node --version
-          npm --version
+      - name: Exibir versão do Bun
+        run: bun --version
 
       - name: Instalar dependências
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Executar testes com cobertura
-        run: npm run test:coverage
+        run: bun run test:cov
 
-      - name: Validar relatório de cobertura
-        run: test -s coverage/lcov.info
+      - name: Validar relatório LCOV
+        shell: bash
+        run: |
+          test -s coverage/lcov.info
+          grep -q '^SF:' coverage/lcov.info
 
       - name: Build do projeto
-        run: npm run build
+        run: bun run build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Análise SonarQube
-        uses: SonarSource/sonarqube-scan-action@2500896589ef8f7247069a56136f8dc177c27ccf # v5.2.0
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
