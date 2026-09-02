@@ -542,3 +542,35 @@ function featuredItems(data: PublicMenuResponse) {
     .filter((i) => i.featured && !i.sold_out)
     .slice(0, 12);
 }
+
+/** Ação do item na lista: esgotado, controle de quantidade ou botão adicionar. */
+function ItemAction({
+  soldOut, inCart, disabled, brand, onChangeQty, onAdd,
+}: Readonly<{
+  soldOut: boolean; inCart: number; disabled: boolean; brand: string;
+  onChangeQty: (delta: number) => void; onAdd: () => void;
+}>) {
+  if (soldOut) {
+    return <span className="text-[11px] text-neutral-500 uppercase tracking-wider">Esgotado</span>;
+  }
+  if (inCart > 0) {
+    return (
+      <div className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-1 py-0.5">
+        <button aria-label="Diminuir" onClick={() => onChangeQty(-1)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-neutral-100"><Minus className="h-3.5 w-3.5" /></button>
+        <span className="min-w-4 text-center text-sm font-medium tabular-nums">{inCart}</span>
+        <button aria-label="Aumentar" onClick={() => onChangeQty(1)} className="h-7 w-7 grid place-items-center rounded-full hover:bg-neutral-100"><Plus className="h-3.5 w-3.5" /></button>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onAdd}
+      className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-white transition disabled:opacity-40"
+      style={{ background: brand }}
+    >
+      <Plus className="h-3.5 w-3.5" /> Adicionar
+    </button>
+  );
+}
