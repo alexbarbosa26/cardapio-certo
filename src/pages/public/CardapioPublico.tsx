@@ -518,7 +518,7 @@ function MenuHeader({ data, status, brand }: {
         <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-neutral-600">
           {s.address && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{s.address}</span>}
           {s.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{s.phone}</span>}
-          {s.instagram && <a className="inline-flex items-center gap-1 hover:underline" href={`https://instagram.com/${s.instagram.replace('@', '')}`} target="_blank" rel="noreferrer"><Instagram className="h-3 w-3" />@{s.instagram.replace('@', '')}</a>}
+          {s.instagram && <a className="inline-flex items-center gap-1 hover:underline" href={`https://instagram.com/${s.instagram.replace('@', '')}`} target="_blank" rel="noreferrer"><InstagramIcon className="h-3 w-3" />@{s.instagram.replace('@', '')}</a>}
         </div>
       </div>
     </header>
