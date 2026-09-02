@@ -117,9 +117,7 @@ export default function CardapioPublico() {
 
         {!canOrder && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {status.open
-              ? 'No momento este estabelecimento não está aceitando pedidos.'
-              : `Fechado agora. ${status.next ? `Abrimos ${status.next}.` : 'Sem horário previsto de abertura.'}`}
+            {unavailableNotice(status)}
           </div>
         )}
 
