@@ -266,11 +266,36 @@ export default function CardapioPedido() {
   );
 }
 
+/** Botão de copiar a chave Pix, com tratamento explícito de falha da clipboard API. */
+function CopyPixButton({
+  pixKey, brand, copied, onCopied,
+}: Readonly<{ pixKey: string; brand: string; copied: boolean; onCopied: (v: boolean) => void }>) {
+  const handleCopy = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(pixKey);
+      onCopied(true);
+      setTimeout(() => onCopied(false), 2000);
+    } catch {
+      toast.error('Não foi possível copiar a chave Pix. Copie manualmente.');
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={() => { handleCopy().catch(() => undefined); }}
+      className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-white"
+      style={{ background: brand }}
+    >
+      {copied ? 'Copiado!' : 'Copiar'}
+    </button>
+  );
+}
+
 /** ETA recalculado a partir dos marcos reais do pedido (aceite, pronto, saída). */
 function useEta(order: EtaSource | undefined) {
-  // `tick` só existe para reprocessar o ETA a cada 30s; o valor não é exibido.
-  const [tick, setTick] = useState(0);
-  void tick;
+  // O estado só existe para reprocessar o ETA a cada 30s; o valor não é exibido.
+  const [, setTick] = useState(0);
   const status = order?.status;
   useEffect(() => {
     if (!status || FINAL_STATUSES.has(status)) return;
