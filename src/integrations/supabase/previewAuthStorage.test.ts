@@ -21,6 +21,24 @@ describe("previewAuthStorage — proteção antirregressão de PRNG", () => {
     expect(SOURCE).not.toMatch(/(^|[^.\w])window\s*\./m);
   });
 
+  it("verifica origens confiáveis com .includes(), sem .indexOf()", () => {
+    expect(SOURCE).toContain("editorOrigins.includes(e.origin)");
+    expect(SOURCE).not.toContain(".indexOf(");
+  });
+
+  it("usa encadeamento opcional nas guardas de mensagem e resposta", () => {
+    expect(SOURCE).toContain("d?.type === RESULT");
+    expect(SOURCE).toContain("res?.ok");
+    expect(SOURCE).not.toMatch(/\bd && d\./);
+    expect(SOURCE).not.toMatch(/\bres && res\./);
+  });
+
+  it("mantém String.raw e RegExp.exec nas expressões regulares", () => {
+    expect(SOURCE).toContain("String.raw");
+    expect(SOURCE).toContain(".exec(host)");
+    expect(SOURCE).not.toMatch(/host\.match\(/);
+  });
+
   it("gera requestIds únicos no formato UUID v4", async () => {
     const seen = new Set<string>();
     for (let i = 0; i < 50; i++) {
