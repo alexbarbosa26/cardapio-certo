@@ -13,3 +13,11 @@ Object.defineProperty(globalThis, "matchMedia", {
     dispatchEvent: () => false,
   }),
 });
+
+// jsdom não implementa ResizeObserver, exigido pelos gráficos responsivos.
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+Object.defineProperty(globalThis, "ResizeObserver", { writable: true, value: ResizeObserverStub });
