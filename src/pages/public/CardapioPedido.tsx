@@ -6,6 +6,7 @@ import { fmtBRL, fmtDateTime } from '@/lib/format';
 import { CheckCircle2, Clock, ChefHat, Bike, PackageCheck, XCircle, ArrowLeft, Circle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { etaClock, etaLabel, type EtaSource } from '@/lib/delivery-notify';
+import { toast } from 'sonner';
 
 
 const STATUS_LABEL: Record<string, { label: string; tone: string; icon: typeof Clock }> = {
