@@ -242,14 +242,7 @@ export default function CardapioPedido() {
               </div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 break-all rounded bg-white border px-2 py-1.5 text-xs">{data.pix.key}</code>
-                <button
-                  type="button"
-                  onClick={() => { void navigator.clipboard.writeText(data.pix!.key); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                  className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-white"
-                  style={{ background: brand }}
-                >
-                  {copied ? 'Copiado!' : 'Copiar'}
-                </button>
+                <CopyPixButton pixKey={data.pix.key} brand={brand} copied={copied} onCopied={setCopied} />
               </div>
               <p className="text-[11px] text-neutral-500">
                 Após o pagamento, envie o comprovante ao estabelecimento. A confirmação aparece aqui assim que for registrada.
