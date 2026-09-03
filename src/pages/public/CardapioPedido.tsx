@@ -6,6 +6,7 @@ import { fmtBRL, fmtDateTime } from '@/lib/format';
 import { CheckCircle2, Clock, ChefHat, Bike, PackageCheck, XCircle, ArrowLeft, Circle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { etaClock, etaLabel, type EtaSource } from '@/lib/delivery-notify';
+import { toast } from 'sonner';
 
 
 const STATUS_LABEL: Record<string, { label: string; tone: string; icon: typeof Clock }> = {
@@ -242,14 +243,7 @@ export default function CardapioPedido() {
               </div>
               <div className="flex items-center gap-2">
                 <code className="flex-1 break-all rounded bg-white border px-2 py-1.5 text-xs">{data.pix.key}</code>
-                <button
-                  type="button"
-                  onClick={() => { void navigator.clipboard.writeText(data.pix!.key); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-                  className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-white"
-                  style={{ background: brand }}
-                >
-                  {copied ? 'Copiado!' : 'Copiar'}
-                </button>
+                <CopyPixButton pixKey={data.pix.key} brand={brand} copied={copied} onCopied={setCopied} />
               </div>
               <p className="text-[11px] text-neutral-500">
                 Após o pagamento, envie o comprovante ao estabelecimento. A confirmação aparece aqui assim que for registrada.
@@ -273,11 +267,36 @@ export default function CardapioPedido() {
   );
 }
 
+/** Botão de copiar a chave Pix, com tratamento explícito de falha da clipboard API. */
+function CopyPixButton({
+  pixKey, brand, copied, onCopied,
+}: Readonly<{ pixKey: string; brand: string; copied: boolean; onCopied: (v: boolean) => void }>) {
+  const handleCopy = async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(pixKey);
+      onCopied(true);
+      setTimeout(() => onCopied(false), 2000);
+    } catch {
+      toast.error('Não foi possível copiar a chave Pix. Copie manualmente.');
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={() => { handleCopy().catch(() => undefined); }}
+      className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-white"
+      style={{ background: brand }}
+    >
+      {copied ? 'Copiado!' : 'Copiar'}
+    </button>
+  );
+}
+
 /** ETA recalculado a partir dos marcos reais do pedido (aceite, pronto, saída). */
 function useEta(order: EtaSource | undefined) {
-  // `tick` só existe para reprocessar o ETA a cada 30s; o valor não é exibido.
-  const [tick, setTick] = useState(0);
-  void tick;
+  // O estado só existe para reprocessar o ETA a cada 30s; o valor não é exibido.
+  const [, setTick] = useState(0);
   const status = order?.status;
   useEffect(() => {
     if (!status || FINAL_STATUSES.has(status)) return;

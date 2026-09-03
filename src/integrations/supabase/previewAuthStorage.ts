@@ -3,7 +3,7 @@
 // On a Lovable preview surface, broker the auth session to the editor over
 // postMessage so the project's preview surfaces share one login; else localStorage.
 export function brokeredPreviewStorage() {
-  if (typeof globalThis.window === 'undefined') return undefined;
+  if (globalThis.window === undefined) return undefined;
   const host = location.hostname;
   const PREVIEW_ZONES = ['lovableproject.com', 'lovableproject-dev.com', 'lovable.app', 'gpt-eng.com', 'gptengineer.run'];
   const onPreviewZone = PREVIEW_ZONES.some((z) => host === z || host.endsWith('.' + z));
@@ -46,9 +46,9 @@ export function brokeredPreviewStorage() {
         resolve(r);
       };
       const onMessage = (e: MessageEvent) => {
-        if (!editorOrigins.includes(e.origin)) return;
+        if (editorOrigins.indexOf(e.origin) < 0) return;
         const d = e.data;
-        if (d?.type === RESULT && d.requestId === requestId) finish(d);
+        if (d && d.type === RESULT && d.requestId === requestId) finish(d);
       };
       globalThis.addEventListener('message', onMessage);
       const msg: Record<string, unknown> = { type, requestId, projectId, key };

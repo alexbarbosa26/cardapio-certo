@@ -15,6 +15,12 @@ describe("previewAuthStorage — proteção antirregressão de PRNG", () => {
     expect(SOURCE).toContain("globalThis.crypto.randomUUID()");
   });
 
+  it("compara globalThis.window diretamente com undefined, sem typeof", () => {
+    expect(SOURCE).toContain("globalThis.window === undefined");
+    expect(SOURCE).not.toMatch(/typeof\s+window/);
+    expect(SOURCE).not.toMatch(/(^|[^.\w])window\s*\./m);
+  });
+
   it("gera requestIds únicos no formato UUID v4", async () => {
     const seen = new Set<string>();
     for (let i = 0; i < 50; i++) {
