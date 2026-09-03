@@ -295,16 +295,22 @@ function CopyPixButton({
 
 /** ETA recalculado a partir dos marcos reais do pedido (aceite, pronto, saída). */
 function useEta(order: EtaSource | undefined) {
-  // O estado só existe para reprocessar o ETA a cada 30s; o valor não é exibido.
-  const [, setTick] = useState(0);
+  // Contador de recálculo: muda a cada 30s para reprocessar a previsão de entrega.
+  const [etaRefreshCount, setEtaRefreshCount] = useState(0);
   const status = order?.status;
   useEffect(() => {
     if (!status || FINAL_STATUSES.has(status)) return;
-    const t = setInterval(() => setTick((x) => x + 1), 30_000);
+    const t = setInterval(() => setEtaRefreshCount((count) => count + 1), 30_000);
     return () => clearInterval(t);
   }, [status]);
-  if (!order) return { label: null as string | null, clock: null as string | null };
-  return { label: etaLabel(order), clock: etaClock(order) };
+  return useMemo(
+    () =>
+      order
+        ? { label: etaLabel(order), clock: etaClock(order) }
+        : { label: null as string | null, clock: null as string | null },
+    // etaRefreshCount força o recálculo periódico enquanto o pedido está em andamento.
+    [order, etaRefreshCount],
+  );
 }
 
 const PAYMENT_STATUS_META: Record<string, { label: string; tone: string }> = {

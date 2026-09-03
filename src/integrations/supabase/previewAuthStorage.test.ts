@@ -21,6 +21,24 @@ describe("previewAuthStorage — proteção antirregressão de PRNG", () => {
     expect(SOURCE).not.toMatch(/(^|[^.\w])window\s*\./m);
   });
 
+  it("verifica origens confiáveis com .includes(), sem .indexOf()", () => {
+    expect(SOURCE).toContain("editorOrigins.includes(e.origin)");
+    expect(SOURCE).not.toContain(".indexOf(");
+  });
+
+  it("usa encadeamento opcional nas guardas de mensagem e resposta", () => {
+    expect(SOURCE).toContain("d?.type === RESULT");
+    expect(SOURCE).toContain("res?.ok");
+    expect(SOURCE).not.toMatch(/\bd && d\./);
+    expect(SOURCE).not.toMatch(/\bres && res\./);
+  });
+
+  it("mantém String.raw e RegExp.exec nas expressões regulares", () => {
+    expect(SOURCE).toContain("String.raw");
+    expect(SOURCE).toContain(".exec(host)");
+    expect(SOURCE).not.toMatch(/host\.match\(/);
+  });
+
   it("gera requestIds únicos no formato UUID v4", async () => {
     const seen = new Set<string>();
     for (let i = 0; i < 50; i++) {
@@ -50,5 +68,39 @@ describe("brokeredPreviewStorage", () => {
     expect(storage.getItem("sb-token")).toBe("abc");
     storage.removeItem("sb-token");
     expect(storage.getItem("sb-token")).toBeNull();
+  });
+});
+
+describe("semântica de includes em listas de origens", () => {
+  const origins = ["https://lovable.dev", "http://localhost:3000"];
+
+  it("aceita origem presente na primeira e na última posição", () => {
+    expect(origins.includes("https://lovable.dev")).toBe(true);
+    expect(origins.includes("http://localhost:3000")).toBe(true);
+  });
+
+  it("rejeita origem ausente, lista vazia e diferença de caixa", () => {
+    expect(origins.includes("https://evil.com")).toBe(false);
+    expect([].includes("https://lovable.dev" as never)).toBe(false);
+    expect(origins.includes("https://LOVABLE.dev")).toBe(false);
+  });
+});
+
+describe("encadeamento opcional preserva valores falsy", () => {
+  const read = (o?: { value?: string | number | boolean | null } | null) => o?.value;
+
+  it("retorna undefined para objeto undefined ou null", () => {
+    expect(read(undefined)).toBeUndefined();
+    expect(read(null)).toBeUndefined();
+  });
+
+  it("preserva 0, false e string vazia", () => {
+    expect(read({ value: 0 })).toBe(0);
+    expect(read({ value: false })).toBe(false);
+    expect(read({ value: "" })).toBe("");
+  });
+
+  it("retorna undefined quando a propriedade está ausente", () => {
+    expect(read({})).toBeUndefined();
   });
 });
