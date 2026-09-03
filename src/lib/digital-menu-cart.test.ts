@@ -68,6 +68,7 @@ describe("envio e consulta de pedido público", () => {
     customer_phone: "11988887777",
     payment_method: "pix" as const,
     items: [{ item_id: "a", quantity: 2, notes: null }],
+    address: null,
   };
 
   it("normaliza o slug e devolve o resultado do backend", async () => {
