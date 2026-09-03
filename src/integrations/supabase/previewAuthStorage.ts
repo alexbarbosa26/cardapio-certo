@@ -42,7 +42,7 @@ export function brokeredPreviewStorage() {
         if (done) return;
         done = true;
         clearTimeout(timer);
-        window.removeEventListener('message', onMessage);
+        globalThis.removeEventListener('message', onMessage);
         resolve(r);
       };
       const onMessage = (e: MessageEvent) => {
@@ -50,11 +50,11 @@ export function brokeredPreviewStorage() {
         const d = e.data;
         if (d && d.type === RESULT && d.requestId === requestId) finish(d);
       };
-      window.addEventListener('message', onMessage);
+      globalThis.addEventListener('message', onMessage);
       const msg: Record<string, unknown> = { type, requestId, projectId, key };
       if (value !== undefined) msg['value'] = value;
       // targetOrigin per trusted editor origin, so a session token never reaches an arbitrary embedder.
-      for (const origin of editorOrigins) window.parent.postMessage(msg, origin);
+      for (const origin of editorOrigins) globalThis.parent.postMessage(msg, origin);
       timer = setTimeout(() => finish(null), TIMEOUT);
     });
 
