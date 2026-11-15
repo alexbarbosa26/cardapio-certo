@@ -33,14 +33,14 @@ Referências recebidas: instruções e mapeamento funcional da versão 2. O mape
 ## Detalhes técnicos
 ### Modelo e camadas
 - Contexto **Fiscal**: documentos fiscais e seus eventos são distintos de vendas, recebimento físico e financeiro. Vendas continuam no contexto operacional existente.
-- Entidade/raiz: documento fiscal; componentes históricos: participantes, itens, totais/tributos, parcelas e transporte; arquivos e eventos vinculados à raiz.
+- Raiz: documento fiscal com participantes, itens, tributos, parcelas, transporte, arquivos e eventos históricos.
 - Identificadores como chave, série, número e documento do participante são texto. Dinheiro usa `numeric` no banco e representação decimal textual nas fronteiras; evitar cálculos financeiros com ponto flutuante.
-- Criar apenas persistência aditiva necessária à consulta: documentos por empresa, conteúdo histórico estruturado, metadados de arquivos e eventos. Não criar tabelas de movimentos, tentativas de emissão ou certificados antes de seus casos de uso.
-- Separar tipos/regras fiscais independentes, consultas de persistência e apresentação. Hooks coordenam carregamento; componentes não definem elegibilidade fiscal presumida.
-- Centralizar filtros e paginação em consultas reutilizáveis. Buscar detalhe por `id` **e** `company_id`; negar acesso quando a empresa estiver ausente.
+- Persistência aditiva: documentos por empresa, conteúdo histórico, metadados de arquivos e eventos. Adiar movimentos, tentativas e certificados.
+- Separar domínio, consultas e apresentação; hooks coordenam carregamento, sem presumir elegibilidade fiscal.
+- Centralizar filtros/paginação; buscar detalhe por `id` **e** `company_id`, negando empresa ausente.
 - Migrações com GRANTs, RLS, índices por empresa/período e integridade dos vínculos. Permissões separadas para consulta, entrada, recebimento, financeiro, emissão, eventos, exportação/envio e configuração; somente consulta/exportação serão utilizadas nesta etapa.
 - Sem acesso anônimo ou escrita fiscal direta para usuários. Qualquer futura escrita exige autorização própria e auditoria. Exportações devem registrar autor, empresa, ação e escopo sem conteúdo sensível ou credenciais.
-- Arquivos ficam em armazenamento privado, com autorização pelo documento e empresa; não incluir segredos ou certificados nesse armazenamento de documentos.
+- Armazenamento privado autorizado por documento/empresa, sem segredos ou certificados.
 
 ### Nomes e linguagem do domínio
 | Termo ambíguo | Nome proposto | Motivo |
@@ -80,8 +80,8 @@ Glossário: **entrada** = documento recebido; **saída** = documento emitido pel
 - Revisão Clean Code: funções pequenas, nomes fiscais pesquisáveis, filtros sem duplicação, erros explícitos e separação domínio/consulta/interface. Nota de saúde e riscos serão relatados a partir do código entregue, não presumidos antes da implementação.
 
 ## Próximas etapas — não incluídas nesta entrega
-1. **XML:** prévia privada e sem efeitos; validar destinatário/chave, revisar associações e conversões, confirmar de forma idempotente. Depende dos fluxos de compras/estoque/contas a pagar ainda não encontrados.
-2. **Configuração fiscal:** escolher serviço e contrato de certificados/CSC, ambiente e parâmetros do estabelecimento; segredos somente no servidor, metadados seguros, renovação validada e auditada.
-3. **Saídas integradas:** rascunhos vinculados a vendas, idempotência, consulta após timeout e eventos autorizados pelo servidor. Nunca simular autorização real.
+1. **XML:** prévia sem efeitos, validação, associações/conversões e confirmação idempotente; depende de compras/estoque/contas a pagar.
+2. **Configuração:** escolher serviço, contrato de certificados/CSC e ambiente; segredos no servidor e renovação auditada.
+3. **Saídas:** vínculos com vendas, idempotência, recuperação de timeout e eventos autorizados no servidor.
 
 **Entrega final da etapa:** mudanças implementadas, evidências locais de validação e pendências explicitadas; emissão fiscal continuará indisponível.
