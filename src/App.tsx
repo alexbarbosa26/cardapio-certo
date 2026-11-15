@@ -7,7 +7,8 @@ import { TenantBrandingProvider } from '@/hooks/use-tenant-branding';
 import { PermissionsProvider } from '@/hooks/use-permissions';
 import MinhaAssinatura from '@/pages/MinhaAssinatura';
 import { PrintPreviewDialog } from '@/components/print-preview-dialog';
-import { RequireAuth, RequireSuperAdmin, RequireCompanyAccess } from '@/components/route-guards';
+import { RequireAuth, RequireSuperAdmin, RequireCompanyAccess, RequireAdmin } from '@/components/route-guards';
+import FiscalDocuments from '@/pages/fiscal/FiscalDocuments';
 import AppLayout from '@/pages/AppLayout';
 import Login from '@/pages/Login';
 import Index from '@/pages/Index';
@@ -106,6 +107,11 @@ export default function App() {
                   <Route path="/cardapio-digital" element={<CardapioDigital />} />
                   <Route path="/pedidos-delivery" element={<PedidosDelivery />} />
                   <Route path="/delivery-metricas" element={<DeliveryMetricas />} />
+                  <Route element={<RequireAdmin />}>
+                    <Route path="/fiscal/entradas" element={<FiscalDocuments direction="entrada" />} />
+                    <Route path="/fiscal/saidas" element={<FiscalDocuments direction="saida" />} />
+                    <Route path="/fiscal" element={<FiscalDocuments direction="entrada" />} />
+                  </Route>
 
                 </Route>
               </Route>

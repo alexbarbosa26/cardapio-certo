@@ -34,7 +34,7 @@ const NAV: NavItem[] = [
 
   { key: 'assinatura', to: '/assinatura', label: 'Minha assinatura', icon: CreditCard, admin: true },
   { key: 'wpp', to: '/whatsapp', label: 'WhatsApp', icon: MessageSquare, admin: true, soon: true },
-  { key: 'nf', to: '/notas-fiscais', label: 'Notas Fiscais', icon: Receipt, admin: true, soon: true },
+  { key: 'nf', to: '/fiscal', label: 'Fiscal', icon: Receipt, admin: true },
 ];
 
 function AppLayout() {

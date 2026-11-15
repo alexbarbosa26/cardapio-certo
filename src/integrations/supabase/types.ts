@@ -900,6 +900,195 @@ export type Database = {
           },
         ]
       }
+      fiscal_document_events: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          company_id: string
+          created_at: string
+          document_id: string
+          id: string
+          message: string | null
+          protocol: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          company_id: string
+          created_at?: string
+          document_id: string
+          id?: string
+          message?: string | null
+          protocol?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          company_id?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          message?: string | null
+          protocol?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_document_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_document_events_document_id_company_id_fkey"
+            columns: ["document_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documents"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      fiscal_document_files: {
+        Row: {
+          checksum: string | null
+          company_id: string
+          created_at: string
+          document_id: string
+          id: string
+          kind: string
+          name: string
+          storage_path: string
+        }
+        Insert: {
+          checksum?: string | null
+          company_id: string
+          created_at?: string
+          document_id: string
+          id?: string
+          kind: string
+          name: string
+          storage_path: string
+        }
+        Update: {
+          checksum?: string | null
+          company_id?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          kind?: string
+          name?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_document_files_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_document_files_document_id_company_id_fkey"
+            columns: ["document_id", "company_id"]
+            isOneToOne: false
+            referencedRelation: "fiscal_documents"
+            referencedColumns: ["id", "company_id"]
+          },
+        ]
+      }
+      fiscal_documents: {
+        Row: {
+          access_key: string | null
+          authorization_status: string
+          category: string
+          company_id: string
+          created_at: string
+          direction: string
+          excluded_at: string | null
+          financial_status: string
+          fiscal_message: string | null
+          id: string
+          issued_at: string | null
+          last_checked_at: string | null
+          model: string
+          movement_at: string | null
+          number: string
+          order_id: string | null
+          participant_name: string
+          posted_at: string | null
+          receipt_status: string
+          series: string
+          snapshot: Json
+          total: number
+          transmission_status: string
+        }
+        Insert: {
+          access_key?: string | null
+          authorization_status?: string
+          category?: string
+          company_id: string
+          created_at?: string
+          direction: string
+          excluded_at?: string | null
+          financial_status?: string
+          fiscal_message?: string | null
+          id?: string
+          issued_at?: string | null
+          last_checked_at?: string | null
+          model: string
+          movement_at?: string | null
+          number?: string
+          order_id?: string | null
+          participant_name?: string
+          posted_at?: string | null
+          receipt_status?: string
+          series?: string
+          snapshot?: Json
+          total?: number
+          transmission_status?: string
+        }
+        Update: {
+          access_key?: string | null
+          authorization_status?: string
+          category?: string
+          company_id?: string
+          created_at?: string
+          direction?: string
+          excluded_at?: string | null
+          financial_status?: string
+          fiscal_message?: string | null
+          id?: string
+          issued_at?: string | null
+          last_checked_at?: string | null
+          model?: string
+          movement_at?: string | null
+          number?: string
+          order_id?: string | null
+          participant_name?: string
+          posted_at?: string | null
+          receipt_status?: string
+          series?: string
+          snapshot?: Json
+          total?: number
+          transmission_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_documents_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_documents_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       option_groups: {
         Row: {
           company_id: string
@@ -2199,6 +2388,16 @@ export type Database = {
         }
         Returns: Json
       }
+      audit_fiscal_distribution: {
+        Args: {
+          _company_id: string
+          _direction: string
+          _filters: Json
+          _kind: string
+          _selected_ids: string[]
+        }
+        Returns: undefined
+      }
       company_plan_limits: {
         Args: { _company: string }
         Returns: {
@@ -2224,6 +2423,10 @@ export type Database = {
       }
       current_company_id: { Args: never; Returns: string }
       current_open_register: { Args: { _company: string }; Returns: string }
+      get_fiscal_document: {
+        Args: { _company_id: string; _document_id: string }
+        Returns: Json
+      }
       get_public_menu: { Args: { _slug: string }; Returns: Json }
       get_public_order: { Args: { _token: string }; Returns: Json }
       get_public_settings: {
@@ -2238,6 +2441,7 @@ export type Database = {
           service_fee_percentage: number
         }[]
       }
+      has_fiscal_permission: { Args: { _permission: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2247,6 +2451,17 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      list_fiscal_documents: {
+        Args: {
+          _company_id: string
+          _direction: string
+          _export?: boolean
+          _filters?: Json
+          _page?: number
+          _size?: number
+        }
+        Returns: Json
+      }
       recalc_credit_receivable: { Args: { _rec: string }; Returns: undefined }
       recalc_customer_tab: { Args: { _tab_id: string }; Returns: undefined }
       recalc_order_payments: { Args: { _order_id: string }; Returns: undefined }

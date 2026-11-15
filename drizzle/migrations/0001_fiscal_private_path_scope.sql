@@ -1,0 +1,1 @@
+ALTER POLICY fiscal_private_download ON storage.objects USING(bucket_id='fiscal-documents' AND public.has_fiscal_permission('distribute') AND EXISTS(SELECT 1 FROM public.fiscal_document_files f WHERE f.storage_path=storage.objects.name AND f.company_id=public.current_company_id()));
