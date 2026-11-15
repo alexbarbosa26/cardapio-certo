@@ -77,11 +77,11 @@ Glossário: **entrada** = documento recebido; **saída** = documento emitido pel
 - Testes P0: sem sessão, staff sem permissão, empresa ausente, documento de outra empresa, exportação sem permissão, consultas sem alteração de pedidos/financeiro.
 - Verificar isolamento real nas políticas além dos mocks. Testar navegação autenticada, listagens e detalhes em desktop e celular; dados sintéticos claramente identificados somente em testes, não como notas iniciais. Cobrir AC-01, AC-02, AC-03 e AC-16 nesta etapa; AC-04 a AC-15 e AC-17 a AC-25 pertencem às etapas futuras, sem declarar aprovação antecipada.
 - Executar testes relevantes e lint dos arquivos alterados; conferir resultado da compilação automática. Não reduzir cobertura, excluir código produtivo ou modificar arquivos gerados de autenticação.
-- Revisão Clean Code: funções pequenas, nomes fiscais pesquisáveis, filtros sem duplicação, erros explícitos e separação domínio/consulta/interface. Nota de saúde e riscos serão relatados a partir do código entregue, não presumidos antes da implementação.
+- Revisão Clean Code: nomes claros, funções pequenas, filtros sem duplicação e separação de responsabilidades.
 
 ## Próximas etapas — não incluídas nesta entrega
 1. **XML:** prévia sem efeitos, validação, associações/conversões e confirmação idempotente; depende de compras/estoque/contas a pagar.
 2. **Configuração:** escolher serviço, contrato de certificados/CSC e ambiente; segredos no servidor e renovação auditada.
 3. **Saídas:** vínculos com vendas, idempotência, recuperação de timeout e eventos autorizados no servidor.
 
-**Entrega final da etapa:** mudanças implementadas, evidências locais de validação e pendências explicitadas; emissão fiscal continuará indisponível.
+**Entrega:** mudanças, validações e pendências; emissão indisponível.
