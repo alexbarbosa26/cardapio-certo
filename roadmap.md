@@ -15,13 +15,13 @@
 - [x] Permitir configuração não secreta de ambiente e antecedência de alerta, com auditoria e isolamento por empresa.
 - [x] Consultar metadados seguros de certificados e mostrar pendências de integração sem simular validação.
 - [x] Validar acesso, configuração e layout em computador e celular.
-- [ ] Habilitar upload, validação e armazenamento de certificado/CSC — bloqueado pela ausência do serviço fiscal e seu contrato; não presumir formatos ou ativação.
+- [ ] Habilitar upload, validação e armazenamento de certificado/CSC — Focus NFe definida; aguardando conexão e credenciais autorizadas.
 
 Etapas seguintes: importação XML e integração operacional.
 
 ## Focus NFe — homologação
 - [x] Confirmar contratos oficiais de empresas, A1, CSC, emissão, consulta e documentos.
-- [ ] Integrar operações fiscais no servidor com isolamento, auditoria, idempotência e produção bloqueada.
-- [ ] Habilitar configuração segura e indicar credenciais ou cadastros pendentes — conexão não autorizada; aguardando decisão sobre credenciais.
+- [ ] Integrar operações fiscais no servidor com isolamento, auditoria, idempotência e produção bloqueada — usuário decidiu conectar depois.
+- [ ] Habilitar configuração segura e indicar credenciais ou cadastros pendentes — aguardando conta e tokens administrativos/de homologação; usuário decidiu conectar depois.
 - [x] Verificar separadamente documentos recebidos e manifestação.
-- [ ] Testar regras e fluxo autenticado sem emitir documentos reais durante a construção.
+- [ ] Testar regras e fluxo autenticado sem emitir documentos reais durante a construção — bloqueado pela integração ainda não implementada e ausência de credenciais.

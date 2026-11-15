@@ -9,7 +9,7 @@ O MesaChef já separa documentos, metadados de certificados e preferências por 
 ## Decisão
 Usar uma camada de integração exclusivamente no servidor. A API de empresas opera somente em `https://api.focusnfe.com.br/v2`; isso não autoriza emissões nesse ambiente. Emissões e consultas de documentos emitidos devem usar exclusivamente `https://homologacao.focusnfe.com.br/v2` e o token de homologação correspondente à empresa. Autenticação oficial: Basic Auth, token como usuário e senha vazia.
 
-O cadastro administrativo precisa de uma conexão autorizada. A solicitação de conexão foi recusada; não foi criado conector e nenhuma credencial foi fornecida. Não implementar alternativa de credenciais sem decisão do usuário.
+O cadastro administrativo precisa de uma conexão autorizada. A solicitação de conexão foi recusada; não foi criado conector e nenhuma credencial foi fornecida. O usuário escolheu conectar depois. A implementação operacional fica pendente até essa conexão; não foi criada alternativa de credenciais.
 
 Certificados A1 são enviados como PFX/P12 em base64 com senha em campo separado. Usar `certificado_especifico=true` para evitar propagação para matriz/filiais. Executar pré-validação `dry_run=1` antes da atualização efetiva e só confirmar metadados locais após confirmação do provedor. O comportamento atômico de uma atualização efetiva com falha ainda precisa ser verificado; dry-run sozinho não comprova preservação remota.
 
