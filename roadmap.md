@@ -20,8 +20,8 @@
 Etapas seguintes: importação XML e integração operacional.
 
 ## Focus NFe — homologação
-- [ ] Confirmar contratos oficiais de empresas, A1, CSC, emissão, consulta e documentos.
+- [x] Confirmar contratos oficiais de empresas, A1, CSC, emissão, consulta e documentos.
 - [ ] Integrar operações fiscais no servidor com isolamento, auditoria, idempotência e produção bloqueada.
-- [ ] Habilitar configuração segura e indicar credenciais ou cadastros pendentes.
-- [ ] Verificar separadamente documentos recebidos e manifestação.
+- [ ] Habilitar configuração segura e indicar credenciais ou cadastros pendentes — conexão não autorizada; aguardando decisão sobre credenciais.
+- [x] Verificar separadamente documentos recebidos e manifestação.
 - [ ] Testar regras e fluxo autenticado sem emitir documentos reais durante a construção.
