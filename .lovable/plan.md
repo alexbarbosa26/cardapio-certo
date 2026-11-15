@@ -3,21 +3,23 @@
 ## Entrega proposta
 Criar **Fiscal > Entradas e Saídas**, mantendo o visual atual e sem alterar pedidos, caixa, comandas ou dados existentes. Esta entrega é somente de consulta: não emite, cancela, manifesta, importa documentos nem envia e-mails.
 
-O arquivo recebido contém as instruções da versão 2. O documento separado de mapeamento funcional mencionado não foi anexado; nenhum comportamento adicional do Pratika será presumido.
+Referências recebidas: instruções e mapeamento funcional da versão 2. O mapeamento distingue observações de interface, comandos não executados, propostas e pendências; essas classificações serão preservadas. Não acessar o Pratika nem copiar seus dados. As pendências de inspeção externa do documento não autorizam novas consultas.
 
 ### Navegação e listagens
 - Substituir “Notas Fiscais — em breve” por Fiscal, com acesso a Entradas e Saídas.
 - Proteger as rotas por sessão, empresa e permissão de consulta. Inicialmente, conceder consulta e exportação aos administradores da própria empresa; staff não recebe acesso por padrão. As permissões fiscais ficam separadas para futura concessão explícita.
 - **Saídas:** período, destinatário, série, número, chave, modelo NF-e/NFC-e e situação; categorias Transmitidas, Pendentes, Canceladas, Inutilizadas e Offline.
 - **Entradas:** período, emitente/fornecedor, série, número, chave e situação; categorias Autorizadas e Excluídas.
-- Mostrar todas as colunas solicitadas, seleção de linhas, total de resultados, paginação e tamanhos de página. Filtros, contagem e exportação devem compartilhar a mesma consulta e autorização, sem limite silencioso de resultados.
+- Mostrar todas as colunas solicitadas, seleção explícita, total de resultados, primeira/anterior/próxima/última página, páginas numeradas e tamanhos 10, 25, 50 e 100. Não replicar a opção 11 da referência. Filtros, contagem e exportação compartilham consulta e autorização, sem limite silencioso.
+- Persistir filtros apenas como preferência de navegação, separados por empresa e direção; não persistir documentos ou permissões no navegador. Oferecer avanço/retorno de período e cópia integral da chave abreviada na tabela, tratando falha de cópia.
 - Preservar distinção entre transmissão e autorização: registrar ambos separadamente. “Transmitidas” não significa “Autorizadas”; sem contrato de integração, não inferir estado por envio. Categorias serão baseadas em estados explícitos registrados, com mapeamento definitivo dependente do serviço fiscal.
 - Estados de carregamento, erro recuperável e vazio sem notas fictícias. Explicar no estado vazio que ainda não há documentos e que a importação será disponibilizada na próxima etapa.
-- Exportar CSV dos resultados autorizados, com tratamento de identificadores textuais, valores exatos e prevenção de fórmulas em planilhas. Oferecer relatório imprimível no mesmo escopo.
+- Exportar CSV dos resultados autorizados, com identificadores textuais, valores exatos e prevenção de fórmulas em planilhas. Oferecer relatório imprimível; indicar filtros ou seleção, quantidade e total do escopo, nunca o total da página como total geral.
 
 ### Detalhes e ações
 - Painel do documento com Resumo, Participantes, Itens, Valores e Tributos, Pagamentos/Parcelas, Documentos e Eventos. Mostrar Transporte apenas quando aplicável.
 - Datas de emissão, entrada/saída e criação/lançamento independentes; participantes históricos não dependem do cadastro atual.
+- Saídas: mostrar vínculo real com pedido, última consulta e mensagem fiscal original quando existirem; não deduzir modelo pelo texto da mensagem. Entradas: distinguir situação fiscal, recebimento físico e financeiro; filtros operacionais somente quando houver informação confiável, sem presumir lançamentos.
 - XML e documento auxiliar somente quando existir arquivo correspondente e o usuário tiver permissão; gerar acesso temporário autorizado a arquivos privados, nunca links públicos permanentes.
 - Apresentar as ações solicitadas para entradas e saídas. As operações não implementadas permanecem indisponíveis com motivo acessível por texto/tooltip, inclusive em celular. Nenhuma ação indisponível chama serviços fiscais.
 - Certificados/CSC e emissão não serão habilitados nesta etapa. Não solicitar nem armazenar credenciais fiscais agora.
@@ -73,7 +75,7 @@ Glossário: **entrada** = documento recebido; **saída** = documento emitido pel
 ## Validação e revisão
 - Testes rápidos, independentes e comportamentais: filtros combinados, datas de fronteira, paginação/contagem/exportação no mesmo escopo, preservação de zeros e valores monetários, detalhe e arquivos do documento correto.
 - Testes P0: sem sessão, staff sem permissão, empresa ausente, documento de outra empresa, exportação sem permissão, consultas sem alteração de pedidos/financeiro.
-- Verificar isolamento real nas políticas além dos mocks. Testar navegação autenticada, listagens e detalhes em desktop e celular; usar dados sintéticos claramente identificados somente em testes, não como notas iniciais do app.
+- Verificar isolamento real nas políticas além dos mocks. Testar navegação autenticada, listagens e detalhes em desktop e celular; dados sintéticos claramente identificados somente em testes, não como notas iniciais. Cobrir AC-01, AC-02, AC-03 e AC-16 nesta etapa; AC-04 a AC-15 e AC-17 a AC-25 pertencem às etapas futuras, sem declarar aprovação antecipada.
 - Executar testes relevantes e lint dos arquivos alterados; conferir resultado da compilação automática. Não reduzir cobertura, excluir código produtivo ou modificar arquivos gerados de autenticação.
 - Revisão Clean Code: funções pequenas, nomes fiscais pesquisáveis, filtros sem duplicação, erros explícitos e separação domínio/consulta/interface. Nota de saúde e riscos serão relatados a partir do código entregue, não presumidos antes da implementação.
 
