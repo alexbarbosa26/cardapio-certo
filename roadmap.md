@@ -9,6 +9,8 @@
 
 ## Configuração fiscal — etapa 3
 
+- [x] Revisar todos os caminhos fiscais e impedir que uma edição pendente acompanhe a troca de empresa.
+
 - [x] Adicionar acesso a Configuração fiscal > Certificados e CSC.
 - [x] Permitir configuração não secreta de ambiente e antecedência de alerta, com auditoria e isolamento por empresa.
 - [x] Consultar metadados seguros de certificados e mostrar pendências de integração sem simular validação.

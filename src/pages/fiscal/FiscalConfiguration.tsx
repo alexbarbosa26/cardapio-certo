@@ -36,6 +36,9 @@ import { fiscalDate } from "@/lib/fiscal/domain";
 export default function FiscalConfiguration() {
   const { profile } = useAuth();
   const companyId = profile?.company_id ?? "";
+  return <FiscalConfigurationWorkspace key={companyId} companyId={companyId} />;
+}
+function FiscalConfigurationWorkspace({ companyId }: { companyId: string }) {
   const query = useQuery({
     queryKey: ["fiscal-configuration", companyId],
     queryFn: () => loadFiscalConfiguration(companyId),
@@ -127,6 +130,7 @@ export default function FiscalConfiguration() {
                 <Label htmlFor="fiscal-environment">Ambiente</Label>
                 <select
                   id="fiscal-environment"
+                  disabled={saving}
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                   value={preferences.environment}
                   onChange={(e) =>
@@ -141,6 +145,7 @@ export default function FiscalConfiguration() {
                 <Label htmlFor="warning-days">Alertar antes do vencimento (dias)</Label>
                 <Input
                   id="warning-days"
+                  disabled={saving}
                   type="number"
                   min={1}
                   max={365}

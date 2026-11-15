@@ -2,9 +2,9 @@ import { beforeEach, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-const mock = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn() }));
+const mock = vi.hoisted(() => ({ load: vi.fn(), save: vi.fn(), companyId: "company-test" }));
 vi.mock("@/hooks/use-auth", () => ({
-  useAuth: () => ({ profile: { company_id: "company-test", role: "admin" } }),
+  useAuth: () => ({ profile: { company_id: mock.companyId, role: "admin" } }),
 }));
 vi.mock("@/lib/fiscal/certificates", async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -25,6 +25,7 @@ function mount() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  mock.companyId = "company-test";
   mock.load.mockResolvedValue({
     preferences: { environment: "test", expiry_warning_days: 30 },
     certificates: [],
@@ -59,4 +60,30 @@ it("explains the provider requirement without accepting private files", async ()
     "Upload e validação de certificado dependem do serviço fiscal escolhido",
   );
   expect(container.querySelector("input[type=file]")).toBeNull();
+});
+it("discards pending edits when the active company changes", async () => {
+  const cache = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const view = () => (
+    <MemoryRouter>
+      <QueryClientProvider client={cache}>
+        <FiscalConfiguration />
+      </QueryClientProvider>
+    </MemoryRouter>
+  );
+  const { rerender } = render(view());
+  await screen.findByLabelText("Ambiente");
+  fireEvent.change(screen.getByLabelText("Alertar antes do vencimento (dias)"), {
+    target: { value: "45" },
+  });
+  mock.companyId = "other-company";
+  mock.load.mockResolvedValue({
+    preferences: { environment: "production", expiry_warning_days: 60 },
+    certificates: [],
+  });
+  rerender(view());
+  await waitFor(() =>
+    expect(screen.getByLabelText("Alertar antes do vencimento (dias)")).toHaveValue(60),
+  );
+  expect(screen.getByRole("button", { name: "Salvar preferências" })).toBeDisabled();
+  expect(mock.save).not.toHaveBeenCalled();
 });
