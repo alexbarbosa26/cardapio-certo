@@ -7,4 +7,12 @@
 - [x] Validar testes, privilégios, isolamento de empresa e navegação autenticada em computador e celular.
 - [ ] Validar documentos preenchidos e downloads reais — bloqueado pela ausência de documentos fiscais; fixtures locais testadas sem criar notas em produção.
 
-Etapas seguintes: importação XML e integração operacional; certificados/CSC e emissão dependem da definição do serviço fiscal.
+## Configuração fiscal — etapa 3
+
+- [x] Adicionar acesso a Configuração fiscal > Certificados e CSC.
+- [x] Permitir configuração não secreta de ambiente e antecedência de alerta, com auditoria e isolamento por empresa.
+- [x] Consultar metadados seguros de certificados e mostrar pendências de integração sem simular validação.
+- [x] Validar acesso, configuração e layout em computador e celular.
+- [ ] Habilitar upload, validação e armazenamento de certificado/CSC — bloqueado pela ausência do serviço fiscal e seu contrato; não presumir formatos ou ativação.
+
+Etapas seguintes: importação XML e integração operacional; emissão depende da definição do serviço fiscal.

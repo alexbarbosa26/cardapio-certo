@@ -900,6 +900,91 @@ export type Database = {
           },
         ]
       }
+      fiscal_certificate_metadata: {
+        Row: {
+          company_id: string
+          configuration_state: string
+          created_at: string
+          csc_configured: boolean
+          csc_identifier: string | null
+          environment: string
+          holder_document: string
+          holder_name: string
+          id: string
+          last_verified_at: string | null
+          serial_number: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          company_id: string
+          configuration_state?: string
+          created_at?: string
+          csc_configured?: boolean
+          csc_identifier?: string | null
+          environment: string
+          holder_document: string
+          holder_name: string
+          id?: string
+          last_verified_at?: string | null
+          serial_number: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          company_id?: string
+          configuration_state?: string
+          created_at?: string
+          csc_configured?: boolean
+          csc_identifier?: string | null
+          environment?: string
+          holder_document?: string
+          holder_name?: string
+          id?: string
+          last_verified_at?: string | null
+          serial_number?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_certificate_metadata_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fiscal_configuration: {
+        Row: {
+          company_id: string
+          environment: string
+          expiry_warning_days: number
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          environment?: string
+          expiry_warning_days?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          environment?: string
+          expiry_warning_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_configuration_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fiscal_document_events: {
         Row: {
           action: string
@@ -2465,6 +2550,14 @@ export type Database = {
       recalc_credit_receivable: { Args: { _rec: string }; Returns: undefined }
       recalc_customer_tab: { Args: { _tab_id: string }; Returns: undefined }
       recalc_order_payments: { Args: { _order_id: string }; Returns: undefined }
+      save_fiscal_configuration: {
+        Args: {
+          _company_id: string
+          _environment: string
+          _expiry_warning_days: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "staff" | "super_admin"

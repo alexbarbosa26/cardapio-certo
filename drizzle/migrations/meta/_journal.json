@@ -29,6 +29,13 @@
       "when": 1794709197190,
       "tag": "0003_fiscal_least_privilege",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794709840823,
+      "tag": "0004_fiscal_configuration_metadata",
+      "breakpoints": true
     }
   ]
 }

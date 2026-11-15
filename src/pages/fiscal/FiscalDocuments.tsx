@@ -159,7 +159,7 @@ function FiscalWorkspace({
           Consulta · integração fiscal não configurada
         </Badge>
       </header>
-      <nav aria-label="Área Fiscal" className="flex gap-2 border-b pb-4">
+      <nav aria-label="Área Fiscal" className="flex flex-wrap gap-2 border-b pb-4">
         <Button asChild variant={direction === "entrada" ? "default" : "ghost"}>
           <Link to="/fiscal/entradas">
             <ArrowDownLeft />
@@ -171,6 +171,9 @@ function FiscalWorkspace({
             <ArrowUpRight />
             Saídas
           </Link>
+        </Button>
+        <Button asChild variant="ghost">
+          <Link to="/fiscal/configuracao">Configuração fiscal</Link>
         </Button>
       </nav>
       <section className="space-y-4" aria-label="Filtros fiscais">
@@ -347,8 +350,8 @@ function FiscalWorkspace({
                     <span className="ml-auto text-xs text-muted-foreground">Em breve</span>
                   </DropdownMenuItem>
                 ))}
-                <DropdownMenuItem onSelect={() => setUnavailable("Certificados e CSC")}>
-                  Certificados e CSC
+                <DropdownMenuItem asChild>
+                  <Link to="/fiscal/configuracao">Certificados e CSC</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
