@@ -17,4 +17,11 @@
 - [x] Validar acesso, configuração e layout em computador e celular.
 - [ ] Habilitar upload, validação e armazenamento de certificado/CSC — bloqueado pela ausência do serviço fiscal e seu contrato; não presumir formatos ou ativação.
 
-Etapas seguintes: importação XML e integração operacional; emissão depende da definição do serviço fiscal.
+Etapas seguintes: importação XML e integração operacional.
+
+## Focus NFe — homologação
+- [ ] Confirmar contratos oficiais de empresas, A1, CSC, emissão, consulta e documentos.
+- [ ] Integrar operações fiscais no servidor com isolamento, auditoria, idempotência e produção bloqueada.
+- [ ] Habilitar configuração segura e indicar credenciais ou cadastros pendentes.
+- [ ] Verificar separadamente documentos recebidos e manifestação.
+- [ ] Testar regras e fluxo autenticado sem emitir documentos reais durante a construção.
